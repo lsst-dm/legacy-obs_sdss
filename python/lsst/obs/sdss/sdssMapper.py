@@ -21,14 +21,7 @@
 #
 
 import re
-
-import lsst.daf.base as dafBase
-import lsst.afw.image as afwImage
-import lsst.afw.image.utils as afwImageUtils
-import lsst.afw.coord as afwCoord
-import lsst.afw.geom as afwGeom
 import lsst.pex.policy as pexPolicy
-
 from lsst.daf.butlerUtils import CameraMapper
 
 # Solely to get boost serialization registrations for Measurement subclasses
@@ -47,16 +40,9 @@ class SdssMapper(CameraMapper):
                 else:
                     kwargs[kw] = inputPolicy.get(kw)
 
-        super(LsstSimMapper, self).__init__(policy, policyFile.getRepositoryPath(), **kwargs)
-        self.filterIdMap = {
-                'u': 0, 'g': 1, 'r': 2, 'i': 3, 'z': 4}
-
-        #The LSST Filters from L. Jones 04/07/10
-        afwImageUtils.defineFilter('u', 364.59)
-        afwImageUtils.defineFilter('g', 476.31)
-        afwImageUtils.defineFilter('r', 619.42)
-        afwImageUtils.defineFilter('i', 752.06)
-        afwImageUtils.defineFilter('z', 866.85)
+        super(SdssMapper, self).__init__(policy, policyFile.getRepositoryPath(), **kwargs)
+        # define filters?
+        self.filterIdMap = dict(u=0, g=1, r=2, i=3, z=4)
 
     def _computeCcdExposureId(self, dataId):
         """Compute the 64-bit (long) identifier for a CCD exposure.
@@ -64,20 +50,29 @@ class SdssMapper(CameraMapper):
         @param dataId (dict) Data identifier with run, rerun, band, camcol, frame
         """
 
-        # FIXME
-        visit = pathId['visit']
-        raft = pathId['raft'] # "xy" e.g. "20"
-        sensor = pathId['sensor'] # "xy" e.g. "11"
-
-        r1, r2 = raft
-        s1, s2 = sensor
-        return (visit << 9) + \
-                (long(r1) * 5 + long(r2)) * 10 + \
-                (long(s1) * 3 + long(s2))
+        return ((long(run) \
+                * 10 + self.filterIdMap[band]) \
+                * 10 + camcol) \
+                * 10000 + frame
 
     def _setCcdExposureId(self, propertyList, dataId):
         propertyList.set("Computed_ccdExposureId", self._computeCcdExposureId(dataId))
         return propertyList
+
+    def _standardizeExposure(self, mapping, item, dataId, filter=True,
+            trimmed=True):
+
+        """Default standardization function for images.
+        @param mapping (lsst.daf.butlerUtils.Mapping)
+        @param[in,out] item (lsst.afw.image.Exposure)
+        @param dataId (dict) Dataset identifier
+        @param filter (bool) Set filter?
+        @param trimmed (bool) Should detector be marked as trimmed?
+        @return (lsst.afw.image.Exposure) the standardized Exposure"""
+
+        if (re.search(r'Exposure', mapping.python) and re.search(r'Image',mapping.persistable)):
+            item = exposureFromImage(item)
+        return item
 
 ###############################################################################
 
@@ -86,8 +81,7 @@ class SdssMapper(CameraMapper):
         # Note that sources are identified by what is called an ampExposureId,
         # but in this case all we have is a CCD.
         ampExposureId = self._computeCcdExposureId(dataId)
-        pathId = self._transformId(dataId)
-        filterId = self.filterIdMap[pathId['filter']]
+        filterId = self.filterIdMap[pathId['band']]
         ad = dict(ampExposureId=ampExposureId, filterId=filterId)
         if self.doFootprints:
             ad["doFootprints"] = True
@@ -98,12 +92,12 @@ class SdssMapper(CameraMapper):
         return {"skyTileId": dataId['skyTile']}
 
 for dsType in ("icSrc", "src"):
-    setattr(LsstSimMapper, "add_" + dsType, LsstSimMapper._addSources)
+    setattr(SdssMapper, "add_" + dsType, SdssMapper._addSources)
 for dsType in ("source", "badSource", "invalidSource", "object", "badObject"):
-    setattr(LsstSimMapper, "add_" + dsType, LsstSimMapper._addSkytile)
+    setattr(SdssMapper, "add_" + dsType, SdssMapper._addSkytile)
 
 ###############################################################################
 
 for dsType in ("corr", "mask", "calexp"):
-    setattr(LsstSimMapper, "std_" + dsType + "_md",
+    setattr(SdssMapper, "std_" + dsType + "_md",
             lambda self, item, dataId: self._setCcdExposureId(item))
