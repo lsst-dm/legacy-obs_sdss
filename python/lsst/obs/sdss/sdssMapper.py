@@ -23,6 +23,7 @@
 import re
 import lsst.pex.policy as pexPolicy
 from lsst.daf.butlerUtils import CameraMapper
+from lsst.obs.sdss.convertfpM import convertfpM
 
 # Solely to get boost serialization registrations for Measurement subclasses
 import lsst.meas.algorithms as measAlgo
@@ -76,6 +77,11 @@ class SdssMapper(CameraMapper):
 
 ###############################################################################
 
+    def bypass_mask(self, datasetType, pythonType, location, dataId):
+        return convertfpM(location.getLocations()[0])
+
+###############################################################################
+
     def _addSources(self, dataId):
         """Generic 'add' function to add ampExposureId and filterId"""
         # Note that sources are identified by what is called an ampExposureId,
@@ -97,6 +103,7 @@ for dsType in ("source", "badSource", "invalidSource", "object", "badObject"):
     setattr(SdssMapper, "add_" + dsType, SdssMapper._addSkytile)
 
 ###############################################################################
+
 
 for dsType in ("corr", "mask", "calexp"):
     setattr(SdssMapper, "std_" + dsType + "_md",

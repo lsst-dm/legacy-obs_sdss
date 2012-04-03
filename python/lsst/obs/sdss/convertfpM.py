@@ -90,14 +90,7 @@ class Objmask(object):
                 mask.set(x, y, mask.get(x, y) | self.cval)
                 x += 1
 
-
-if __name__ == '__main__':
-    infile  = sys.argv[1]
-    outfile = sys.argv[2]
-    
-    if not os.path.isfile(infile):
-        sys.exit(1)
-    
+def convertfpM(infile):
     hdr    = pyfits.open(infile)
     run    = hdr[0].header['RUN']
     camcol = hdr[0].header['CAMCOL']
@@ -126,10 +119,17 @@ if __name__ == '__main__':
         for frow in hdr[plane].data:
             Objmask(frow, bitmask).setMask(mask)
     
-    mask.writeFits(outfile)
+    return mask
 
 
-
+if __name__ == '__main__':
+    infile  = sys.argv[1]
+    outfile = sys.argv[2]
+    
+    if not os.path.isfile(infile):
+        sys.exit(1)
+    
+    convertfpM(infile).writeFits(outfile)
 
 
     comparison = """

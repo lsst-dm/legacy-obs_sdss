@@ -5,8 +5,8 @@ butler = dafPersist.ButlerFactory(
         mapper=SdssMapper(root="/lsst7/stripe82/dr7/runs")).create()
 exp = butler.get("corr", run=5754, camcol=3, frame=280, band="r", rerun=40)
 print exp.getWidth(), exp.getHeight()
-# msk = butler.get("mask", run=5754, camcol=3, frame=280, band="r", rerun=40)
-# do something with msk
+msk = butler.get("mask", run=5754, camcol=3, frame=280, band="r", rerun=40)
+print msk.getWidth(), msk.getHeight()
 # psf = butler.get("origPsf", run=5754, camcol=3, frame=280, band="r", rerun=40)
 # do something with psf
 
