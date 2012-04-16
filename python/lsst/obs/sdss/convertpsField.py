@@ -24,6 +24,7 @@ import pyfits
 import numpy as num
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
+import lsst.afw.detection as afwDetect
 DEBUG = True
 
 filtToHdu = {'u':1,'g':2,'r':3,'i':4,'z':5}
@@ -125,7 +126,8 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
     spaFun = afwMath.PolynomialFunction2D(LSST_ORDER)
     spatialKernel = afwMath.LinearCombinationKernel(kernelList, spaFun)
     spatialKernel.setSpatialParameters(spaParList)
-    return spatialKernel
+    spatialPsf = afwDetect.KernelPsf(spatialKernel)
+    return spatialPsf
 
 def directCompare(infile, filt, x, y, soft_bias = 1000, amp = 30000, outfile = "/tmp/sdss_psf.fits"):
     if not filt in filtToHdu.keys():
@@ -133,7 +135,8 @@ def directCompare(infile, filt, x, y, soft_bias = 1000, amp = 30000, outfile = "
         sys.exit(1)
     
     # Make the kernel image from LSST
-    kernel = convertpsField(infile, filt, trim = False)
+    psf = convertpsField(infile, filt, trim = False)
+    kernel = psf.getKernel()
 
     # Assumes you have built dervish and have read_PSF in your path
     #
@@ -190,6 +193,6 @@ if __name__ == '__main__':
     if DEBUG:
         directCompare(infile, filt, x, y)
     else:
-        kernel = convertpsField(infile, filt)
+        psf = convertpsField(infile, filt)
     
     # Persist the kernel at your own leisure
