@@ -61,7 +61,6 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
             karr = karr[10:41, 10:41]
 
         kim  = afwImage.ImageD(karr)
-        kim.writeFits("/tmp/basis_%d.fits" % (i))
         kern = afwMath.FixedKernel(kim)
         kernelList.push_back(kern)
 
