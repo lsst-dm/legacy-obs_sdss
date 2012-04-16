@@ -48,17 +48,20 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
     spaParList = [[]]*len(pstruct)
     kernelList = afwMath.KernelList()
     for i in range(len(pstruct)):
-        nrow_b = pstruct[i][0]
-        ncol_b = pstruct[i][1]
+        nrow_b = pstruct[i][0] # ny
+        ncol_b = pstruct[i][1] # nx
         cmat   = pstruct[i][2].reshape((MAX_ORDER_B, MAX_ORDER_B))
         e_val  = pstruct[i][3]
         krow   = pstruct[i][4] # RNROW
         kcol   = pstruct[i][5] # RNCOL
+        # This is *not* transposed
         karr   = pstruct[i][7].reshape((krow, kcol)).astype(num.float64)
 
         if trim:
             karr = karr[10:41, 10:41]
+
         kim  = afwImage.ImageD(karr)
+        kim.writeFits("/tmp/basis_%d.fits" % (i))
         kern = afwMath.FixedKernel(kim)
         kernelList.push_back(kern)
 
@@ -83,15 +86,15 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
         # So, it technically goes up to fourth order in LSST-speak.  OK, that is the trick.
         # 
         # Mapping:
-        # cmat[0][0] = c0  x^0,y^0
-        # cmat[1][0] = c1  x^1,y^0
-        # cmat[2][0] = c3  x^2,y^0
-        # cmat[0][1] = c2  x^0,y^1
-        # cmat[1][1] = c4  x^1,y^1
-        # cmat[2][1] = c7  x^2,y^1
-        # cmat[0][2] = c5  x^0,y^2 
-        # cmat[1][2] = c8  x^1,y^2
-        # cmat[2][2] = c12 x^2,y^2
+        # cmat[0][0] = c0  x^0y^0 
+        # cmat[1][0] = c2  x^0y^1
+        # cmat[2][0] = c5  x^0y^2
+        # cmat[0][1] = c1  x^1y^0 
+        # cmat[1][1] = c4  x^1y^1 
+        # cmat[2][1] = c8  x^1y^2
+        # cmat[0][2] = c3  x^2y^0 
+        # cmat[1][2] = c7  x^2y^1
+        # cmat[2][2] = c12 x^2y^2
         #
         # This is quantified in skMatrixPos2TriSeqPosT
 
@@ -102,11 +105,17 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
             coeff       = cmat[row,col]
             scale       = pow(rcscale, row) * pow(rcscale, col)
             scaledCoeff = coeff * scale
-            idx         = row * MAX_ORDER_B + col 
 
-            #print row, col, cmat[row,col], idx, skMatrixPos2TriSeqPosT[idx], scaledCoeff
+            # Was originally written like this, but the SDSS code
+            # takes inputs as y,x instead of x,y meaning it was
+            # originally transposed
+            #
+            # idx         = row * MAX_ORDER_B + col 
 
+            idx         = col * MAX_ORDER_B + row
             spaParamsTri[skMatrixPos2TriSeqPosT[idx]] = scaledCoeff
+
+            print "%d y=%d x=%d %10.3e %2d %2d %10.3e" % (i, row, col, cmat[row,col], idx, skMatrixPos2TriSeqPosT[idx], scaledCoeff)
 
         #print spaParamsTri
         nTerms = (LSST_ORDER + 1) * (LSST_ORDER + 2) // 2
@@ -128,18 +137,28 @@ def directCompare(infile, filt, x, y, soft_bias = 1000, amp = 30000, outfile = "
     kernel = convertpsField(infile, filt, trim = False)
 
     # Assumes you have built dervish and have read_PSF in your path
-    cmd = "read_PSF %s %s %f %f %s" % (infile, filtToHdu[filt], x, y, outfile)
+    #
+    # read_PSF takes coordinates in the order row,col or y,x
+    cmd = "read_PSF %s %s %f %f %s" % (infile, filtToHdu[filt], y, x, outfile)
     os.system(cmd)
     if not os.path.isfile(outfile):
         print "Cannot find SDSS-derived kernel", outfile
         sys.exit(1)
 
-    kImage1  = afwImage.ImageD(outfile)
-    kImage1 -= soft_bias
-    kImage1 /= (amp - soft_bias)
-    maxVal   = afwMath.makeStatistics(kImage1, afwMath.MAX).getValue(afwMath.MAX)
-    print "TEST 1", maxVal == 1.0
-    kImage1.writeFits("/tmp/sdss_psf_scaled.fits")
+    if False:
+        # Default version that integerizes Psf
+        kImage1  = afwImage.ImageD(outfile)
+        kImage1 -= soft_bias
+        kImage1 /= (amp - soft_bias)
+        maxVal   = afwMath.makeStatistics(kImage1, afwMath.MAX).getValue(afwMath.MAX)
+        print "TEST 1", maxVal == 1.0
+        kImage1.writeFits("/tmp/sdss_psf_scaled.fits")
+    else:
+        # Hacked version of main_PSF.c that writes floats
+        kImage1  = afwImage.ImageD(outfile)
+        maxVal   = afwMath.makeStatistics(kImage1, afwMath.MAX).getValue(afwMath.MAX)
+        kImage1 /= maxVal
+        kImage1.writeFits("/tmp/sdss_psf_scaled.fits")
 
     # 
     kImage2  = afwImage.ImageD(kernel.getDimensions())
@@ -148,16 +167,22 @@ def directCompare(infile, filt, x, y, soft_bias = 1000, amp = 30000, outfile = "
     kImage2 /= maxVal
     kImage2.writeFits("/tmp/kernel.fits")
 
-    kImage2 -= kImage1
-    kImage2.writeFits("/tmp/diff.fits")
-    residSum = afwMath.makeStatistics(kImage2, afwMath.SUM).getValue(afwMath.SUM)
+    kImage3  = afwImage.ImageD(kImage2, True)
+    kImage3 -= kImage1
+    kImage3.writeFits("/tmp/diff.fits")
+    residSum = afwMath.makeStatistics(kImage3, afwMath.SUM).getValue(afwMath.SUM)
     print "TEST 2", residSum
+
+    kImage4  = afwImage.ImageD(kImage2, True)
+    kImage4 /= kImage1
+    kImage4.writeFits("/tmp/rat.fits")
+
 
 if __name__ == '__main__':
     infile  = sys.argv[1]
     filt    = sys.argv[2]
-    x       = float(sys.argv[3])
-    y       = float(sys.argv[4])
+    x       = float(sys.argv[3]) # col
+    y       = float(sys.argv[4]) # row
     outfile = sys.argv[5]
 
     if not os.path.isfile(infile):
