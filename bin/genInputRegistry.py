@@ -50,7 +50,7 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
         # Create tables in new output registry.
         cmd = """CREATE TABLE raw (id INTEGER PRIMARY KEY AUTOINCREMENT,
             run INT, rerun INT, band TEXT, camcol INT, frame INT,
-            taiObs TEXT, expTime DOUBLE)"""
+            taiObs TEXT)"""
         # cmd += ", unique(run, band, camcol, frame))"
         conn.execute(cmd)
         cmd = "CREATE TABLE raw_skyTile (id INTEGER, skyTile INTEGER)"
@@ -94,13 +94,17 @@ def processRun(runDir, conn, done, qsp):
         run = int(run)
         frame = int(frame)
         key = "%d_R%d_B%s_C%d_F%d" % (run, rerun, band, camcol, frame)
-        if done.has_key(key):
+        if done.has_key(key) or rerun != 40:
             nSkipped += 1
             continue
 
         md = afwImage.readMetadata(fits)
-        expTime = md.get("EXPTIME")
-        (year, month, day) = md.get("DATE-OBS").split("-")
+        date = md.get("DATE-OBS")
+        if date.find("-") != -1:
+            (year, month, day) = md.get("DATE-OBS").split("-")
+        else:
+            (day, month, year) = md.get("DATE-OBS").split("/")
+            year = 1900 + int(year)
         (hour, minute, second) = md.get("TAIHMS").split(":")
         seconds = float(second)
         second = int(seconds)
@@ -110,8 +114,8 @@ def processRun(runDir, conn, done, qsp):
                 long((seconds - second) * 1000000000), dafBase.DateTime.TAI)
         taiObs = taiObs.toString()[:-1]
         conn.execute("""INSERT INTO raw VALUES
-            (NULL, ?, ?, ?, ?, ?, ?, ?)""",
-            (run, rerun, band, camcol, frame, taiObs, expTime))
+            (NULL, ?, ?, ?, ?, ?, ?)""",
+            (run, rerun, band, camcol, frame, taiObs))
    
         for row in conn.execute("SELECT last_insert_rowid()"):
             id = row[0]
