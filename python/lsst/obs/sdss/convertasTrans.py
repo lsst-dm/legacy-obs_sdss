@@ -32,7 +32,23 @@ deg2rad = num.pi / 180.
 rad2deg = 180. / num.pi
 
 class CoordinateMapper(object):
-    def __init__(self, node_rad, incl_rad, dRow0, dRow1, dRow2, dRow3, dCol0, dCol1, dCol2, dCol3, a, b, c, d, e, f, cOffset = 1.0):
+    # COMMENT mu nu are defined as:
+    # COMMENT   r'-i' < riCut:
+    # COMMENT       rowm = row+dRow0+dRow1*col+dRow2*(col^2)+dRow3*(col^3)+csRow*c
+    # COMMENT       colm = col+dCol0+dCol1*col+dCol2*(col^2)+dCol3*(col^3)+csCol*c
+    # COMMENT   r'-i' >= riCut
+    # COMMENT       rowm = row+dRow0+dRow1*col+dRow2*(col^2)+dRow3*(col^3)+ccRow
+    # COMMENT       colm = col+dCol0+dCol1*col+dCol2*(col^2)+dCol3*(col^3)+ccCol
+    # COMMENT   mu = a + b * rowm + c * colm
+    # COMMENT   nu = d + e * rowm + f * colm
+
+    def __init__(self, node_rad, incl_rad, dRow0, dRow1, dRow2, dRow3, dCol0, dCol1, dCol2, dCol3, a, b, c, d, e, f, cOffset = -0.5):
+        # Here cOffset reflects the differences between SDSS coords
+        # (LLC = 0,0) and LSST coords (LLC = 0.5,0.5).  If SDSS
+        # measures an object centered at (0,0) then LSST will measure
+        # it at coordinate (0.5,0.5) and when using SDSS astrometry we
+        # need to evaluate the equations at (x-0.5, y-0.5)
+
         self.node_rad = node_rad
         self.incl_rad = incl_rad
 
@@ -83,7 +99,12 @@ class CoordinateMapper(object):
         return self.muNuToRaDec(mu_rad, nu_rad)
 
         
-def createWcs(x, y, mapper, order = 4):
+def createWcs(x, y, mapper, order = 4, cOffset = 0.5):
+    # Here cOffset reflects the differences between FITS coords (LLC =
+    # 1,1) and LSST coords (LLC = 0.5,0.5).  That is, when creating a
+    # Wcs from scratch, we need to add a half pixel offset to the
+    # zeropoint of the solution CRPIX.
+
     ra_rad, dec_rad = mapper.xyToRaDec(x, y)
 
     matches = afwDet.SourceMatchVector()
@@ -104,11 +125,11 @@ def createWcs(x, y, mapper, order = 4):
 
     # CRPIX1  = Column Pixel Coordinate of Ref. Pixel
     # CRPIX2  = Row Pixel Coordinate of Ref. Pixel
-    crpix = afwGeom.Point2D(x[0], y[0])
+    crpix = afwGeom.Point2D(x[0] + cOffset, y[0] + cOffset)
 
     # CRVAL1  = RA at Reference Pixel
     # CRVAL2  = DEC at Reference Pixel
-    crval = afwCoord.Coord(afwGeom.Point2D(ra_rad[0],  dec_rad[0]),  afwGeom.radians)
+    crval = afwCoord.Coord(afwGeom.Point2D(ra_rad[0], dec_rad[0]), afwGeom.radians)
 
     # CD1_1   = RA  degrees per column pixel
     # CD1_2   = RA  degrees per row pixel
@@ -118,9 +139,9 @@ def createWcs(x, y, mapper, order = 4):
     ULl   = mapper.xyToRaDec(0., 1.)
     LRl   = mapper.xyToRaDec(1., 0.)
 
-    LLc   = afwCoord.Coord(afwGeom.Point2D(LLl[0], LLl[1]),  afwGeom.radians)
-    ULc   = afwCoord.Coord(afwGeom.Point2D(ULl[0], ULl[1]),  afwGeom.radians)
-    LRc   = afwCoord.Coord(afwGeom.Point2D(LRl[0], LRl[1]),  afwGeom.radians)
+    LLc   = afwCoord.Coord(afwGeom.Point2D(LLl[0], LLl[1]), afwGeom.radians)
+    ULc   = afwCoord.Coord(afwGeom.Point2D(ULl[0], ULl[1]), afwGeom.radians)
+    LRc   = afwCoord.Coord(afwGeom.Point2D(LRl[0], LRl[1]), afwGeom.radians)
 
     cd1_1, cd2_1 = LLc.getOffsetFrom(LRc, afwGeom.degrees)
     cd1_2, cd2_2 = LLc.getOffsetFrom(ULc, afwGeom.degrees)
@@ -195,16 +216,6 @@ def convertasTrans(infile, filt, camcol, field, stepSize = 50):
     e     = edat.field('e')[fIdx]
     f     = edat.field('f')[fIdx]
         
-    # COMMENT mu nu are defined as:
-    # COMMENT   r'-i' < riCut:
-    # COMMENT       rowm = row+dRow0+dRow1*col+dRow2*(col^2)+dRow3*(col^3)+csRow*c
-    # COMMENT       colm = col+dCol0+dCol1*col+dCol2*(col^2)+dCol3*(col^3)+csCol*c
-    # COMMENT   r'-i' >= riCut
-    # COMMENT       rowm = row+dRow0+dRow1*col+dRow2*(col^2)+dRow3*(col^3)+ccRow
-    # COMMENT       colm = col+dCol0+dCol1*col+dCol2*(col^2)+dCol3*(col^3)+ccCol
-    # COMMENT   mu = a + b * rowm + c * colm
-    # COMMENT   nu = d + e * rowm + f * colm
-
     # We need to fit for a TAN-SIP
     x        = num.arange(0, 1489+stepSize, stepSize)
     y        = num.arange(0, 2048+stepSize, stepSize)
