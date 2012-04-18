@@ -1,0 +1,231 @@
+# 
+# LSST Data Management System
+# Copyright 2008, 2009, 2010 LSST Corporation.
+# 
+# This product includes software developed by the
+# LSST Project (http://www.lsst.org/).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the LSST License Statement and 
+# the GNU General Public License along with this program.  If not, 
+# see <http://www.lsstcorp.org/LegalNotices/>.
+#
+import sys
+import pyfits
+import numpy as num
+import lsst.afw.image as afwImage
+import lsst.afw.geom as afwGeom
+import lsst.afw.coord as afwCoord
+import lsst.afw.detection as afwDet
+import lsst.meas.astrom.sip as sip
+
+deg2rad = num.pi / 180.
+rad2deg = 180. / num.pi
+
+class CoordinateMapper(object):
+    def __init__(self, node_rad, incl_rad, dRow0, dRow1, dRow2, dRow3, dCol0, dCol1, dCol2, dCol3, a, b, c, d, e, f, cOffset = 1.0):
+        self.node_rad = node_rad
+        self.incl_rad = incl_rad
+
+        self.dRow0 = dRow0
+        self.dRow1 = dRow1
+        self.dRow2 = dRow2
+        self.dRow3 = dRow3
+       
+        self.dCol0 = dCol0
+        self.dCol1 = dCol1
+        self.dCol2 = dCol2
+        self.dCol3 = dCol3
+        
+        self.a     = a
+        self.b     = b
+        self.c     = c
+        self.d     = d
+        self.e     = e
+        self.f     = f
+
+        self.cOff  = cOffset
+
+    def xyToMuNu(self, x, y):
+        rowm     = (y+self.cOff) + self.dRow0 + self.dRow1*(x+self.cOff) + self.dRow2*((x+self.cOff)**2) + self.dRow3*((x+self.cOff)**3)
+        colm     = (x+self.cOff) + self.dCol0 + self.dCol1*(x+self.cOff) + self.dCol2*((x+self.cOff)**2) + self.dCol3*((x+self.cOff)**3)
+        
+        mu_deg   = self.a + self.b * rowm + self.c * colm
+        nu_deg   = self.d + self.e * rowm + self.f * colm
+        mu_rad   = mu_deg * deg2rad
+        nu_rad   = nu_deg * deg2rad
+        
+        return mu_rad, nu_rad
+
+    def muNuToRaDec(self, mu_rad, nu_rad):
+        x2  = num.cos(mu_rad - self.node_rad) * num.cos(nu_rad)
+        y2  = num.sin(mu_rad - self.node_rad) * num.cos(nu_rad)
+        z2  = num.sin(nu_rad)
+        y1  = y2 * num.cos(self.incl_rad) - z2 * num.sin(self.incl_rad)
+        z1  = y2 * num.sin(self.incl_rad) + z2 * num.cos(self.incl_rad)
+        
+        ra_rad  = num.arctan2(y1, x2) + self.node_rad
+        dec_rad = num.arcsin(z1)
+
+        return ra_rad, dec_rad
+        
+    def xyToRaDec(self, x, y):
+        mu_rad, nu_rad = self.xyToMuNu(x, y)
+        return self.muNuToRaDec(mu_rad, nu_rad)
+
+        
+def createWcs(x, y, mapper, order = 4):
+    ra_rad, dec_rad = mapper.xyToRaDec(x, y)
+
+    matches = afwDet.SourceMatchVector()
+
+    for i in range(len(x)):
+        img = afwDet.Source()
+        img.setXAstrom(x[i])
+        img.setYAstrom(y[i])
+
+        cat = afwDet.Source()
+        cat.setRaObject(afwGeom.Angle(ra_rad[i], afwGeom.radians))
+        cat.setDecObject(afwGeom.Angle(dec_rad[i], afwGeom.radians))
+    
+        mat = afwDet.SourceMatch(cat, img, 0.0)
+        matches.append(mat)
+
+    # Need to make linear Wcs around which to expand solution
+
+    # CRPIX1  = Column Pixel Coordinate of Ref. Pixel
+    # CRPIX2  = Row Pixel Coordinate of Ref. Pixel
+    crpix = afwGeom.Point2D(x[0], y[0])
+
+    # CRVAL1  = RA at Reference Pixel
+    # CRVAL2  = DEC at Reference Pixel
+    crval = afwCoord.Coord(afwGeom.Point2D(ra_rad[0],  dec_rad[0]),  afwGeom.radians)
+
+    # CD1_1   = RA  degrees per column pixel
+    # CD1_2   = RA  degrees per row pixel
+    # CD2_1   = DEC degrees per column pixel
+    # CD2_2   = DEC degrees per row pixel
+    LLl   = mapper.xyToRaDec(0., 0.)
+    ULl   = mapper.xyToRaDec(0., 1.)
+    LRl   = mapper.xyToRaDec(1., 0.)
+
+    LLc   = afwCoord.Coord(afwGeom.Point2D(LLl[0], LLl[1]),  afwGeom.radians)
+    ULc   = afwCoord.Coord(afwGeom.Point2D(ULl[0], ULl[1]),  afwGeom.radians)
+    LRc   = afwCoord.Coord(afwGeom.Point2D(LRl[0], LRl[1]),  afwGeom.radians)
+
+    cd1_1, cd2_1 = LLc.getOffsetFrom(LRc, afwGeom.degrees)
+    cd1_2, cd2_2 = LLc.getOffsetFrom(ULc, afwGeom.degrees)
+
+    linearWcs = afwImage.makeWcs(crval, crpix, cd1_1, cd2_1, cd1_2, cd2_2)
+    wcs       = sip.CreateWcsWithSip(matches, linearWcs, order).getNewWcs()
+    import pdb; pdb.set_trace()
+    return wcs
+
+def convertasTrans(infile, filt, camcol, field, stepSize = 50):
+    hdulist = pyfits.open(infile)
+    t0 = hdulist[0].header['ccdarray']
+    if t0 != 'photo':
+        raise RuntimeError, '*** Cannot support ccdarray: %s' % t0
+    
+    camcols  = hdulist[0].header['camcols']
+    filters  = hdulist[0].header['filters']
+    node_deg = hdulist[0].header['node']
+    incl_deg = hdulist[0].header['incl']
+    node_rad = node_deg * deg2rad
+    incl_rad = incl_deg * deg2rad
+
+    cList   = map(int, camcols.split())
+    fList   = filters.split()
+
+    try:
+        cIdx = cList.index(camcol)
+    except:
+        print "Cannot extract data for camcol %s" % (camcol)
+        return None
+
+    try:
+        fIdx = fList.index(filt)
+    except:
+        print "Cannot extract data for filter %s" % (filt)
+        return None
+    
+    ext  = cIdx * len(fList) + (fIdx + 1)
+    ehdr = hdulist[ext].header
+    edat = hdulist[ext].data
+    
+    if ehdr['CAMCOL'] != camcol or ehdr['FILTER'] != filt:
+        print "Extracted incorrect header; fix me"
+        return None
+    
+    fields = edat.field('field').tolist()
+    try:
+        fIdx = fields.index(field)
+    except:
+        print "Cannot extract data for field %d" % (field)
+        return None
+
+    dRow0 = edat.field('dRow0')[fIdx]
+    dRow1 = edat.field('dRow1')[fIdx]
+    dRow2 = edat.field('dRow2')[fIdx]
+    dRow3 = edat.field('dRow3')[fIdx]
+    csRow = edat.field('csRow')[fIdx]
+    ccRow = edat.field('ccRow')[fIdx]
+
+    dCol0 = edat.field('dCol0')[fIdx]
+    dCol1 = edat.field('dCol1')[fIdx]
+    dCol2 = edat.field('dCol2')[fIdx]
+    dCol3 = edat.field('dCol3')[fIdx]
+    csCol = edat.field('csCol')[fIdx]
+    ccCol = edat.field('ccCol')[fIdx]
+    riCut = edat.field('riCut')[fIdx]
+
+    a     = edat.field('a')[fIdx]
+    b     = edat.field('b')[fIdx]
+    c     = edat.field('c')[fIdx]
+    d     = edat.field('d')[fIdx]
+    e     = edat.field('e')[fIdx]
+    f     = edat.field('f')[fIdx]
+        
+    # COMMENT mu nu are defined as:
+    # COMMENT   r'-i' < riCut:
+    # COMMENT       rowm = row+dRow0+dRow1*col+dRow2*(col^2)+dRow3*(col^3)+csRow*c
+    # COMMENT       colm = col+dCol0+dCol1*col+dCol2*(col^2)+dCol3*(col^3)+csCol*c
+    # COMMENT   r'-i' >= riCut
+    # COMMENT       rowm = row+dRow0+dRow1*col+dRow2*(col^2)+dRow3*(col^3)+ccRow
+    # COMMENT       colm = col+dCol0+dCol1*col+dCol2*(col^2)+dCol3*(col^3)+ccCol
+    # COMMENT   mu = a + b * rowm + c * colm
+    # COMMENT   nu = d + e * rowm + f * colm
+
+    # We need to fit for a TAN-SIP
+    x        = num.arange(0, 1489+stepSize, stepSize)
+    y        = num.arange(0, 2048+stepSize, stepSize)
+    coords   = num.meshgrid(x, y) 
+    xs       = num.ravel(coords[0]).astype(num.float)
+    ys       = num.ravel(coords[1]).astype(num.float)
+    mapper   = CoordinateMapper(node_rad, incl_rad, dRow0, dRow1, dRow2, dRow3, dCol0, dCol1, dCol2, dCol3, a, b, c, d, e, f)
+
+    return createWcs(xs, ys, mapper)
+
+if __name__ == '__main__':
+    infile  = sys.argv[1]
+    filt    = sys.argv[2]
+    camcol  = int(sys.argv[3])
+    field   = int(sys.argv[4])
+    fpC     = sys.argv[5]
+
+    wcs     = convertasTrans(infile, filt, camcol, field)
+
+    image   = afwImage.ImageF(fpC)
+    mi      = afwImage.MaskedImageF(image)
+    exp     = afwImage.ExposureF(mi, wcs)
+    exp.writeFits("/tmp/exp.fits")
+        
