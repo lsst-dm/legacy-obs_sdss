@@ -26,6 +26,7 @@ import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 import lsst.afw.coord as afwCoord
 import lsst.afw.detection as afwDet
+import lsst.afw.table as afwTable
 import lsst.meas.astrom.sip as sip
 
 deg2rad = num.pi / 180.
@@ -42,12 +43,16 @@ class CoordinateMapper(object):
     # COMMENT   mu = a + b * rowm + c * colm
     # COMMENT   nu = d + e * rowm + f * colm
 
-    def __init__(self, node_rad, incl_rad, dRow0, dRow1, dRow2, dRow3, dCol0, dCol1, dCol2, dCol3, a, b, c, d, e, f, cOffset = -0.5):
+    # We will do an "average" mapping for an r-i=0 object so that the
+    # last cs/cc terms are not necessary
+
+    def __init__(self, node_rad, incl_rad, dRow0, dRow1, dRow2, dRow3, dCol0, dCol1, dCol2, dCol3, a, b, c, d, e, f, cOffset = +0.5):
         # Here cOffset reflects the differences between SDSS coords
-        # (LLC = 0,0) and LSST coords (LLC = 0.5,0.5).  If SDSS
-        # measures an object centered at (0,0) then LSST will measure
-        # it at coordinate (0.5,0.5) and when using SDSS astrometry we
-        # need to evaluate the equations at (x-0.5, y-0.5)
+        # (LLC = 0.5,0.5) and LSST coords (LLC = 0,0).  If SDSS
+        # measures an object centered at (0.5,0.5) then LSST will
+        # measure it at coordinate (0,0), but when using SDSS
+        # astrometry we need to evaluate the equations at (x+0.5,
+        # y+0.5)
 
         self.node_rad = node_rad
         self.incl_rad = incl_rad
@@ -99,26 +104,36 @@ class CoordinateMapper(object):
         return self.muNuToRaDec(mu_rad, nu_rad)
 
         
-def createWcs(x, y, mapper, order = 4, cOffset = 0.5):
+def createWcs(x, y, mapper, order = 4, cOffset = 1.0):
     # Here cOffset reflects the differences between FITS coords (LLC =
-    # 1,1) and LSST coords (LLC = 0.5,0.5).  That is, when creating a
-    # Wcs from scratch, we need to add a half pixel offset to the
-    # zeropoint of the solution CRPIX.
+    # 1,1) and LSST coords (LLC = 0,0).  That is, when creating a Wcs
+    # from scratch, we need to evaluate our WCS at coordinate 0,0 to
+    # create CRVAL, but set CRPIX to 1,1.
 
     ra_rad, dec_rad = mapper.xyToRaDec(x, y)
 
-    matches = afwDet.SourceMatchVector()
+    # Minimial table for sky coordinates
+    catTable    = afwTable.SimpleTable.make(afwTable.SimpleTable.makeMinimalSchema())
 
+    # Minimial table + centroids for focal plane coordintes
+    srcSchema   = afwTable.SourceTable.makeMinimalSchema()
+    centroidKey = srcSchema.addField("centroid", type="Point<F8>")
+    flagKey     = srcSchema.addField("centroid.flags", type="Flag")
+    covKey      = srcSchema.addField("centroid.err", type="Cov<Point<F8>>")
+    srcTable    = afwTable.SourceTable.make(srcSchema)
+    srcTable.defineCentroid("centroid")
+
+    matches = []
     for i in range(len(x)):
-        img = afwDet.Source()
-        img.setXAstrom(x[i])
-        img.setYAstrom(y[i])
-
-        cat = afwDet.Source()
-        cat.setRaObject(afwGeom.Angle(ra_rad[i], afwGeom.radians))
-        cat.setDecObject(afwGeom.Angle(dec_rad[i], afwGeom.radians))
+        src = srcTable.makeRecord()
+        src.set(centroidKey.getX(), x[i])
+        src.set(centroidKey.getY(), y[i])
+        
+        cat = catTable.makeRecord()
+        cat.set(catTable.getCoordKey().getRa(),  afwGeom.Angle(ra_rad[i],  afwGeom.radians))
+        cat.set(catTable.getCoordKey().getDec(), afwGeom.Angle(dec_rad[i], afwGeom.radians))
     
-        mat = afwDet.SourceMatch(cat, img, 0.0)
+        mat = afwTable.ReferenceMatch(cat, src, 0.0)
         matches.append(mat)
 
     # Need to make linear Wcs around which to expand solution
@@ -148,7 +163,7 @@ def createWcs(x, y, mapper, order = 4, cOffset = 0.5):
 
     linearWcs = afwImage.makeWcs(crval, crpix, cd1_1, cd2_1, cd1_2, cd2_2)
     wcs       = sip.CreateWcsWithSip(matches, linearWcs, order).getNewWcs()
-    import pdb; pdb.set_trace()
+
     return wcs
 
 def convertasTrans(infile, filt, camcol, field, stepSize = 50):
