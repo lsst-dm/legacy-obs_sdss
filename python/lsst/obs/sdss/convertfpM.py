@@ -99,8 +99,8 @@ def convertfpM(infile):
     nCols  = hdr[0].header['MASKCOLS']
     nPlane = hdr[0].header['NPLANE']
 
-    planes = hdr[-1].data["attributeName"].tolist()
-    values = hdr[-1].data["Value"].tolist()
+    planes = hdr[-1].data.field("attributeName").tolist()
+    values = hdr[-1].data.field("Value").tolist()
 
     mask   = afwImage.MaskU(afwGeom.ExtentI(nCols, nRows))
 
@@ -115,8 +115,9 @@ def convertfpM(infile):
     for plane, bitmask in [ (interpPlane, interpBitMask),
                             (satPlane, satBitMask),
                             (crPlane, crBitMask) ]:
-
-        for frow in hdr[plane].data:
+        nmask = len(hdr[plane].data)
+        for i in range(nmask):
+            frow = hdr[plane].data[i]
             Objmask(frow, bitmask).setMask(mask)
     
     return mask
