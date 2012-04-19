@@ -36,11 +36,7 @@ class SdssMapperTestCase(unittest.TestCase):
 
     def testGetDR7(self):
         butler = dafPersist.ButlerFactory(
-                mapper=SdssMapper(root="/lsst7/stripe82/dr7/runs",
-                    registry=os.path.join(os.environ['OBS_SDSS_DIR'],
-                        "bin", "registry3.sqlite3")
-                    )
-                ).create()
+                mapper=SdssMapper(root="/lsst7/stripe82/dr7/runs")).create()
         sub = butler.subset("fpC", run=5754, camcol=3, frame=280, band="r")
         self.assertEqual(len(sub), 1)
         for ref in sub:
