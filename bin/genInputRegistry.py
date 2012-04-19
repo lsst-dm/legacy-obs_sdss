@@ -50,7 +50,7 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
         # Create tables in new output registry.
         cmd = """CREATE TABLE raw (id INTEGER PRIMARY KEY AUTOINCREMENT,
             run INT, rerun INT, band TEXT, camcol INT, frame INT,
-            taiObs TEXT)"""
+            taiObs TEXT, strip TEXT)"""
         # cmd += ", unique(run, band, camcol, frame))"
         conn.execute(cmd)
         cmd = "CREATE TABLE raw_skyTile (id INTEGER, skyTile INTEGER)"
@@ -113,9 +113,10 @@ def processRun(runDir, conn, done, qsp):
         taiObs = dafBase.DateTime(taiObs.nsecs() +
                 long((seconds - second) * 1000000000), dafBase.DateTime.TAI)
         taiObs = taiObs.toString()[:-1]
+        strip = "%d%s" % (md.get('STRIPE'), md.get('STRIP'))
         conn.execute("""INSERT INTO raw VALUES
-            (NULL, ?, ?, ?, ?, ?, ?)""",
-            (run, rerun, band, camcol, frame, taiObs))
+            (NULL, ?, ?, ?, ?, ?, ?, ?)""",
+            (run, rerun, band, camcol, frame, taiObs, strip))
    
         for row in conn.execute("SELECT last_insert_rowid()"):
             id = row[0]
