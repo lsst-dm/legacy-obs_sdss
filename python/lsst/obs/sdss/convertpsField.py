@@ -115,7 +115,7 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
             idx         = col * MAX_ORDER_B + row
             spaParamsTri[skMatrixPos2TriSeqPosT[idx]] = scaledCoeff
 
-            print "%d y=%d x=%d %10.3e %2d %2d %10.3e" % (i, row, col, cmat[row,col], idx, skMatrixPos2TriSeqPosT[idx], scaledCoeff)
+            # print "%d y=%d x=%d %10.3e %2d %2d %10.3e" % (i, row, col, cmat[row,col], idx, skMatrixPos2TriSeqPosT[idx], scaledCoeff)
 
         #print spaParamsTri
         nTerms = (LSST_ORDER + 1) * (LSST_ORDER + 2) // 2

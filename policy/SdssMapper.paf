@@ -17,19 +17,19 @@ defaultSubLevels: {
 }
 
 exposures: {
-    corr: {
+    fpC: {
         template:    "%(run)d/%(rerun)d/corr/%(camcol)d/fpC-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fit.gz"
-        python:     "lsst.afw.image.DecoratedImageU"
-        persistable:         "DecoratedImageU"
+        python:     "lsst.afw.image.ImageU"
+        persistable:         "ImageU"
         storage:     "FitsStorage"
         level:       "None"
         tables:        raw
         tables:        raw_skyTile
     }
-    mask: {
+    fpM: {
         template:    "%(run)d/%(rerun)d/objcs/%(camcol)d/fpM-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fit"
-        python:     "lsst.afw.image.DecoratedImageU"
-        persistable:         "DecoratedImageU"
+        python:     "lsst.afw.image.ImageU"
+        persistable:         "ImageU"
         storage:     "FitsStorage"
         level:       "None"
         tables:        raw
@@ -37,8 +37,8 @@ exposures: {
     }
     coadd: {
         template:    "%(band)s/fpC-%(run)06d-%(band)s%(camcol)d-%(frame)04d_ts_coaddNorm_NN.fit.gz"
-        python:     "lsst.afw.image.DecoratedImageU"
-        persistable:         "DecoratedImageU"
+        python:     "lsst.afw.image.ImageF"
+        persistable:         "ImageF"
         storage:     "FitsStorage"
         level:       "None"
         tables:        raw
@@ -56,14 +56,23 @@ exposures: {
 }
 
 datasets: {
-    origPsf: {
+    psField: {
         template:    "%(run)d/%(rerun)d/objcs/%(camcol)d/psField-%(run)06d-%(camcol)d-%(frame)04d.fit"
-        python:     "lsst.afw.image.DecoratedImageU"
-        persistable:         "DecoratedImageU"
+        python:     "lsst.afw.detection.Psf"
+        persistable:         "ignored"
         storage:     "FitsStorage"
         tables:        raw
         tables:        raw_skyTile
     }
+    asTrans: {
+        template:    "no template yet"
+        python:     "lsst.afw.image.Wcs"
+        persistable:         "ignored"
+        storage:     "FitsStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+
     icSrc: {
         template:      "icSrc/%(run)d/%(camcol)d/%(band)s/calexp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.boost"
         python:        "lsst.afw.detection.PersistableSourceVector"

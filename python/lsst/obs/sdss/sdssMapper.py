@@ -24,6 +24,8 @@ import re
 import lsst.pex.policy as pexPolicy
 from lsst.daf.butlerUtils import CameraMapper
 from lsst.obs.sdss.convertfpM import convertfpM
+from lsst.obs.sdss.convertpsField import convertpsField
+from lsst.obs.sdss.convertasTrans import convertasTrans
 
 # Solely to get boost serialization registrations for Measurement subclasses
 import lsst.meas.algorithms as measAlgo
@@ -77,8 +79,15 @@ class SdssMapper(CameraMapper):
 
 ###############################################################################
 
-    def bypass_mask(self, datasetType, pythonType, location, dataId):
+    def bypass_fpM(self, datasetType, pythonType, location, dataId):
         return convertfpM(location.getLocations()[0])
+
+    def bypass_psField(self, datasetType, pythonType, location, dataId):
+        return convertpsField(location.getLocations()[0], dataId['band'])
+
+    def bypass_asTrans(self, datasetType, pythonType, location, dataId):
+        return convertasTrans(location.getLocations()[0], dataId['band'],
+                dataId['camcol'], dataid['frame'])
 
 ###############################################################################
 
@@ -105,6 +114,6 @@ for dsType in ("source", "badSource", "invalidSource", "object", "badObject"):
 ###############################################################################
 
 
-for dsType in ("corr", "mask", "calexp"):
+for dsType in ("fpC", "fpM", "calexp"):
     setattr(SdssMapper, "std_" + dsType + "_md",
             lambda self, item, dataId: self._setCcdExposureId(item))
