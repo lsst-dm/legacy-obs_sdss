@@ -49,15 +49,14 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
     if inputRegistry is None:
         # Create tables in new output registry.
         cmd = """CREATE TABLE raw (id INTEGER PRIMARY KEY AUTOINCREMENT,
-            run INT, rerun INT, band TEXT, camcol INT, frame INT,
-            taiObs TEXT, strip TEXT)"""
+            run INT, band TEXT, camcol INT, frame INT)"""
         # cmd += ", unique(run, band, camcol, frame))"
         conn.execute(cmd)
         cmd = "CREATE TABLE raw_skyTile (id INTEGER, skyTile INTEGER)"
         # cmd += ", unique(id, skyTile), foreign key(id) references raw(id))"
         conn.execute(cmd)
     else:
-        cmd = """SELECT run || '_R' || rerun || '_B' || band ||
+        cmd = """SELECT run || '_B' || band ||
             '_C' || camcol || '_F' || frame FROM raw"""
         for row in conn.execute(cmd):
             done[row[0]] = True
@@ -66,62 +65,40 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
 
     try:
         for dir in dirList:
-            if dir.endswith("runs"):
-                for runDir in glob.iglob(os.path.join(dir, "*")):
-                    processRun(runDir, conn, done, qsp)
-            else:
-                processRun(dir, conn, done, qsp)
+            for bandDir in glob.iglob(os.path.join(dir, "*")):
+                processBand(bandDir, conn, done, qsp)
     finally:
         print >>sys.stderr, "Cleaning up..."
-        conn.execute("""CREATE UNIQUE INDEX uq_raw ON raw
-                (run, band, camcol, frame)""")
         conn.execute("CREATE INDEX ix_skyTile_id ON raw_skyTile (id)")
         conn.execute("CREATE INDEX ix_skyTile_tile ON raw_skyTile (skyTile)")
         conn.commit()
         conn.close()
 
-def processRun(runDir, conn, done, qsp):
+def processBand(bandDir, conn, done, qsp):
     nProcessed = 0
     nSkipped = 0
     nUnrecognized = 0
-    print >>sys.stderr, runDir, "... started"
+    print >>sys.stderr, bandDir, "... started"
     for fits in glob.iglob(
-            os.path.join(runDir, "*", "corr", "[1-6]", "fpC*.fit.gz")):
-        m = re.search(r'(\d+)/corr/([1-6])/fpC-(\d{6})-([ugriz])\2-(\d{4}).fit.gz', fits)
+            os.path.join(bandDir, "fpC*_ts_coaddNorm_NN.fit.gz")):
+        m = re.search(r'/([ugriz])/fpC-(\d{6})-\1(\d)-(\d{4})_ts_coaddNorm_NN.fit.gz', fits)
         if not m:
             print >>sys.stderr, "Warning: Unrecognized file:", fits
             nUnrecognized += 1
             continue
 
-        (rerun, camcol, run, band, frame) = m.groups()
-        rerun = int(rerun)
+        (band, run, camcol, frame) = m.groups()
         camcol = int(camcol)
         run = int(run)
         frame = int(frame)
-        key = "%d_R%d_B%s_C%d_F%d" % (run, rerun, band, camcol, frame)
-        if done.has_key(key) or rerun < 40:
+        key = "%d_B%s_C%d_F%d" % (run, band, camcol, frame)
+        if done.has_key(key):
             nSkipped += 1
             continue
 
         md = afwImage.readMetadata(fits)
-        date = md.get("DATE-OBS")
-        if date.find("-") != -1:
-            (year, month, day) = md.get("DATE-OBS").split("-")
-        else:
-            (day, month, year) = md.get("DATE-OBS").split("/")
-            year = 1900 + int(year)
-        (hour, minute, second) = md.get("TAIHMS").split(":")
-        seconds = float(second)
-        second = int(seconds)
-        taiObs = dafBase.DateTime(int(year), int(month), int(day), int(hour),
-                int(minute), second, dafBase.DateTime.TAI)
-        taiObs = dafBase.DateTime(taiObs.nsecs() +
-                long((seconds - second) * 1000000000), dafBase.DateTime.TAI)
-        taiObs = taiObs.toString()[:-1]
-        strip = "%d%s" % (md.get('STRIPE'), md.get('STRIP'))
         conn.execute("""INSERT INTO raw VALUES
-            (NULL, ?, ?, ?, ?, ?, ?, ?)""",
-            (run, rerun, band, camcol, frame, taiObs, strip))
+            (NULL, ?, ?, ?, ?)""", (run, band, camcol, frame))
    
         for row in conn.execute("SELECT last_insert_rowid()"):
             id = row[0]
@@ -141,15 +118,14 @@ def processRun(runDir, conn, done, qsp):
             conn.commit()
 
     conn.commit()
-    print >>sys.stderr, runDir, \
+    print >>sys.stderr, bandDir, \
             "... %d processed, %d skipped, %d unrecognized" % \
             (nProcessed, nSkipped, nUnrecognized)
 
 if __name__ == "__main__":
     parser = OptionParser(usage="""%prog [options] DIR ...
 
-DIR may be either a root directory containing a 'raw' subdirectory
-or a visit subdirectory.""")
+DIR should contain a directory per band containing coadd pieces.""")
     parser.add_option("-i", dest="inputRegistry", help="input registry")
     parser.add_option("-o", dest="outputRegistry", default="registry.sqlite3",
             help="output registry (default=registry.sqlite3)")
