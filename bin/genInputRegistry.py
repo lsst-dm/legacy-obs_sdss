@@ -94,7 +94,7 @@ def processRun(runDir, conn, done, qsp):
         run = int(run)
         frame = int(frame)
         key = "%d_R%d_B%s_C%d_F%d" % (run, rerun, band, camcol, frame)
-        if done.has_key(key) or rerun != 40:
+        if done.has_key(key) or rerun < 40:
             nSkipped += 1
             continue
 
