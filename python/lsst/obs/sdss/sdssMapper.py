@@ -87,7 +87,7 @@ class SdssMapper(CameraMapper):
 
     def bypass_asTrans(self, datasetType, pythonType, location, dataId):
         return convertasTrans(location.getLocations()[0], dataId['band'],
-                dataId['camcol'], dataid['frame'])
+                dataId['camcol'], dataId['frame'])
 
 ###############################################################################
 

@@ -65,12 +65,11 @@ datasets: {
         tables:        raw_skyTile
     }
     asTrans: {
-        template:    "no template yet"
+        template:    "%(run)d/%(rerun)d/astrom/asTrans-%(run)06d.fit"
         python:     "lsst.afw.image.Wcs"
         persistable:         "ignored"
         storage:     "FitsStorage"
         tables:        raw
-        tables:        raw_skyTile
     }
 
     icSrc: {

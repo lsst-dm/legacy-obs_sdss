@@ -65,6 +65,12 @@ class SdssMapperTestCase(unittest.TestCase):
             self.assertEqual(w, 31)
             self.assertEqual(h, 31)
 
+            wcs = ref.get("asTrans")
+            self.assertEqual(wcs.__class__, lsst.afw.image.TanWcs)
+            self.assertFalse(wcs.isFlipped())
+            self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX1"), 1.0, 5)
+            self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX2"), 1.0, 5)
+
     def testGetCoadd(self):
         butler = dafPersist.ButlerFactory(
                 mapper=SdssMapper(root="/lsst7/stripe82/uw-coadds")).create()
