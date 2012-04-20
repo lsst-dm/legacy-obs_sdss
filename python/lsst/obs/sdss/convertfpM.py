@@ -20,7 +20,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import sys, os
+import sys, os, re
 import pyfits
 import numpy as num
 import lsst.afw.image as afwImage
@@ -62,7 +62,12 @@ class Objmask(object):
             self.spans.append(Span(y, x1, x2))
             for i in range(x1, x2+1): npixcheck += 1
 
-        assert(self.npix == npixcheck)
+        # Some fpM files are actually wrong and this test fails!
+        # So warn, not assert
+        # 5759/40/objcs/1/fpM-005759-r1-0011.fit
+        # Plane S_MASK_NOTCHECKED
+        if self.npix != npixcheck:
+            print "WARNING: npix != npixcheck (%d != %d)" % (self.npix, npixcheck)
 
         self.cval    = cval
 
@@ -90,7 +95,7 @@ class Objmask(object):
                 mask.set(x, y, mask.get(x, y) | self.cval)
                 x += 1
 
-def convertfpM(infile):
+def convertfpM(infile, allPlanes = False):
     hdr    = pyfits.open(infile)
     run    = hdr[0].header['RUN']
     camcol = hdr[0].header['CAMCOL']
@@ -101,20 +106,37 @@ def convertfpM(infile):
 
     planes = hdr[-1].data.field("attributeName").tolist()
     values = hdr[-1].data.field("Value").tolist()
-
     mask   = afwImage.MaskU(afwGeom.ExtentI(nCols, nRows))
 
-    interpPlane = planes.index("S_MASK_INTERP") + 1
-    satPlane    = planes.index("S_MASK_SATUR") + 1
-    crPlane     = planes.index("S_MASK_CR") + 1
+    # Minimal sets of mask planes needed for LSST
+    interpPlane   = planes.index("S_MASK_INTERP") + 1
+    satPlane      = planes.index("S_MASK_SATUR") + 1
+    crPlane       = planes.index("S_MASK_CR") + 1
 
     interpBitMask = afwImage.MaskU_getPlaneBitMask("INTRP")
     satBitMask    = afwImage.MaskU_getPlaneBitMask("SAT")
     crBitMask     = afwImage.MaskU_getPlaneBitMask("CR")
 
-    for plane, bitmask in [ (interpPlane, interpBitMask),
-                            (satPlane, satBitMask),
-                            (crPlane, crBitMask) ]:
+    listToSet     = [ (interpPlane, interpBitMask),
+                      (satPlane, satBitMask),
+                      (crPlane, crBitMask) ]
+
+    # Add the rest of the SDSS planes
+    if allPlanes:
+        for plane in ['S_MASK_NOTCHECKED', 'S_MASK_OBJECT', 'S_MASK_BRIGHTOBJECT', 
+                      'S_MASK_BINOBJECT', 'S_MASK_CATOBJECT', 'S_MASK_SUBTRACTED', 'S_MASK_GHOST']:
+            idx     = planes.index(plane) + 1
+            bitMask = mask.addMaskPlane(re.sub("S_MASK", "", plane))
+            listToSet.append( (idx, bitMask) )
+            print plane, idx, bitMask
+
+    for plane, bitmask in listToSet:
+
+        if hdr[plane].data == None:
+            continue
+
+        print plane, bitmask
+
         nmask = len(hdr[plane].data)
         for i in range(nmask):
             frow = hdr[plane].data[i]
@@ -132,21 +154,37 @@ if __name__ == '__main__':
     
     convertfpM(infile).writeFits(outfile)
 
-
     comparison = """
 import lsst.afw.image as afwImage
+import numpy as num
+import os
 
-interp  = afwImage.ImageU("interp.fit")
+readMask = "/astro/users/acbecker/LSST/lsst_devel/clue/Coadd/src/native/SDSS_PSFs/readAtlasImages_mod_by_Keith/src/read_mask"
+cmd      = readMask + " %s INTERP /tmp/interp.fit"
+os.system(cmd)
+cmd      = readMask + " %s SATUR /tmp/satur.fit"
+os.system(cmd)
+cmd      = readMask + " %s CR /tmp/cr.fit"
+os.system(cmd)
+
+interp  = afwImage.ImageU("/tmp/interp.fit")
 interp *= 2**2
 
-sat     = afwImage.ImageU("satur.fit")
+sat     = afwImage.ImageU("/tmp/satur.fit")
 sat    *= 2**1
 
-cr      = afwImage.ImageU("cr.fit")
+cr      = afwImage.ImageU("/tmp/cr.fit")
 cr     *= 2**3
 
 interp += sat
 interp += cr
-interp.writeFits("compare.fits")
 
-"""
+lsst    = afwImage.ImageU("%s")
+interp -= lsst
+interp.writeFits("/tmp/mask_diff.fits")
+print len(num.where(interp.getArray() != 0)[0])
+
+""" % (infile, infile, infile, outfile)
+    print comparison
+
+
