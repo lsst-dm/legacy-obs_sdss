@@ -166,7 +166,19 @@ def createWcs(x, y, mapper, order = 4, cOffset = 1.0):
 
     return wcs
 
-def convertasTrans(infile, filt, camcol, field, stepSize = 50):
+def validate(xs, ys, mapper, wcs):
+    dists = []
+    for i in range(len(xs)):
+        tuple1 = mapper.xyToRaDec(xs[i], ys[i])
+        coord1 = afwCoord.Coord(afwGeom.Point2D(tuple1[0], tuple1[1]), afwGeom.radians)
+        coord2 = wcs.pixelToSky(xs[i], ys[i])
+        dist   = coord1.angularSeparation(coord2).asArcseconds()
+        dists.append(dist)
+
+    print num.mean(dists), num.std(dists)
+
+    
+def convertasTrans(infile, filt, camcol, field, stepSize = 50, doValidate = False):
     hdulist = pyfits.open(infile)
     t0 = hdulist[0].header['ccdarray']
     if t0 != 'photo':
@@ -238,20 +250,25 @@ def convertasTrans(infile, filt, camcol, field, stepSize = 50):
     xs       = num.ravel(coords[0]).astype(num.float)
     ys       = num.ravel(coords[1]).astype(num.float)
     mapper   = CoordinateMapper(node_rad, incl_rad, dRow0, dRow1, dRow2, dRow3, dCol0, dCol1, dCol2, dCol3, a, b, c, d, e, f)
+    wcs      = createWcs(xs, ys, mapper)
 
-    return createWcs(xs, ys, mapper)
+    if doValidate:
+        validate(xs, ys, mapper, wcs)
+
+    return wcs
 
 if __name__ == '__main__':
     infile  = sys.argv[1]
     filt    = sys.argv[2]
     camcol  = int(sys.argv[3])
     field   = int(sys.argv[4])
-    fpC     = sys.argv[5]
 
-    wcs     = convertasTrans(infile, filt, camcol, field)
+    wcs     = convertasTrans(infile, filt, camcol, field, doValidate = True)
 
-    image   = afwImage.ImageF(fpC)
-    mi      = afwImage.MaskedImageF(image)
-    exp     = afwImage.ExposureF(mi, wcs)
-    exp.writeFits("/tmp/exp.fits")
+    if len(sys.argv) > 5:
+        fpC     = sys.argv[5]
+        image   = afwImage.ImageF(fpC)
+        mi      = afwImage.MaskedImageF(image)
+        exp     = afwImage.ExposureF(mi, wcs)
+        exp.writeFits("/tmp/exp.fits")
         
