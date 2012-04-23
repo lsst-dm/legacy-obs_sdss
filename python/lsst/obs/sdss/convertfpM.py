@@ -104,6 +104,10 @@ def convertfpM(infile, allPlanes = False):
     nCols  = hdr[0].header['MASKCOLS']
     nPlane = hdr[0].header['NPLANE']
 
+    names  = hdr[-1].data.names
+    if (not "attributeName" in names) or (not "Value" in names):
+        raise LookupError, "Missing data in fpM header"
+        
     planes = hdr[-1].data.field("attributeName").tolist()
     values = hdr[-1].data.field("Value").tolist()
     mask   = afwImage.MaskU(afwGeom.ExtentI(nCols, nRows))
@@ -128,14 +132,11 @@ def convertfpM(infile, allPlanes = False):
             idx     = planes.index(plane) + 1
             bitMask = mask.addMaskPlane(re.sub("S_MASK", "", plane))
             listToSet.append( (idx, bitMask) )
-            print plane, idx, bitMask
 
     for plane, bitmask in listToSet:
 
         if hdr[plane].data == None:
             continue
-
-        print plane, bitmask
 
         nmask = len(hdr[plane].data)
         for i in range(nmask):
