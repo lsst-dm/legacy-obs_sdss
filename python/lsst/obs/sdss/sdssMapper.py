@@ -52,11 +52,10 @@ class SdssMapper(CameraMapper):
 
         @param dataId (dict) Data identifier with run, rerun, band, camcol, frame
         """
-
-        return ((long(run) \
-                * 10 + self.filterIdMap[band]) \
-                * 10 + camcol) \
-                * 10000 + frame
+        return ((long(dataId['run']) \
+                * 10 + self.filterIdMap[dataId['band']]) \
+                * 10 + dataId['camcol']) \
+                * 10000 + dataId['frame']
 
     def _setCcdExposureId(self, propertyList, dataId):
         propertyList.set("Computed_ccdExposureId", self._computeCcdExposureId(dataId))
@@ -96,7 +95,7 @@ class SdssMapper(CameraMapper):
         # Note that sources are identified by what is called an ampExposureId,
         # but in this case all we have is a CCD.
         ampExposureId = self._computeCcdExposureId(dataId)
-        filterId = self.filterIdMap[pathId['band']]
+        filterId = self.filterIdMap[dataId['band']]
         ad = dict(ampExposureId=ampExposureId, filterId=filterId)
         if self.doFootprints:
             ad["doFootprints"] = True
