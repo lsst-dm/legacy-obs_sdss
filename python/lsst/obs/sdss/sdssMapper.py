@@ -107,7 +107,7 @@ class SdssMapper(CameraMapper):
 
 for dsType in ("icSrc", "src"):
     setattr(SdssMapper, "add_" + dsType, SdssMapper._addSources)
-for dsType in ("source", "badSource", "invalidSource", "object", "badObject"):
+for dsType in ("source", "badSource", "invalidSource", "object"):
     setattr(SdssMapper, "add_" + dsType, SdssMapper._addSkytile)
 
 ###############################################################################

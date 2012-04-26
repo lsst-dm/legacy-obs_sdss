@@ -129,42 +129,34 @@ datasets: {
         tables:        raw_skyTile
     }
     source: {
-        template:      "results/st%(skyTile)d/source.boost"
-        python:        "lsst.afw.detection.PersistableSourceVector"
-        persistable:        "PersistableSourceVector"
-        storage:    "BoostStorage"
+        template:      "results/st%(skyTile)d/source.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
     badSource: {
-        template:      "results/st%(skyTile)d/badSource.boost"
-        python:        "lsst.afw.detection.PersistableSourceVector"
-        persistable:        "PersistableSourceVector"
-        storage:    "BoostStorage"
+        template:      "results/st%(skyTile)d/badSource.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
     invalidSource: {
-        template:      "results/st%(skyTile)d/invalidSource.boost"
-        python:        "lsst.afw.detection.PersistableSourceVector"
-        persistable:        "PersistableSourceVector"
-        storage:    "BoostStorage"
+        template:      "results/st%(skyTile)d/invalidSource.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
     object: {
-        template:      "results/st%(skyTile)d/object.boost"
-        python:        "lsst.afw.detection.PersistableSourceClusterVector"
-        persistable:        "PersistableSourceClusterVector"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    badObject: {
-        template:      "results/st%(skyTile)d/badObject.boost"
-        python:        "lsst.afw.detection.PersistableSourceClusterVector"
-        persistable:        "PersistableSourceClusterVector"
-        storage:    "BoostStorage"
+        template:      "results/st%(skyTile)d/object.fits"
+        python:        "lsst.ap.cluster.SourceClusterCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
