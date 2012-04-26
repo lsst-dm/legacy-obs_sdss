@@ -73,18 +73,18 @@ datasets: {
     }
 
     icSrc: {
-        template:      "icSrc/%(run)d/%(camcol)d/%(band)s/calexp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.boost"
-        python:        "lsst.afw.detection.PersistableSourceVector"
-        persistable:        "PersistableSourceVector"
-        storage:    "BoostStorage"
+        template:      "icSrc/%(run)d/%(camcol)d/%(band)s/icSrc-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
     icMatch: {
-        template:      "icMatch/%(run)d/%(camcol)d/%(band)s/calexp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
-        python:        "lsst.afw.detection.PersistableSourceMatchVector"
-        persistable:        "PersistableSourceMatchVector"
-        storage:    "FitsStorage"
+        template:      "icMatch/%(run)d/%(camcol)d/%(band)s/icMatch-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
@@ -105,10 +105,10 @@ datasets: {
         tables:        raw_skyTile
     }
     src: {
-        template:      "src/%(run)d/%(camcol)d/%(band)s/calexp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.boost"
-        python:        "lsst.afw.detection.PersistableSourceVector"
-        persistable:        "PersistableSourceVector"
-        storage:    "BoostStorage"
+        template:      "src/%(run)d/%(camcol)d/%(band)s/src-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
