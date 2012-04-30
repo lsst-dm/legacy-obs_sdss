@@ -46,6 +46,8 @@ class Objmask(object):
         self.cmax    = frow[7]
         self.npix    = frow[8]
         self.span    = frow[9]
+        if len(self.span) == 0:
+            self.nspan = 0 # some bogus fpM files
 
         self.spans   = []
         npixcheck    = 0
@@ -89,7 +91,7 @@ class Objmask(object):
                 
             if(x2 >= ncol):
                 x2 = ncol - 1
-           
+                
             x = int(x1)
             while x <= x2:
                 mask.set(x, y, mask.get(x, y) | self.cval)
@@ -134,6 +136,8 @@ def convertfpM(infile, allPlanes = False):
             listToSet.append( (idx, bitMask) )
 
     for plane, bitmask in listToSet:
+        if len(hdr) < plane:
+            continue
 
         if hdr[plane].data == None:
             continue
