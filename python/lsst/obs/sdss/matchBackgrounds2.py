@@ -18,17 +18,18 @@
 # You should have received a copy of the LSST License Statement and 
 # the GNU General Public License along with this program.  If not, 
 # see <http://www.lsstcorp.org/LegalNotices/>.
-import sys, os
+import sys, os, re
 import numpy as num
 
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
+import lsst.afw.geom as afwGeom
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
 from convertfpM import convertfpM
 from convertasTrans import convertasTrans
-
+from scipy.interpolate import SmoothBivariateSpline
 try:
     import pymssql 
 except:
@@ -69,6 +70,21 @@ class MatchBackgroundsConfig(pexConfig.Config):
         doc = """Type of kernel for remapping""",
         default = "lanczos3"
     )
+    backgroundOrder = pexConfig.Field(
+        dtype = int,
+        doc = """Order of background Chebyshev""",
+        default = 1
+    )
+    writeFits = pexConfig.Field(
+        dtype = bool,
+        doc = """Write output fits files""",
+        default = False
+    )
+    outputPath = pexConfig.Field(
+        dtype = str,
+        doc = """Location of output files""",
+        default = "/tmp"
+    )
 
 
 class MatchBackgrounds(pipeBase.Task):
@@ -86,7 +102,6 @@ class MatchBackgrounds(pipeBase.Task):
         self.warpedExp   = {} # per run
 
         self.warper = afwMath.Warper(self.config.kernelName)
-        self.writeFits = True
 
     @pipeBase.timeMethod
     def run(self, fields, **kwargs):
@@ -109,6 +124,8 @@ class MatchBackgrounds(pipeBase.Task):
             varRef = afwImage.ImageF(fpCRef, True)
             miRef  = afwImage.MaskedImageF(fpCRef, fpMRef, varRef)
             self.refExp[field] = afwImage.ExposureF(miRef, wcsRef)
+            self.stitchedExp[field] = {}
+            self.warpedExp[field] = {}
             
             matches = self.queryClue(fpCRef.getBBox(), wcsRef, self.filt)
             self.processMatches(matches, field)
@@ -163,7 +180,7 @@ class MatchBackgrounds(pipeBase.Task):
         uruns = list(set(runs))
         uruns.sort()
 
-        if self.writeFits:
+        if self.config.writeFits:
             self.refExp[field].writeFits("/tmp/exp-%06d-%s%d-%04d.fits" % (self.refrun, self.filt, self.camcol, field))
     
         for run in uruns:
@@ -172,8 +189,8 @@ class MatchBackgrounds(pipeBase.Task):
             if run == self.refrun:
                 continue
 
-            if run != 1755:
-                continue
+            #if run != 1755:
+            #    continue
             
             idxs = num.where(runs == run)[0]
             if len(idxs) == 0:
@@ -241,15 +258,197 @@ class MatchBackgrounds(pipeBase.Task):
     
             # Keep Wcs of first image
             exp = afwImage.ExposureF(stitch, runMatches[0].wcs)
-            self.stitchedExp[run] = exp
-            self.warpedExp[run]   = self.warper.warpExposure(self.refExp[field].getWcs(), 
-                                                             exp, 
-                                                             destBBox = self.refExp[field].getBBox(afwImage.PARENT))
+            self.stitchedExp[field][run] = exp
+            self.warpedExp[field][run]   = self.warper.warpExposure(self.refExp[field].getWcs(), 
+                                                                    exp, 
+                                                                    destBBox = self.refExp[field].getBBox(afwImage.PARENT))
 
-            if self.writeFits:
-                self.stitchedExp[run].writeFits("/tmp/match-%06d-%s%d-%04d-r%06d.fits" % (self.refrun, self.filt, self.camcol, field, run))
-                self.warpedExp[run].writeFits("/tmp/warp-%06d-%s%d-%04d-r%06d.fits" % (self.refrun, self.filt, self.camcol, field, run))
-    
+            if self.config.writeFits:
+                self.stitchedExp[field][run].writeFits("/tmp/match-%06d-%s%d-%04d-r%06d.fits" % (self.refrun, self.filt, self.camcol, field, run))
+                self.warpedExp[field][run].writeFits("/tmp/warp-%06d-%s%d-%04d-r%06d.fits" % (self.refrun, self.filt, self.camcol, field, run))
+
+    @pipeBase.timeMethod   
+    def matchBackgrounds(self, field, binsize = 256):
+        refMask  = self.refExp[field].getMaskedImage().getMask().getArray()
+        refArr   = self.refExp[field].getMaskedImage().getImage().getArray()
+
+        # Basic; only use pixels that are unmasked in *all* images
+        # Less basic; look for certain bits flipped.  TBD...
+        skyMask  = num.sum(num.array([x.getMaskedImage().getMask().getArray() for x in self.warpedExp[field].values()]), 0)
+        skyArr   = num.array([x.getMaskedImage().getImage().getArray() for x in self.warpedExp[field].values()])
+        Nim      = len(skyArr)
+
+        # Find all unmasked (sky) pixels
+        idx = num.where((refMask + skyMask) == 0)
+
+        width  = self.refExp[field].getMaskedImage().getWidth()
+        height = self.refExp[field].getMaskedImage().getHeight()
+        nbinx  = width  // binsize
+        nbiny  = height // binsize
+
+        bgX  = num.zeros((nbinx*nbiny, Nim)) # coord
+        bgY  = num.zeros((nbinx*nbiny, Nim)) # coord
+        bgZ  = num.zeros((nbinx*nbiny, Nim)) # value
+        bgdZ = num.zeros((nbinx*nbiny, Nim)) # unc
+
+        for biny in range(nbiny):
+            ymin = biny * binsize
+            ymax = min((biny + 1) * binsize, self.refExp[field].getMaskedImage().getHeight())
+            idxy = num.where( (idx[0] >= ymin) & (idx[0] < ymax) )[0]
+
+            for binx in range(nbinx):
+                xmin   = binx * binsize
+                xmax   = min((binx + 1) * binsize, self.refExp[field].getMaskedImage().getWidth())
+                idxx   = num.where( (idx[1] >= xmin) & (idx[1] < xmax) )[0]
+                inreg  = num.intersect1d(idxx, idxy)
+
+                Aij    = num.zeros((Nim, Nim))
+                Eij    = num.ones((Nim, Nim))
+
+                area0 = refArr[idx[0][inreg],idx[1][inreg]]
+                for i in range(Nim):
+                    areai     = skyArr[i][idx[0][inreg],idx[1][inreg]]
+                    area      = area0 - areai
+                    
+                    bgX [binx + biny * nbinx, i] = 0.5 * (xmin + xmax)
+                    bgY [binx + biny * nbinx, i] = 0.5 * (ymin + ymax) 
+                    bgZ [binx + biny * nbinx, i] = num.mean(area) 
+                    bgdZ[binx + biny * nbinx, i] = num.std(area) 
+
+        # Function for each image
+        for i in range(Nim):
+
+            # Function for this image
+            bbox  = afwGeom.Box2D(self.refExp[field].getBBox())
+            poly  = afwMath.Chebyshev1Function2D(self.config.backgroundOrder, bbox)          
+            terms = list(poly.getParameters())
+
+            Ncell = biny * binx
+            Nterm = len(terms)
+
+            # Mx = b; solve for x
+            m  = num.zeros((Ncell, Nterm))
+            b  = num.zeros((Ncell))
+            iv = num.zeros((Ncell))
+
+            # One constraint for each cell
+            for nc in range(Ncell):
+                for nt in range(Nterm):
+                    terms[nt] = 1.0
+                    poly.setParameters(terms)
+                    m[nc, nt] = poly(bgX[:,i][nc], bgY[:,i][nc])
+                    terms[nt] = 0.0
+                b[nc]  = bgZ[:,i][nc]
+                iv[nc] = 1.0 / (bgdZ[:,i][nc])**2
+
+            M    = num.dot(num.dot(m.T, num.diag(iv)), m)
+            B    = num.dot(num.dot(m.T, num.diag(iv)), b)
+            Minv = num.linalg.inv(M)
+            Soln = num.dot(Minv, B)
+            poly.setParameters(Soln)
+
+            exp = self.warpedExp[field].values()[i]
+            im  = exp.getMaskedImage()
+            im += poly
+
+            if self.config.writeFits:
+                exp.writeFits(os.path.join(self.config.outputPath, "comp_inv_%d.fits" % (i)))
+
+            im -= self.refExp[field].getMaskedImage()
+
+            if self.config.writeFits:
+                exp.writeFits(os.path.join(self.config.outputPath, "comp_diff_%d.fits" % (i)))
+            
+            # Lets see some stats!
+            area = exp.getMaskedImage().getImage().getArray()[idx]
+            print num.mean(area), num.median(area), num.std(area), len(area)
+
+
+        if self.config.writeFits:
+            self.refExp[field].writeFits("/tmp/refexp.fits")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    #Aij[0][i] = num.mean(area)
+                    #Eij[0][i] = num.std(area)
+                    #Aij[i][0] = -1 * Aij[0][i]
+                    #Eij[i][0] = +1 * Eij[0][i]
+
+# NN2 BELOW, NOT YET WORKING            
+        
+#                    print binx, biny, i, num.mean(area0), num.mean(areai), num.mean(area), num.mean(area0)-num.mean(areai)
+#                    bgs1X.append(num.mean(area0) - num.mean(areai))
+#
+#                    for j in range(i+1, N):
+#                        areaj     = skyArr[j-1][idx[0][inreg],idx[1][inreg]]
+#                        area      = areai - areaj
+#                        Aij[i][j] = num.mean(area)
+#                        Eij[i][j] = num.std(area)
+#                        Aij[j][i] = -1 * Aij[i][j]
+#                        Eij[j][i] = +1 * Eij[i][j]
+#                        
+#                Eij2     = Eij**2
+#                InvEhat2 = 2.0 / (N * (N - 1.0)) / num.sum(num.triu(Eij2)) # NOTE TRIU DOES INCLUDE DIAGONALS!!!
+#                InvEhat2 = 1.0
+#
+#                Cij   = -1. / Eij2
+#                for i in range(N): Cij[i][i] = 0.0
+#                Cij  += num.diag(1.0 / num.sum(Eij2, 0))
+#                Cij  += InvEhat2
+#                Cinv  = num.linalg.inv(Cij)
+#                AEij  = Aij / Eij2
+#                for i in range(N): AEij[i][i] = 0.0
+#                bgs   = num.sum(num.dot(Cinv, AEij), 0)
+#                unc   = num.sqrt(num.diagonal(Cinv))
+#                
+#                import pdb; pdb.set_trace()
+#
+#                print num.sum(bgs)
+#                bgs  -= bgs[0]
+#                print bgs
+#                print
+#                # Note that these numbers are differences between
+#                # image reference in a lightcurve sense.  So negative
+#                # numbers means the background is fainter.  So you
+#                # need to subtract the numbers from the images to get
+#                # them to match.
+#                bgs *= -1
+#
+#                bgs1.append(bgs1X)
+#                bgs2.append(bgs)
+#
+#        bgs1     = num.array(bgs1)
+#        bgs2     = num.array(bgs2)
+#        offsets1 = num.mean(bgs1, 0)
+#        offsets2 = num.mean(bgs2, 0)
+#
+#        # debugging!
+#        self.refExp[field].writeFits("/tmp/refexp.fits")
+#        for i in range(1, len(offsets1)):
+#            comp1  = afwImage.MaskedImageF(self.warpedExp[field].values()[i-1].getMaskedImage(), True)
+#            comp1 += offsets1[i]
+#            comp1.writeFits("/tmp/comp_avg_%d.fits" % (i))
+#
+#            comp2  = afwImage.MaskedImageF(self.warpedExp[field].values()[i-1].getMaskedImage(), True)
+#            comp2 += offsets2[i]
+#            comp2.writeFits("/tmp/comp_nn2_%d.fits" % (i))
+#
+#        import pdb; pdb.set_trace()
+        
+
 ######
 ######
 ######
@@ -292,4 +491,19 @@ if __name__ == '__main__':
     matcher = MatchBackgrounds(refrun, 40, camcol, filt)
     fields  = range(1, 1000)
     fields  = [11,]
-    matcher.run(fields)
+    #matcher.run(fields)
+    
+    matcher.warpedExp[fields[0]] = {}
+    tmpdir  = "/tmp/"
+    nmax    = 4
+    nfound  = 0
+    for f in os.listdir(tmpdir):
+        if f.startswith("exp-%06d" % (refrun)):
+            refExp = afwImage.ExposureF(os.path.join(tmpdir, f))
+            matcher.refExp[fields[0]] = refExp
+        elif f.startswith("warp-%06d" % (refrun)) and nfound < nmax:
+            skyExp = afwImage.ExposureF(os.path.join(tmpdir, f))
+            skyrun  = int(re.sub("r", "", f.split("-")[4].split(".")[0]))
+            matcher.warpedExp[fields[0]][skyrun] = skyExp
+            nfound += 1
+    matcher.matchBackgrounds(fields[0])
