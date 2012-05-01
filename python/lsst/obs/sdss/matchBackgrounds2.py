@@ -78,7 +78,7 @@ class MatchBackgroundsConfig(pexConfig.Config):
     writeFits = pexConfig.Field(
         dtype = bool,
         doc = """Write output fits files""",
-        default = False
+        default = True
     )
     outputPath = pexConfig.Field(
         dtype = str,
@@ -145,8 +145,6 @@ class MatchBackgrounds(pipeBase.Task):
         sql += " %f %f," % (LRC[0].asDegrees(), LRC[1].asDegrees())
         sql += " %f %f ))', 4326))=1" % (LLC[0].asDegrees(), LLC[1].asDegrees())
         sql += " and filter='%s'" % (filt)
-    
-    
         sql += " order by run asc, field asc;"   
         
         print sql
@@ -181,7 +179,9 @@ class MatchBackgrounds(pipeBase.Task):
         uruns.sort()
 
         if self.config.writeFits:
-            self.refExp[field].writeFits("/tmp/exp-%06d-%s%d-%04d.fits" % (self.refrun, self.filt, self.camcol, field))
+            self.refExp[field].writeFits(os.path.join(self.config.outputPath, 
+                                                      "exp-%06d-%s%d-%04d.fits" % 
+                                                      (self.refrun, self.filt, self.camcol, field)))
     
         for run in uruns:
             print "RUNNING", run, "vs.", self.refrun
@@ -200,19 +200,6 @@ class MatchBackgrounds(pipeBase.Task):
             for idx in idxs:
                 runMatches.append(matches[idx])
 
-            # We need to pad the ends, it appears.  This is a bit
-            # blunt, but for lack of time just do it for now...
-            if False:
-                firstMatch = FieldMatch((runMatches[0].run, runMatches[0].rerun, 
-                                         runMatches[0].filt, runMatches[0].camcol, 
-                                         runMatches[0].field-1, runMatches[0].strip))
-                lastMatch  = FieldMatch((runMatches[-1].run, runMatches[-1].rerun, 
-                                         runMatches[-1].filt, runMatches[-1].camcol, 
-                                         runMatches[-1].field+1, runMatches[-1].strip))
-                runMatches.insert(0, firstMatch)
-                runMatches.append(lastMatch)
-
-    
             nloaded = 0
             for match in runMatches:
                 match.loadfpC()
@@ -224,7 +211,8 @@ class MatchBackgrounds(pipeBase.Task):
             if nloaded != len(runMatches):
                 print "Not able to load all images, skipping to next run"
                 continue
-    
+
+            # Stitching together neighboring images from the matching run
             width  = runMatches[0].fpC.getWidth()
             height = runMatches[0].fpC.getHeight() * nloaded - overlap * (nloaded - 1) + testme * nloaded
             stitch = afwImage.MaskedImageF(width, height)
@@ -249,8 +237,11 @@ class MatchBackgrounds(pipeBase.Task):
                     stitch.getMask().getArray()[symin:symax,:] = match.fpM.getArray()[iymin:iymax,:]
                 except:
                     import pdb; pdb.set_trace()
-    
-    
+                    
+                # Clear up memory
+                match.fpC = None
+                match.fpM = None
+
             # Variance from gain
             var  = stitch.getVariance()
             var  = afwImage.ImageF(stitch.getImage(), True)
@@ -258,14 +249,20 @@ class MatchBackgrounds(pipeBase.Task):
     
             # Keep Wcs of first image
             exp = afwImage.ExposureF(stitch, runMatches[0].wcs)
-            self.stitchedExp[field][run] = exp
+
+            # Memory hog!
+            # self.stitchedExp[field][run] = exp
+            
+            # Do need to keep this
             self.warpedExp[field][run]   = self.warper.warpExposure(self.refExp[field].getWcs(), 
                                                                     exp, 
                                                                     destBBox = self.refExp[field].getBBox(afwImage.PARENT))
 
             if self.config.writeFits:
-                self.stitchedExp[field][run].writeFits("/tmp/match-%06d-%s%d-%04d-r%06d.fits" % (self.refrun, self.filt, self.camcol, field, run))
-                self.warpedExp[field][run].writeFits("/tmp/warp-%06d-%s%d-%04d-r%06d.fits" % (self.refrun, self.filt, self.camcol, field, run))
+                #self.stitchedExp[field][run].writeFits("/tmp/match-%06d-%s%d-%04d-r%06d.fits" % (self.refrun, self.filt, self.camcol, field, run))
+                self.warpedExp[field][run].writeFits(os.path.join(self.config.outputPath, 
+                                                                  "warp-%06d-%s%d-%04d-r%06d.fits" % 
+                                                                  (self.refrun, self.filt, self.camcol, field, run)))
 
     @pipeBase.timeMethod   
     def matchBackgrounds(self, field, binsize = 256):
@@ -347,28 +344,26 @@ class MatchBackgrounds(pipeBase.Task):
             Soln = num.dot(Minv, B)
             poly.setParameters(Soln)
 
+            run = self.warpedExp[field].keys()[i]
             exp = self.warpedExp[field].values()[i]
             im  = exp.getMaskedImage()
             im += poly
 
             if self.config.writeFits:
-                exp.writeFits(os.path.join(self.config.outputPath, "comp_inv_%d.fits" % (i)))
+                exp.writeFits(os.path.join(self.config.outputPath, 
+                                           "match-%06d-%s%d-%04d-r%06d.fits" % 
+                                           (self.refrun, self.filt, self.camcol, field, run)))
 
             im -= self.refExp[field].getMaskedImage()
 
             if self.config.writeFits:
-                exp.writeFits(os.path.join(self.config.outputPath, "comp_diff_%d.fits" % (i)))
+                exp.writeFits(os.path.join(self.config.outputPath, 
+                                           "diff-%06d-%s%d-%04d-r%06d.fits" % 
+                                           (self.refrun, self.filt, self.camcol, field, run)))
             
             # Lets see some stats!
             area = exp.getMaskedImage().getImage().getArray()[idx]
-            print num.mean(area), num.median(area), num.std(area), len(area)
-
-
-        if self.config.writeFits:
-            self.refExp[field].writeFits("/tmp/refexp.fits")
-
-
-
+            print run, num.mean(area), num.median(area), num.std(area), len(area)
 
 
 
@@ -491,11 +486,14 @@ if __name__ == '__main__':
     matcher = MatchBackgrounds(refrun, 40, camcol, filt)
     fields  = range(1, 1000)
     fields  = [11,]
-    #matcher.run(fields)
+    matcher.run(fields)
+    matcher.matchBackgrounds(fields[0])
+    sys.exit(1)
     
+    # If you have stuff in the output dir, use it...
     matcher.warpedExp[fields[0]] = {}
     tmpdir  = "/tmp/"
-    nmax    = 4
+    nmax    = 100
     nfound  = 0
     for f in os.listdir(tmpdir):
         if f.startswith("exp-%06d" % (refrun)):
