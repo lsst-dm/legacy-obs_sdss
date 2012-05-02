@@ -24,11 +24,15 @@ import numpy as num
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.geom as afwGeom
+import lsst.afw.detection as afwDetect
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
+import lsst.ip.diffim as ipDiffim
+from lsst.coadd.utils import Coadd, addToCoadd, setCoaddEdgeBits
 
 from convertfpM import convertfpM
 from convertasTrans import convertasTrans
+from convertpsField import convertpsField
 from scipy.interpolate import SmoothBivariateSpline
 try:
     import pymssql 
@@ -52,6 +56,7 @@ class FieldMatch(object):
         self.fpC    = None
         self.fpM    = None
         self.wcs    = None
+        self.psf    = None
 
     def loadfpC(self):
         self.fpC = getfpC(self.run, self.rerun, self.filt, self.camcol, self.field)
@@ -64,8 +69,19 @@ class FieldMatch(object):
         if asTrans:
             self.wcs = convertasTrans(asTrans, self.filt, self.camcol, self.field)
 
+    def loadPsf(self):
+        self.psf = getpsField(self.run, self.rerun, self.filt, self.camcol, self.field)
+    
+    def createExp(self, gain = 1.0):
+        var  = afwImage.ImageF(self.fpC, True)
+        var /= gain
+        mi   = afwImage.MaskedImageF(self.fpC, self.fpM, var)
+        exp  = afwImage.ExposureF(mi, self.wcs)
+        exp.setPsf(self.psf)
+        return exp
+
 class MatchBackgroundsConfig(pexConfig.Config):
-    kernelName = pexConfig.Field(
+    warpingKernelName = pexConfig.Field(
         dtype = str,
         doc = """Type of kernel for remapping""",
         default = "lanczos3"
@@ -86,6 +102,18 @@ class MatchBackgroundsConfig(pexConfig.Config):
         default = "/tmp"
     )
 
+    refPsfSize = pexConfig.Field(
+        dtype = int,
+        doc = """Size of reference Psf matrix; must be same size as SDSS Psfs""",
+        default = 31
+    )
+    refPsfSigma = pexConfig.Field(
+        dtype = float,
+        doc = """Gaussian sigma for Psf FWHM (pixels)""",
+        default = 4.0
+    )
+
+    coadd = pexConfig.ConfigField(dtype = Coadd.ConfigClass, doc="")
 
 class MatchBackgrounds(pipeBase.Task):
     ConfigClass = MatchBackgroundsConfig
@@ -97,14 +125,20 @@ class MatchBackgrounds(pipeBase.Task):
         self.filt    = filt
         self.asTrans = getasTrans(self.refrun, self.rerun)
 
-        self.refExp      = {} # per field
-        self.stitchedExp = {} # per run
-        self.warpedExp   = {} # per run
+        self.refExp          = {} # per field
+        self.stitchedExp     = {} # per run
+        self.warpedExp       = {} # per run
+        self.bgMatchedExp    = {} # per run
 
-        self.warper = afwMath.Warper(self.config.kernelName)
-
+        self.warper = afwMath.Warper(self.config.warpingKernelName)
+        self.refPsf = afwDetect.createPsf("DoubleGaussian", self.config.refPsfSize, self.config.refPsfSize, self.config.refPsfSigma)
+        
+        config          = ipDiffim.ModelPsfMatchTask.ConfigClass()
+        config.kernel.active.kernelSize = self.config.refPsfSize // 2
+        self.psfMatcher = ipDiffim.ModelPsfMatchTask(config=config)
+        
     @pipeBase.timeMethod
-    def run(self, fields, **kwargs):
+    def run(self, fields, nMax = 10, **kwargs):
 
         for field in fields:
             fpCRef = getfpC(self.refrun, self.rerun, self.filt, self.camcol, field)
@@ -118,17 +152,26 @@ class MatchBackgrounds(pipeBase.Task):
             wcsRef = convertasTrans(self.asTrans, self.filt, self.camcol, field)
             if not wcsRef:
                 continue
+
+            psfRef = getpsField(self.refrun, self.rerun, self.filt, self.camcol, field)
+            if not psfRef:
+                continue
         
             # Assemble an exposure out of this
             # Unknown gain for now
             varRef = afwImage.ImageF(fpCRef, True)
             miRef  = afwImage.MaskedImageF(fpCRef, fpMRef, varRef)
-            self.refExp[field] = afwImage.ExposureF(miRef, wcsRef)
-            self.stitchedExp[field] = {}
-            self.warpedExp[field] = {}
+            exp    = afwImage.ExposureF(miRef, wcsRef)
+            exp.setPsf(psfRef)
+
+            self.refExp[field]          = self.psfMatcher.run(exp, self.refPsf).psfMatchedExposure
+
+            self.stitchedExp[field]     = {}
+            self.warpedExp[field]       = {}
+            self.bgMatchedExp[field]    = {}
             
             matches = self.queryClue(fpCRef.getBBox(), wcsRef, self.filt)
-            self.processMatches(matches, field)
+            self.processMatches(matches, field, nMax = nMax)
 
     @pipeBase.timeMethod
     def queryClue(self, bbox, wcs, filt):
@@ -173,7 +216,7 @@ class MatchBackgrounds(pipeBase.Task):
         return smatches
 
     @pipeBase.timeMethod
-    def processMatches(self, matches, field, gain = 1.0, overlap = 128, testme = 0):
+    def processMatches(self, matches, field, nMax = None, gain = 1.0, overlap = 128, testme = 0):
         runs  = num.array([x.run for x in matches])
         uruns = list(set(runs))
         uruns.sort()
@@ -182,9 +225,12 @@ class MatchBackgrounds(pipeBase.Task):
             self.refExp[field].writeFits(os.path.join(self.config.outputPath, 
                                                       "exp-%06d-%s%d-%04d.fits" % 
                                                       (self.refrun, self.filt, self.camcol, field)))
-    
+        nProc = 0
         for run in uruns:
-            print "RUNNING", run, "vs.", self.refrun
+            if nMax and nProc >= nMax:
+                break
+
+            print "RUNNING", run, "vs.", self.refrun, nProc
 
             if run == self.refrun:
                 continue
@@ -205,7 +251,8 @@ class MatchBackgrounds(pipeBase.Task):
                 match.loadfpC()
                 match.loadfpM()
                 match.loadWcs()
-                if match.fpC and match.fpM and match.wcs:
+                match.loadPsf()
+                if match.fpC and match.fpM and match.wcs and match.psf:
                     nloaded += 1
     
             if nloaded != len(runMatches):
@@ -219,7 +266,10 @@ class MatchBackgrounds(pipeBase.Task):
     
             for i in range(len(runMatches)):
                 match  = runMatches[i]
-    
+                matchExp = match.createExp(gain)
+                # Psf match before stitching!
+                psfmatchedExp = self.psfMatcher.run(matchExp, self.refPsf).psfMatchedExposure
+                
                 symin  = (i + 0) * match.fpC.getHeight() + (i * testme)
                 symax  = (i + 1) * match.fpC.getHeight() + (i * testme)
     
@@ -233,8 +283,9 @@ class MatchBackgrounds(pipeBase.Task):
     
                 # Note transpose of getArray()
                 try:
-                    stitch.getImage().getArray()[symin:symax,:] = match.fpC.getArray()[iymin:iymax,:]
-                    stitch.getMask().getArray()[symin:symax,:] = match.fpM.getArray()[iymin:iymax,:]
+                    stitch.getImage().getArray()[symin:symax,:]    = psfmatchedExp.getMaskedImage().getImage().getArray()[iymin:iymax,:]
+                    stitch.getMask().getArray()[symin:symax,:]     = psfmatchedExp.getMaskedImage().getMask().getArray()[iymin:iymax,:]
+                    stitch.getVariance().getArray()[symin:symax,:] = psfmatchedExp.getMaskedImage().getVariance().getArray()[iymin:iymax,:]
                 except:
                     import pdb; pdb.set_trace()
                     
@@ -242,27 +293,32 @@ class MatchBackgrounds(pipeBase.Task):
                 match.fpC = None
                 match.fpM = None
 
-            # Variance from gain
-            var  = stitch.getVariance()
-            var  = afwImage.ImageF(stitch.getImage(), True)
-            var /= gain
-    
             # Keep Wcs of first image
             exp = afwImage.ExposureF(stitch, runMatches[0].wcs)
+            exp.setPsf(self.refPsf)
 
             # Memory hog!
             # self.stitchedExp[field][run] = exp
-            
+
+            if self.config.writeFits:
+                exp.writeFits(os.path.join(self.config.outputPath, 
+                                           "psfmatch-%06d-%s%d-%04d-r%06d.fits" % 
+                                           (self.refrun, self.filt, self.camcol, field, run)))
+
             # Do need to keep this
             self.warpedExp[field][run]   = self.warper.warpExposure(self.refExp[field].getWcs(), 
                                                                     exp, 
                                                                     destBBox = self.refExp[field].getBBox(afwImage.PARENT))
 
+            # Do after warping, since it loses it in warping
+            self.warpedExp[field][run].setPsf(self.refPsf)
+
             if self.config.writeFits:
-                #self.stitchedExp[field][run].writeFits("/tmp/match-%06d-%s%d-%04d-r%06d.fits" % (self.refrun, self.filt, self.camcol, field, run))
                 self.warpedExp[field][run].writeFits(os.path.join(self.config.outputPath, 
                                                                   "warp-%06d-%s%d-%04d-r%06d.fits" % 
                                                                   (self.refrun, self.filt, self.camcol, field, run)))
+            nProc += 1
+
 
     @pipeBase.timeMethod   
     def matchBackgrounds(self, field, binsize = 256):
@@ -271,8 +327,11 @@ class MatchBackgrounds(pipeBase.Task):
 
         # Basic; only use pixels that are unmasked in *all* images
         # Less basic; look for certain bits flipped.  TBD...
-        skyMask  = num.sum(num.array([x.getMaskedImage().getMask().getArray() for x in self.warpedExp[field].values()]), 0)
-        skyArr   = num.array([x.getMaskedImage().getImage().getArray() for x in self.warpedExp[field].values()])
+        runsToMatch = self.warpedExp[field].keys()
+        expsToMatch = self.warpedExp[field].values()
+
+        skyMask  = num.sum(num.array([x.getMaskedImage().getMask().getArray() for x in expsToMatch]), 0)
+        skyArr   = num.array([x.getMaskedImage().getImage().getArray() for x in expsToMatch])
         Nim      = len(skyArr)
 
         # Find all unmasked (sky) pixels
@@ -320,7 +379,8 @@ class MatchBackgrounds(pipeBase.Task):
             poly  = afwMath.Chebyshev1Function2D(self.config.backgroundOrder, bbox)          
             terms = list(poly.getParameters())
 
-            Ncell = biny * binx
+            Nall  = nbiny * nbinx
+            Ncell = num.sum(num.isfinite(bgZ[:,i]))
             Nterm = len(terms)
 
             # Mx = b; solve for x
@@ -329,14 +389,20 @@ class MatchBackgrounds(pipeBase.Task):
             iv = num.zeros((Ncell))
 
             # One constraint for each cell
-            for nc in range(Ncell):
+            nc = 0
+            for na in range(Nall):
+                if not num.isfinite(bgZ[:,i][na]):
+                    continue
+
                 for nt in range(Nterm):
                     terms[nt] = 1.0
                     poly.setParameters(terms)
-                    m[nc, nt] = poly(bgX[:,i][nc], bgY[:,i][nc])
+                    m[nc, nt] = poly(bgX[:,i][na], bgY[:,i][na])
                     terms[nt] = 0.0
-                b[nc]  = bgZ[:,i][nc]
-                iv[nc] = 1.0 / (bgdZ[:,i][nc])**2
+                b[nc]  = bgZ[:,i][na]
+                iv[nc] = 1.0 / (bgdZ[:,i][na])**2
+                nc += 1
+            #import pdb; pdb.set_trace()
 
             M    = num.dot(num.dot(m.T, num.diag(iv)), m)
             B    = num.dot(num.dot(m.T, num.diag(iv)), b)
@@ -344,38 +410,62 @@ class MatchBackgrounds(pipeBase.Task):
             Soln = num.dot(Minv, B)
             poly.setParameters(Soln)
 
-            run = self.warpedExp[field].keys()[i]
-            exp = self.warpedExp[field].values()[i]
+            run = runsToMatch[i]
+            exp = expsToMatch[i]
             im  = exp.getMaskedImage()
             im += poly
+
+            # Clear memory
+            self.warpedExp[field][run] = None
+            # But replace it with warped
+            self.bgMatchedExp[field][run] = exp
 
             if self.config.writeFits:
                 exp.writeFits(os.path.join(self.config.outputPath, 
                                            "match-%06d-%s%d-%04d-r%06d.fits" % 
                                            (self.refrun, self.filt, self.camcol, field, run)))
-
-            im -= self.refExp[field].getMaskedImage()
+            # DEBUGGING INFO
+            tmp  = afwImage.MaskedImageF(im, True)
+            tmp -= self.refExp[field].getMaskedImage()
 
             if self.config.writeFits:
-                exp.writeFits(os.path.join(self.config.outputPath, 
+                tmp.writeFits(os.path.join(self.config.outputPath, 
                                            "diff-%06d-%s%d-%04d-r%06d.fits" % 
                                            (self.refrun, self.filt, self.camcol, field, run)))
             
             # Lets see some stats!
-            area = exp.getMaskedImage().getImage().getArray()[idx]
+            area = tmp.getImage().getArray()[idx]
             print run, num.mean(area), num.median(area), num.std(area), len(area)
 
+    @pipeBase.timeMethod   
+    def createCoadd(self, field):
+        runsToMatch = self.bgMatchedExp[field].keys()
+        expsToMatch = self.bgMatchedExp[field].values()
 
+        refMi    = self.refExp[field].getMaskedImage()
+        coaddMi  = refMi.Factory(refMi.getBBox(afwImage.PARENT))
+        weightIm = coaddMi.getImage().Factory(coaddMi.getBBox(afwImage.PARENT))
+        weight   = 1.0
 
+        badPixelMask = afwImage.MaskU.getPlaneBitMask(self.config.coadd.badMaskPlanes)
 
+        addToCoadd(coaddMi, weightIm, refMi, badPixelMask, weight)
 
+        for i in range(len(runsToMatch)):
+            addToCoadd(coaddMi, weightIm, expsToMatch[i].getMaskedImage(), badPixelMask, weight)
 
+        # Post processing
+        coaddMi /= weightIm
+        setCoaddEdgeBits(coaddMi.getMask(), weightIm)
 
+        
+        if self.config.writeFits:
+            coaddMi.writeFits(os.path.join(self.config.outputPath, 
+                                           "coadd-%06d-%s%d-%04d.fits" % 
+                                           (self.refrun, self.filt, self.camcol, field)))
 
-
-
-
-
+            
+        
 
                     #Aij[0][i] = num.mean(area)
                     #Eij[0][i] = num.std(area)
@@ -477,6 +567,13 @@ def getasTrans(run, rerun):
         return fname
     return None
 
+def getpsField(run, rerun, filt, camcol, field):
+    fname = os.path.join(rootdir, str(run), str(rerun), "objcs", str(camcol), "psField-%06d-%d-%04d.fit" % (run, camcol, field))
+    print fname
+    if os.path.isfile(fname):
+        return convertpsField(fname, filt)
+    return None
+
 
 if __name__ == '__main__':
     refrun  = int(sys.argv[1])
@@ -486,22 +583,26 @@ if __name__ == '__main__':
     matcher = MatchBackgrounds(refrun, 40, camcol, filt)
     fields  = range(1, 1000)
     fields  = [11,]
-    matcher.run(fields)
-    matcher.matchBackgrounds(fields[0])
-    sys.exit(1)
+    if True:
+        matcher.run(fields, nMax = 1000)
+        matcher.matchBackgrounds(fields[0])
+        matcher.createCoadd(fields[0])
+        sys.exit(1)
+    else:
+        # If you have stuff in the output dir, use it...
+        matcher.warpedExp[fields[0]] = {}
+        matcher.bgMatchedExp[fields[0]] = {}
+        tmpdir  = "/tmp/"
+        nmax    = 100
+        nfound  = 0
+        for f in os.listdir(tmpdir):
+            if f.startswith("exp-%06d" % (refrun)):
+                refExp = afwImage.ExposureF(os.path.join(tmpdir, f))
+                matcher.refExp[fields[0]] = refExp
+            elif f.startswith("warp-%06d" % (refrun)) and nfound < nmax:
+                skyExp = afwImage.ExposureF(os.path.join(tmpdir, f))
+                skyrun  = int(re.sub("r", "", f.split("-")[4].split(".")[0]))
+                matcher.warpedExp[fields[0]][skyrun] = skyExp
+                nfound += 1
+        matcher.matchBackgrounds(fields[0])
     
-    # If you have stuff in the output dir, use it...
-    matcher.warpedExp[fields[0]] = {}
-    tmpdir  = "/tmp/"
-    nmax    = 100
-    nfound  = 0
-    for f in os.listdir(tmpdir):
-        if f.startswith("exp-%06d" % (refrun)):
-            refExp = afwImage.ExposureF(os.path.join(tmpdir, f))
-            matcher.refExp[fields[0]] = refExp
-        elif f.startswith("warp-%06d" % (refrun)) and nfound < nmax:
-            skyExp = afwImage.ExposureF(os.path.join(tmpdir, f))
-            skyrun  = int(re.sub("r", "", f.split("-")[4].split(".")[0]))
-            matcher.warpedExp[fields[0]][skyrun] = skyExp
-            nfound += 1
-    matcher.matchBackgrounds(fields[0])
