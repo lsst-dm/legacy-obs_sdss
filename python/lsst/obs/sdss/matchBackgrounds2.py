@@ -33,6 +33,7 @@ from lsst.coadd.utils import Coadd, addToCoadd, setCoaddEdgeBits
 from convertfpM import convertfpM
 from convertasTrans import convertasTrans
 from convertpsField import convertpsField
+from converttsField import converttsField
 from scipy.interpolate import SmoothBivariateSpline
 try:
     import pymssql 
@@ -57,6 +58,8 @@ class FieldMatch(object):
         self.fpM    = None
         self.wcs    = None
         self.psf    = None
+        self.gain   = None
+        self.calib  = None
 
     def loadfpC(self):
         self.fpC = getfpC(self.run, self.rerun, self.filt, self.camcol, self.field)
@@ -71,13 +74,17 @@ class FieldMatch(object):
 
     def loadPsf(self):
         self.psf = getpsField(self.run, self.rerun, self.filt, self.camcol, self.field)
-    
-    def createExp(self, gain = 1.0):
+
+    def loadCalib(self):
+        self.calib, self.gain = gettsField(self.run, self.rerun, self.filt, self.camcol, self.field)
+
+    def createExp(self):
         var  = afwImage.ImageF(self.fpC, True)
-        var /= gain
+        var /= self.gain
         mi   = afwImage.MaskedImageF(self.fpC, self.fpM, var)
         exp  = afwImage.ExposureF(mi, self.wcs)
         exp.setPsf(self.psf)
+        exp.setCalib(self.calib)
         return exp
 
 class MatchBackgroundsConfig(pexConfig.Config):
@@ -156,13 +163,17 @@ class MatchBackgrounds(pipeBase.Task):
             psfRef = getpsField(self.refrun, self.rerun, self.filt, self.camcol, field)
             if not psfRef:
                 continue
-        
+
+            calib, gain = gettsField(self.refrun, self.rerun, self.filt, self.camcol, field)
+
             # Assemble an exposure out of this
-            # Unknown gain for now
-            varRef = afwImage.ImageF(fpCRef, True)
-            miRef  = afwImage.MaskedImageF(fpCRef, fpMRef, varRef)
-            exp    = afwImage.ExposureF(miRef, wcsRef)
+            varRef  = afwImage.ImageF(fpCRef, True)
+            import pdb; pdb.set_trace()
+            varRef /= gain
+            miRef   = afwImage.MaskedImageF(fpCRef, fpMRef, varRef)
+            exp     = afwImage.ExposureF(miRef, wcsRef)
             exp.setPsf(psfRef)
+            exp.setCalib(calib)
 
             self.refExp[field]          = self.psfMatcher.run(exp, self.refPsf).psfMatchedExposure
 
@@ -252,7 +263,8 @@ class MatchBackgrounds(pipeBase.Task):
                 match.loadfpM()
                 match.loadWcs()
                 match.loadPsf()
-                if match.fpC and match.fpM and match.wcs and match.psf:
+                match.loadCalib()
+                if match.fpC and match.fpM and match.wcs and match.psf and match.gain and match.calib:
                     nloaded += 1
     
             if nloaded != len(runMatches):
@@ -574,6 +586,13 @@ def getpsField(run, rerun, filt, camcol, field):
         return convertpsField(fname, filt)
     return None
 
+def gettsField(run, rerun, filt, camcol, field):
+    fname = os.path.join(rootdir, str(run), str(rerun), "calibChunks", str(camcol), "tsField-%06d-%d-%d-%04d.fit" % (run, camcol, rerun, field))
+    print fname
+    if os.path.isfile(fname):
+        return converttsField(fname, filt)
+    return None
+
 
 if __name__ == '__main__':
     refrun  = int(sys.argv[1])
@@ -584,7 +603,7 @@ if __name__ == '__main__':
     fields  = range(1, 1000)
     fields  = [11,]
     if True:
-        matcher.run(fields, nMax = 1000)
+        matcher.run(fields, nMax = 3)
         matcher.matchBackgrounds(fields[0])
         matcher.createCoadd(fields[0])
         sys.exit(1)

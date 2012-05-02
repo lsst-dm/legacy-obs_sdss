@@ -33,9 +33,9 @@ def converttsField(infile, filt, exptime = 53.907456):
     filts  = ptr[0].header['FILTERS'].split()
     idx    = filts.index(filt)
 
-    mjdTaiStart = ptr[1].data.field('mjd')[0][idx]   # MJD(TAI) when row 0 was read
-    gain        = ptr[1].data.field('gain')[0][idx]
-    aa          = ptr[1].data.field('aa')[0][idx]    # f0 = 10**(-0.4*aa) counts/second
+    mjdTaiStart = ptr[1].data.field('mjd')[0][idx]        # MJD(TAI) when row 0 was read
+    gain        = float(ptr[1].data.field('gain')[0][idx])# comes out as numpy.float32
+    aa          = ptr[1].data.field('aa')[0][idx]         # f0 = 10**(-0.4*aa) counts/second
     aaErr       = ptr[1].data.field('aaErr')[0][idx] 
 
     # Conversions
@@ -49,7 +49,7 @@ def converttsField(infile, filt, exptime = 53.907456):
     calib.setFluxMag0(fluxMag0, dfluxMag0)
 
     ptr.close()
-    
+
     return calib, gain
 
 if __name__ == '__main__':
