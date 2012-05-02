@@ -19,8 +19,9 @@
 # the GNU General Public License along with this program.  If not, 
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-import sys
+import sys, os
 import pyfits
+import numpy as num
 import lsst.afw.image as afwImage
 import lsst.daf.base as dafBase
 
@@ -34,13 +35,13 @@ def converttsField(infile, filt, exptime = 53.907456):
 
     mjdTaiStart = ptr[1].data.field('mjd')[0][idx]   # MJD(TAI) when row 0 was read
     gain        = ptr[1].data.field('gain')[0][idx]
-    fluxMag0    = ptr[1].data.field('aa')[0][idx]    # f0 = 10**(-0.4*aa) counts/second
-    dfluxMag0   = ptr[1].data.field('aaErr')[0][idx] 
+    aa          = ptr[1].data.field('aa')[0][idx]    # f0 = 10**(-0.4*aa) counts/second
+    aaErr       = ptr[1].data.field('aaErr')[0][idx] 
 
     # Conversions
     mjdTaiMid   = mjdTaiStart + 0.5 * exptime / 3600 / 24
-    fluxMag0   *= exptime
-    dfluxMag0  *= exptime
+    fluxMag0    = 10**(-0.4 * aa) * exptime
+    dfluxMag0   = fluxMag0 * 0.4 * num.log(10.0) * aaErr
 
     calib  = afwImage.Calib()
     calib.setMidTime(dafBase.DateTime(mjdTaiMid))
