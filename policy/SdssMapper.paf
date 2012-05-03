@@ -62,7 +62,6 @@ datasets: {
         persistable:         "ignored"
         storage:     "FitsStorage"
         tables:        raw
-        tables:        raw_skyTile
     }
     asTrans: {
         template:    "%(run)d/%(rerun)d/astrom/asTrans-%(run)06d.fit"
@@ -71,6 +70,14 @@ datasets: {
         storage:     "FitsStorage"
         tables:        raw
     }
+    tsField: {
+        template:    "%(run)d/%(rerun)d/calibChunks/%(camcol)d/tsField-%(run)06d-%(camcol)d-%(rerun)-%(frame)04d.fit"
+        python:     "lsst.afw.image.Calib"
+        persistable:         "ignored"
+        storage:     "FitsStorage"
+        tables:        raw
+    }
+
 
     icSrc: {
         template:      "icSrc/%(run)d/%(camcol)d/%(band)s/icSrc-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"

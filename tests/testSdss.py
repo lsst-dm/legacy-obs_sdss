@@ -71,6 +71,12 @@ class SdssMapperTestCase(unittest.TestCase):
             self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX1"), 1.0, 5)
             self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX2"), 1.0, 5)
 
+            calib, gain = ref.get("psField")
+            self.assertEqual(calib.getMidTime(), None)
+            self.assertEqual(calib.getExptime(), None)
+            self.assertEqual(calib.getFluxMag0(), None)
+            self.assertEqual(gain, None)
+
     def testGetCoadd(self):
         butler = dafPersist.ButlerFactory(
                 mapper=SdssMapper(root="/lsst7/stripe82/uw-coadds")).create()
