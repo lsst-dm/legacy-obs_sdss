@@ -26,6 +26,7 @@ import unittest
 import lsst.utils.tests as utilsTests
 
 import os
+import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 from lsst.obs.sdss import SdssMapper
 import lsst.afw.image
@@ -72,10 +73,10 @@ class SdssMapperTestCase(unittest.TestCase):
             self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX2"), 1.0, 5)
 
             calib, gain = ref.get("tsField")
-            self.assertEqual(calib.getMidTime(), None)
-            self.assertEqual(calib.getExptime(), None)
-            self.assertEqual(calib.getFluxMag0(), None)
-            self.assertEqual(gain, None)
+            self.assertAlmostEqual(calib.getMidTime().mjd(),
+                    53664.2260706 + 0.5 * 53.907456/3600/24, 7)
+            self.assertAlmostEqual(calib.getExptime(), 53.907456, 6)
+            self.assertAlmostEqual(gain, 4.72, 2)
 
     def testGetCoadd(self):
         butler = dafPersist.ButlerFactory(

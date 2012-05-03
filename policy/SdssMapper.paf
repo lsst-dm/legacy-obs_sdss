@@ -71,7 +71,7 @@ datasets: {
         tables:        raw
     }
     tsField: {
-        template:    "%(run)d/%(rerun)d/calibChunks/%(camcol)d/tsField-%(run)06d-%(camcol)d-%(rerun)-%(frame)04d.fit"
+        template:    "%(run)d/%(rerun)d/calibChunks/%(camcol)d/tsField-%(run)06d-%(camcol)d-%(rerun)d-%(frame)04d.fit"
         python:     "lsst.afw.image.Calib"
         persistable:         "ignored"
         storage:     "FitsStorage"
