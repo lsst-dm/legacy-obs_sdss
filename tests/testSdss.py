@@ -71,7 +71,7 @@ class SdssMapperTestCase(unittest.TestCase):
             self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX1"), 1.0, 5)
             self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX2"), 1.0, 5)
 
-            calib, gain = ref.get("psField")
+            calib, gain = ref.get("tsField")
             self.assertEqual(calib.getMidTime(), None)
             self.assertEqual(calib.getExptime(), None)
             self.assertEqual(calib.getFluxMag0(), None)
