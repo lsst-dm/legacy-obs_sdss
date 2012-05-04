@@ -35,7 +35,7 @@ class Span(object):
 class Objmask(object):
     nperspan = 6
 
-    def __init__(self, frow, cval):
+    def __init__(self, frow, cval, verbose = False):
         self.refcntr = frow[0]
         self.nspan   = frow[1]
         self.row0    = frow[2]
@@ -68,7 +68,7 @@ class Objmask(object):
         # So warn, not assert
         # 5759/40/objcs/1/fpM-005759-r1-0011.fit
         # Plane S_MASK_NOTCHECKED
-        if self.npix != npixcheck:
+        if self.npix != npixcheck and verbose:
             print "WARNING: npix != npixcheck (%d != %d)" % (self.npix, npixcheck)
 
         self.cval    = cval
