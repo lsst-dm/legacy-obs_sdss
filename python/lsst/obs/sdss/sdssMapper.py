@@ -26,6 +26,7 @@ from lsst.daf.butlerUtils import CameraMapper
 from lsst.obs.sdss.convertfpM import convertfpM
 from lsst.obs.sdss.convertpsField import convertpsField
 from lsst.obs.sdss.convertasTrans import convertasTrans
+from lsst.obs.sdss.converttsField import converttsField
 
 # Solely to get boost serialization registrations for Measurement subclasses
 import lsst.meas.algorithms as measAlgo
@@ -87,6 +88,9 @@ class SdssMapper(CameraMapper):
     def bypass_asTrans(self, datasetType, pythonType, location, dataId):
         return convertasTrans(location.getLocations()[0], dataId['band'],
                 dataId['camcol'], dataId['frame'])
+
+    def bypass_tsField(self, datasetType, pythonType, location, dataId):
+        return converttsField(location.getLocations()[0], dataId['band'])
 
 ###############################################################################
 
