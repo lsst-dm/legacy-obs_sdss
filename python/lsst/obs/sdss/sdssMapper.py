@@ -27,6 +27,7 @@ from lsst.obs.sdss.convertfpM import convertfpM
 from lsst.obs.sdss.convertpsField import convertpsField
 from lsst.obs.sdss.convertasTrans import convertasTrans
 from lsst.obs.sdss.converttsField import converttsField
+import lsst.afw.image.utils as afwImageUtils
 
 # Solely to get boost serialization registrations for Measurement subclasses
 import lsst.meas.algorithms as measAlgo
@@ -47,6 +48,12 @@ class SdssMapper(CameraMapper):
         super(SdssMapper, self).__init__(policy, policyFile.getRepositoryPath(), **kwargs)
         # define filters?
         self.filterIdMap = dict(u=0, g=1, r=2, i=3, z=4)
+
+        afwImageUtils.defineFilter('u',  lambdaEff=380)
+        afwImageUtils.defineFilter('g',  lambdaEff=450)
+        afwImageUtils.defineFilter('r',  lambdaEff=600)
+        afwImageUtils.defineFilter('i',  lambdaEff=770)
+        afwImageUtils.defineFilter('z',  lambdaEff=900)
 
     def _computeCcdExposureId(self, dataId):
         """Compute the 64-bit (long) identifier for a CCD exposure.
