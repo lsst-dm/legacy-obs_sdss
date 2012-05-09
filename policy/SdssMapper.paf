@@ -136,6 +136,14 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
+    forcedsources: {
+        template:      "forcedsources/%(run)d/%(camcol)d/%(band)s/src-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:   "ignored"
+        storage:       "FitsCatalogStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
     sourceHist: {
         template:      "results/st%(skyTile)d/sourceHist.fits"
         python:        "lsst.afw.image.DecoratedImageU"
