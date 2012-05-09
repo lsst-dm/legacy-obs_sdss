@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from lsst.obs.sdss.yanny import yanny as Yanny
+import lsst.afw.cameraGeom as cameraGeom
 
 class SdssConfig(Yanny):
     _bands = dict(u = 0, g = 1, r = 2, i = 3, z = 4)
@@ -28,20 +29,27 @@ class SdssConfig(Yanny):
 
         return me[0]
 
-    def getGain(self, ccdName):
-        """Return an array of the (amp, gain) values for the given ccd (e.g. r2)"""
+    def getEParams(self, ccdName):
+        """Return a pair cameraGeom.ElectronicParams for both amps of a named CCD (e.g. z4)"""
         ECALIB = self._ECalib
         me = self.getCcdIndex(ECALIB, ccdName)
 
-        gains = []
+        eparams = []
         for i in range(4):
             if int(self._CcdConfig["amp%d" % i][me]):
-                gains.append((i, ECALIB["gain%d" % i][me]))
+                gain = ECALIB["gain%d" % i][me]
+                readNoise = ECALIB["readNoiseDN%d" % i][me]
+                fullWell = ECALIB["fullWellDN%d" % i][me]
 
-        return gains
-        
+                eparams.append((i, cameraGeom.ElectronicParams(gain, readNoise, fullWell)))
+
+        if len(eparams) == 1:
+            eparams.append((1, eparams[0][1]))
+
+        return eparams
+
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 if __name__ == "__main__":
     sc = SdssConfig("/lsst7/stripe82/dr7/opfiles", "opConfig-50000.par", "opECalib-50000.par")
-    print sc.getGain("g2")
+    print [(i, ep.getGain(), ep.getReadNoise(), ep.getSaturationLevel()) for i, ep in sc.getEParams("g2")]
