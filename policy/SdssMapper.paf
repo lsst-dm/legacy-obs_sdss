@@ -56,6 +56,15 @@ exposures: {
 }
 
 datasets: {
+    ccdExposureId: {
+        template:     "ignored"
+        # Provide something to import, although we actually return a tuple
+        python:       "lsst.daf.base.PropertySet"
+        persistable:  "ignored"
+        storage:      "ignored"
+        tables:       "raw"
+    }
+
     psField: {
         template:    "%(run)d/%(rerun)d/objcs/%(camcol)d/psField-%(run)06d-%(camcol)d-%(frame)04d.fit"
         python:     "lsst.afw.detection.Psf"

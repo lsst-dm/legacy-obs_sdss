@@ -99,6 +99,9 @@ class SdssMapper(CameraMapper):
     def bypass_tsField(self, datasetType, pythonType, location, dataId):
         return converttsField(location.getLocations()[0], dataId['band'])
 
+    def bypass_ccdExposureId(self, datasetType, pythonType, location, dataId):
+        return (self._computeCcdExposureId(dataId), 38)
+
 ###############################################################################
 
     def _addSources(self, dataId):
