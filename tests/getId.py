@@ -44,14 +44,13 @@ class GetIdTestCase(unittest.TestCase):
 
 	def testId(self):
 		"""Test retrieval of exposure ids"""
-		(id, bits) = self.butler.get("ccdExposureId", run=6537,
+		bits = self.butler.get("ccdExposureId_bits")
+                self.assertEqual(bits, 38)
+		id = self.butler.get("ccdExposureId", run=6537,
                         camcol=3, band='r', frame=514)
-                self.assertEqual(bits, 38)
                 self.assertEqual(id, 6537230514)
-
-                (id, bits) = self.butler.get("ccdExposureId", run=4933,
+                id = self.butler.get("ccdExposureId", run=4933,
                         camcol=3, band='g', frame=748)
-                self.assertEqual(bits, 38)
                 self.assertEqual(id, 4933130748)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
