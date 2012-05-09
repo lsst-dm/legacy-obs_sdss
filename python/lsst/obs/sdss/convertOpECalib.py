@@ -4,7 +4,7 @@ from lsst.obs.sdss.yanny import yanny as Yanny
 import lsst.afw.cameraGeom as cameraGeom
 
 class SdssConfig(Yanny):
-    _bands = dict(u = 0, g = 1, r = 2, i = 3, z = 4)
+    _bands = dict(u = 1, g = 2, r = 3, i = 4, z = 5)
 
     def __init__(self, opDir, opConfig, opECalib):
         self._ECalib = Yanny(os.path.join(opDir, opECalib))["ECALIB"]
