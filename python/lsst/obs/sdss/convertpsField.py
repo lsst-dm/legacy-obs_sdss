@@ -25,7 +25,7 @@ import numpy as num
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.detection as afwDetect
-DEBUG = True
+DEBUG = False
 
 filtToHdu = {'u':1,'g':2,'r':3,'i':4,'z':5}
 
@@ -194,5 +194,9 @@ if __name__ == '__main__':
         directCompare(infile, filt, x, y)
     else:
         psf = convertpsField(infile, filt)
-    
+        kernel = psf.getKernel()
+        kImage = afwImage.ImageD(kernel.getDimensions())
+        kernel.computeImage(kImage, True, x, y)
+        kImage.writeFits(outfile)
+
     # Persist the kernel at your own leisure

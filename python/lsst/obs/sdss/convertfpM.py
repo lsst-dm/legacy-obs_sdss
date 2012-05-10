@@ -35,7 +35,7 @@ class Span(object):
 class Objmask(object):
     nperspan = 6
 
-    def __init__(self, frow, cval):
+    def __init__(self, frow, cval, verbose = False):
         self.refcntr = frow[0]
         self.nspan   = frow[1]
         self.row0    = frow[2]
@@ -46,6 +46,8 @@ class Objmask(object):
         self.cmax    = frow[7]
         self.npix    = frow[8]
         self.span    = frow[9]
+        if len(self.span) == 0:
+            self.nspan = 0 # some bogus fpM files
 
         self.spans   = []
         npixcheck    = 0
@@ -66,7 +68,7 @@ class Objmask(object):
         # So warn, not assert
         # 5759/40/objcs/1/fpM-005759-r1-0011.fit
         # Plane S_MASK_NOTCHECKED
-        if self.npix != npixcheck:
+        if self.npix != npixcheck and verbose:
             print "WARNING: npix != npixcheck (%d != %d)" % (self.npix, npixcheck)
 
         self.cval    = cval
@@ -89,7 +91,7 @@ class Objmask(object):
                 
             if(x2 >= ncol):
                 x2 = ncol - 1
-           
+                
             x = int(x1)
             while x <= x2:
                 mask.set(x, y, mask.get(x, y) | self.cval)
@@ -134,6 +136,8 @@ def convertfpM(infile, allPlanes = False):
             listToSet.append( (idx, bitMask) )
 
     for plane, bitmask in listToSet:
+        if len(hdr) < plane:
+            continue
 
         if hdr[plane].data == None:
             continue

@@ -26,6 +26,8 @@ from lsst.daf.butlerUtils import CameraMapper
 from lsst.obs.sdss.convertfpM import convertfpM
 from lsst.obs.sdss.convertpsField import convertpsField
 from lsst.obs.sdss.convertasTrans import convertasTrans
+from lsst.obs.sdss.converttsField import converttsField
+import lsst.afw.image.utils as afwImageUtils
 
 # Solely to get boost serialization registrations for Measurement subclasses
 import lsst.meas.algorithms as measAlgo
@@ -46,6 +48,12 @@ class SdssMapper(CameraMapper):
         super(SdssMapper, self).__init__(policy, policyFile.getRepositoryPath(), **kwargs)
         # define filters?
         self.filterIdMap = dict(u=0, g=1, r=2, i=3, z=4)
+
+        afwImageUtils.defineFilter('u',  lambdaEff=380)
+        afwImageUtils.defineFilter('g',  lambdaEff=450)
+        afwImageUtils.defineFilter('r',  lambdaEff=600)
+        afwImageUtils.defineFilter('i',  lambdaEff=770)
+        afwImageUtils.defineFilter('z',  lambdaEff=900)
 
     def _computeCcdExposureId(self, dataId):
         """Compute the 64-bit (long) identifier for a CCD exposure.
@@ -87,6 +95,14 @@ class SdssMapper(CameraMapper):
     def bypass_asTrans(self, datasetType, pythonType, location, dataId):
         return convertasTrans(location.getLocations()[0], dataId['band'],
                 dataId['camcol'], dataId['frame'])
+
+    def bypass_tsField(self, datasetType, pythonType, location, dataId):
+        return converttsField(location.getLocations()[0], dataId['band'])
+
+    def bypass_ccdExposureId(self, datasetType, pythonType, location, dataId):
+        return self._computeCcdExposureId(dataId)
+    def bypass_ccdExposureId_bits(self, datasetType, pythonType, location, dataId):
+        return 38
 
 ###############################################################################
 

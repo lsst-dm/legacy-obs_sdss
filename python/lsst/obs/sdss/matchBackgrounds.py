@@ -28,13 +28,16 @@ import lsst.afw.math as afwMath
 
 from scipy.interpolate import UnivariateSpline
 import pylab
+from matplotlib.ticker import FormatStrFormatter
 
 from convertfpM import convertfpM
 from convertasTrans import convertasTrans
 
 import lsst.afw.display.ds9 as ds9
 
+fFormatter = FormatStrFormatter('%d')
 rootdir = "/astro/net/pogo1/stripe82/imaging"
+
 class RunBackgroundBinner(object):
     def __init__(self, run, rerun, filt, camcol):
         self.run     = run
@@ -55,21 +58,27 @@ class RunBackgroundBinner(object):
             return ra - 360
         return ra
 
-    def bin(self, image, mask, field):
-        idx  = num.where(mask.getArray() == 0)
-        data = image.getArray()[idx]
-        stat = afwMath.makeStatistics(data.tolist(), afwMath.MEDIAN | afwMath.IQRANGE)
-        med  = stat.getValue(afwMath.MEDIAN)
-        iqr  = stat.getValue(afwMath.IQRANGE)
+    def bin(self, image, mask, field, nbin = 4):
+        ny   = image.getHeight() // 4
+        for n in range(nbin):
+            ymin = n * ny
+            ymax = min((n + 1) * ny, image.getHeight())
 
-        wcs       = convertasTrans(self.asTrans, self.filt, self.camcol, field)
-        center    = wcs.pixelToSky(image.getWidth()//2, image.getHeight()//2)
+            idx  = num.where(mask.getArray()[ymin:ymax,:] == 0)
+            data = image.getArray()[ymin:ymax,:][idx]
+            stat = afwMath.makeStatistics(data.tolist(), afwMath.MEDIAN | afwMath.IQRANGE)
+            med  = stat.getValue(afwMath.MEDIAN)
+            iqr  = stat.getValue(afwMath.IQRANGE)
 
-        self.ras.append(self.convertRa(center[0].asDegrees()))
-        self.decs.append(center[1].asDegrees())
-        self.medians.append(med)
-        self.iqrs.append(iqr)
-        self.fields.append(field)
+            wcs       = convertasTrans(self.asTrans, self.filt, self.camcol, field)
+            center    = wcs.pixelToSky(image.getWidth()//2, 0.5 * (ymin + ymax))
+            
+
+            self.ras.append(self.convertRa(center[0].asDegrees()))
+            self.decs.append(center[1].asDegrees())
+            self.medians.append(med)
+            self.iqrs.append(iqr)
+            self.fields.append(field)
 
     def process(self):
         if len(self.ras) == 0:
@@ -83,34 +92,47 @@ class RunBackgroundBinner(object):
     def doSpline(self, x, y, dy):
         return UnivariateSpline(x, y, w = 1./dy)
 
-    def doPlot(self):
+    def doPlot(self, show = True):
         if len(self.ras) == 0:
             return
 
-        pylab.figure()
-        pylab.errorbar(self.ras, self.medians, yerr = 0.741 * self.iqrs, fmt='ro', ms=2)
+        fig = pylab.figure()
+        ax1 = fig.add_subplot(111)
+        ax1.errorbar(self.ras, self.medians, yerr = 0.741 * self.iqrs, fmt='ro', ms=2)
+
+        ax2 = ax1.twiny()
+        ax2.set_xlabel("Field")
+        ax2.set_xlim(min(self.fields), max(self.fields))
+        ax2.xaxis.set_major_formatter( fFormatter )
+
         xspl = num.arange(num.min(self.ras), num.max(self.ras), 0.05)
         yspl = self.spline(xspl)
-        pylab.plot(xspl, yspl, "k-")
-        pylab.title("%06d-%s%d   Dec = %.5f" % (run, filt, camcol, 
-                                                afwMath.makeStatistics(self.decs, afwMath.MEDIAN).getValue(afwMath.MEDIAN)))
-        pylab.xlabel("RA")
-        pylab.ylabel("Sky")
-        pylab.show()
+        ax1.plot(xspl, yspl, "k-")
+        fig.suptitle("%06d-%s%d   Dec = %.5f" % (self.run, self.filt, self.camcol, 
+                                                 afwMath.makeStatistics(self.decs, afwMath.MEDIAN).getValue(afwMath.MEDIAN)))
+        ax1.set_xlabel("RA")
+        ax1.set_ylabel("Sky")
+        if show:
+            pylab.show()
                     
 
 def getfpC(run, rerun, filt, camcol, field):
     fname = os.path.join(rootdir, str(run), str(rerun), "corr", str(camcol), "fpC-%06d-%s%d-%04d.fit.gz" % (run, filt, camcol, field))
     print fname
     if os.path.isfile(fname):
-        return afwImage.ImageF(fname)
+        im  = afwImage.ImageF(fname)
+        im -= 1000 # damn pedestal
+        return im
     return None
 
 def getfpM(run, rerun, filt, camcol, field):
     fname = os.path.join(rootdir, str(run), str(rerun), "objcs", str(camcol), "fpM-%06d-%s%d-%04d.fit" % (run, filt, camcol, field))
     print fname
     if os.path.isfile(fname):
-        return convertfpM(fname, allPlanes = True)
+        try:
+            return convertfpM(fname, allPlanes = True)
+        except:
+            return None
     return None
 
 def getasTrans(run, rerun):
@@ -121,8 +143,8 @@ def getasTrans(run, rerun):
     return None
  
 if __name__ == '__main__':
+    cc    = int(sys.argv[1]) # parallelize
     rerun = 40
-
     runs  = [94, 125, 1033, 1056, 1752, 1755, 1894, 2385, 2570, 2578, 2579,
              2583, 2585, 2589, 2649, 2650, 2659, 2662, 2677, 2700, 2708, 2709,
              2728, 2738, 2768, 2820, 2855, 2861, 2873, 2886, 2960, 2968, 3325,
@@ -153,28 +175,33 @@ if __name__ == '__main__':
              7140, 7142, 7145, 7150, 7151, 7152, 7155, 7158, 7161, 7164, 7167,
              7170, 7173, 7176, 7177, 7182, 7183, 7188, 7195, 7199, 7202]
     
+    filts   = ["u", "g", "r", "i", "z"]
+    camcols = [cc,]
+    fields  = range(1, 1000)
+
     for run in runs:
-        for filt in ["u", "g", "r", "i", "z"]:
-            for camcol in [1, 2, 3, 4, 5, 6]:
-    
+        for filt in filts:
+            for camcol in camcols:
                 for run in runs:
-                    run    = int(run)
+                    outfile = "bg-%06d-%s%d.pickle" % (run, filt, camcol)
+                    if os.path.isfile(outfile):
+                        continue
+
                     binner = RunBackgroundBinner(run, rerun, filt, camcol)
             
-                    for field in range(1, 1000):
+                    for field in fields:
                         image   = getfpC(run, rerun, filt, camcol, field)
                         mask    = getfpM(run, rerun, filt, camcol, field)
-                
                         if (not image) or (not mask):
                             continue
-            
-                        binner.bin(image, mask, field)
+                        try:
+                            binner.bin(image, mask, field)
+                        except:
+                            print "FAIL", 
+
                     binner.process()
-                    
-                    outfile = "bg-%06d-%s%d.pickle" % (run, filt, camcol)
+
                     buff = open(outfile, "wb")
                     cPickle.dump(binner, buff)
                     buff.close()
-            
-                    #binner.doPlot()
-                    #sys.exit(1)
+                    
