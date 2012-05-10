@@ -215,6 +215,7 @@ datasets: {
         storage:       "BoostStorage"
         tables:        raw
         tables:        raw_skyTile
+    }
     deepCoadd: {
         template:    "deepCoadd/%(band)s/%(tract)d/%(patch)s.fits"
         python:      "lsst.afw.image.ExposureF"
