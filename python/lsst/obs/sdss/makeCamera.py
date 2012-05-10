@@ -87,7 +87,7 @@ def makeRaft(raftName):
 #
 # Make a Camera out of 6 Rafts (==dewars)
 #
-def makeCamera(name):
+def makeCamera(name="SDSS"):
     camera = cameraGeom.Camera(cameraGeom.Id(name), 6, 1)
 
     for i in range(6):
