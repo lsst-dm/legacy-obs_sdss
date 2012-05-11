@@ -18,11 +18,13 @@ class SdssForcedPhotTask(ForcedPhotTask):
         """Get reference sources on (or close to) exposure"""
         coordList = self.getRaDecFromDatabase(dataRef)
 
-        table = afwTable.SimpleTable.makeMinimalSchema()
-        references = afwTable.SimpleCatalog(table)
+        schema = afwTable.SimpleTable.makeMinimalSchema()
+        references = afwTable.SimpleCatalog(schema)
+        table = references.table
         references.preallocate(len(dbRows))
-        for coord in coordList:
+        for ident, coord in coordList:
             ref = table.makeRecord()
+            ref.setId(ident)
             ref.setCoord(coord)
             references.append(ref)
 
@@ -45,6 +47,7 @@ class SdssForcedPhotTask(ForcedPhotTask):
                INTO @poly;""" % dataRef.get("ccdExposureId"))
         db.executeSql("CALL scisql.scisql_s2CPolyRegion(@poly, 20)")
         db.setTableListForQuery(["Object", "Region"])
+        db.outColumn("objectId")
         db.outColumn("ra")
         db.outColumn("dec")
         db.setQueryWhere("""
@@ -54,9 +57,11 @@ class SdssForcedPhotTask(ForcedPhotTask):
 
         coordList = []
         while db.next():
-            ra = db.getColumnByPosDouble(0) * afwGeom.degrees
-            dec = db.getColumnByPosDouble(1) * afwGeom.degrees
-            coordList.append(afwCoord.IcrsCoord(ra, dec))
+            ident = db.getColumnByPosInt64(0)
+            ra = db.getColumnByPosDouble(1) * afwGeom.degrees
+            dec = db.getColumnByPosDouble(2) * afwGeom.degrees
+            row = (ident, afwCoord.IcrsCoord(ra, dec))
+            coordList.append(row)
 
         db.finishQuery()
         db.endTransaction()
