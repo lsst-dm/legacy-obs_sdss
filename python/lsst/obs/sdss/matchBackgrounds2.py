@@ -549,7 +549,7 @@ class MatchBackgrounds(pipeBase.Task):
                 b[nc]  = bgZ[:,i][na]
                 iv[nc] = 1.0 / (bgdZ[:,i][na])**2
                 nc += 1
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
 
             M    = num.dot(num.dot(m.T, num.diag(iv)), m)
             B    = num.dot(num.dot(m.T, num.diag(iv)), b)
