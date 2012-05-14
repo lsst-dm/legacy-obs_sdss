@@ -92,7 +92,7 @@ class SigmaClippedCoaddConfig(CoaddTask.ConfigClass):
     sigmaClip = pexConfig.Field(
         dtype = float,
         doc = "sigma for outlier rejection",
-        default = 3.0,
+        default = 5.0,
         optional = None,
     )
     clipIter = pexConfig.Field(
@@ -111,7 +111,12 @@ class MatchBackgroundsConfig(pexConfig.Config):
     backgroundOrder = pexConfig.Field(
         dtype = int,
         doc = """Order of background Chebyshev""",
-        default = 1
+        default = 2
+    )
+    backgroundBinsize = pexConfig.Field(
+        dtype = int,
+        doc = """Bin size for background matching""",
+        default = 256
     )
     writeFits = pexConfig.Field(
         dtype = bool,
@@ -163,13 +168,19 @@ class SigmaClippedCoaddTask(CoaddTask):
         self.statsCtrl.setAndMask(afwImage.MaskU.getPlaneBitMask(self.config.coadd.badMaskPlanes))
 
     @pipeBase.timeMethod   
-    def normalizeMiForCoadd(self, exp):
+    def normalizeForCoadd(self, exp):
+        # WARNING: IF YOU HAVE BACKGROUND MATCHED IMAGES THIS WILL
+        # DESTROY THEIR MATCHING.  RUN THIS BEFORE BACKGROUND MATCHING
         calib = exp.getCalib()
         scaleFac = 1.0 / calib.getFlux(self.config.coadd.coaddZeroPoint)
-        mi = afwImage.MaskedImageF(exp.getMaskedImage(), True)
+        mi  = afwImage.MaskedImageF(exp.getMaskedImage(), True)
         mi *= scaleFac
         self.log.log(self.log.INFO, "Normalized using scaleFac=%0.3g" % (scaleFac))
-        return mi
+
+        # Copy Psf, Wcs, Calib (bad idea?)
+        normExp = afwImage.ExposureF(exp, True)
+        normExp.setMaskedImage(mi)
+        return normExp
 
     @pipeBase.timeMethod   
     def weightForCoadd(self, exp, weightFactor = 1.0):
@@ -194,12 +205,12 @@ class SigmaClippedCoaddTask(CoaddTask):
         weightList = []
         
         # Add reference image first
-        maskedImageList.append(self.normalizeMiForCoadd(refExp))
+        maskedImageList.append(refExp.getMaskedImage())
         weightList.append(self.weightForCoadd(refExp))
         
         # All the other matched images
         for exp in expList:
-            maskedImageList.append(self.normalizeMiForCoadd(exp))
+            maskedImageList.append(exp.getMaskedImage())
             weightList.append(self.weightForCoadd(exp))
 
         try:
@@ -277,8 +288,7 @@ class MatchBackgrounds(pipeBase.Task):
         self.warpedExp       = {}
         self.bgMatchedExp    = {}
         
-        self.processMatches(matches, nMax = nMax)
-
+        self.loadMatches(matches, nMax = nMax)
         self.matchBackgrounds()
         self.createCoadd()
         self.log.log(self.log.INFO, "")
@@ -326,17 +336,16 @@ class MatchBackgrounds(pipeBase.Task):
             smatches.append(amatches[idx])
         return smatches
 
-    
-
     @pipeBase.timeMethod
-    def processMatches(self, matches, nMax = None):
+    def loadMatches(self, matches, nMax = None):
+        """Finds matches on disk; Psf matches them to common Psf;
+        stitches them together; remaps to fiducial field; stores in
+        self.warpedExp"""
+
         runs  = num.array([x.run for x in matches])
         uruns = list(set(runs))
         uruns.sort()
 
-        self.refExp.writeFits(os.path.join(self.config.outputPath, 
-                                           "exp-%06d-%s%d-%04d.fits" % 
-                                           (self.refrun, self.filt, self.camcol, self.field)))
         nProc = 0
         for run in uruns:
             if nMax and nProc >= nMax:
@@ -446,15 +455,28 @@ class MatchBackgrounds(pipeBase.Task):
         return stitch
 
     @pipeBase.timeMethod   
-    def matchBackgrounds(self, binsize = 256):
-        refMask  = self.refExp.getMaskedImage().getMask().getArray()
-        refArr   = self.refExp.getMaskedImage().getImage().getArray()
+    def matchBackgrounds(self):
+        """Puts images on a common zeropoint; then background matches
+        them; saves results in self.bgMatchedExp after checking some
+        quality flags"""
 
-        # Basic; only use pixels that are unmasked in *all* images
-        # Less basic; look for certain bits flipped.  TBD...
+        # IMPORTANT DETAIL : match zeropoints before matching backgrounds!
+        self.refExp = self.coadder.normalizeForCoadd(self.refExp)
+        for run in self.warpedExp.keys():
+            self.warpedExp[run] = self.coadder.normalizeForCoadd(self.warpedExp[run])
+        # IMPORTANT DETAIL : match zeropoints before matching b0ackgrounds!
+
+        if self.config.writeFits:
+            self.refExp.writeFits(os.path.join(self.config.outputPath, 
+                                               "exp-%06d-%s%d-%04d.fits" % 
+                                               (self.refrun, self.filt, self.camcol, self.field)))
+
+        refMask   = self.refExp.getMaskedImage().getMask().getArray()
+        refArr    = self.refExp.getMaskedImage().getImage().getArray()
+
         runsToMatch = self.warpedExp.keys()
         expsToMatch = self.warpedExp.values()
-
+        
         skyMask  = num.sum(num.array([x.getMaskedImage().getMask().getArray() for x in expsToMatch]), 0)
         skyArr   = num.array([x.getMaskedImage().getImage().getArray() for x in expsToMatch])
         Nim      = len(skyArr)
@@ -464,8 +486,8 @@ class MatchBackgrounds(pipeBase.Task):
 
         width  = self.refExp.getMaskedImage().getWidth()
         height = self.refExp.getMaskedImage().getHeight()
-        nbinx  = width  // binsize
-        nbiny  = height // binsize
+        nbinx  = width  // self.config.backgroundBinsize
+        nbiny  = height // self.config.backgroundBinsize
 
         bgX  = num.zeros((nbinx*nbiny, Nim)) # coord
         bgY  = num.zeros((nbinx*nbiny, Nim)) # coord
@@ -473,13 +495,13 @@ class MatchBackgrounds(pipeBase.Task):
         bgdZ = num.zeros((nbinx*nbiny, Nim)) # unc
 
         for biny in range(nbiny):
-            ymin = biny * binsize
-            ymax = min((biny + 1) * binsize, height)
+            ymin = biny * self.config.backgroundBinsize
+            ymax = min((biny + 1) * self.config.backgroundBinsize, height)
             idxy = num.where( (idx[0] >= ymin) & (idx[0] < ymax) )[0]
 
             for binx in range(nbinx):
-                xmin   = binx * binsize
-                xmax   = min((binx + 1) * binsize, width)
+                xmin   = binx * self.config.backgroundBinsize
+                xmax   = min((binx + 1) * self.config.backgroundBinsize, width)
                 idxx   = num.where( (idx[1] >= xmin) & (idx[1] < xmax) )[0]
                 inreg  = num.intersect1d(idxx, idxy)
 
@@ -500,7 +522,7 @@ class MatchBackgrounds(pipeBase.Task):
         for i in range(Nim):
 
             # Function for this image
-            bbox  = afwGeom.Box2D(self.refExp.getBBox())
+            bbox  = afwGeom.Box2D(self.refExp.getMaskedImage().getBBox())
             poly  = afwMath.Chebyshev1Function2D(self.config.backgroundOrder, bbox)          
             terms = list(poly.getParameters())
 
@@ -527,7 +549,7 @@ class MatchBackgrounds(pipeBase.Task):
                 b[nc]  = bgZ[:,i][na]
                 iv[nc] = 1.0 / (bgdZ[:,i][na])**2
                 nc += 1
-            #import pdb; pdb.set_trace()
+            import pdb; pdb.set_trace()
 
             M    = num.dot(num.dot(m.T, num.diag(iv)), m)
             B    = num.dot(num.dot(m.T, num.diag(iv)), b)
@@ -540,8 +562,6 @@ class MatchBackgrounds(pipeBase.Task):
             im  = exp.getMaskedImage()
             im += poly
 
-            # Clear memory
-            self.warpedExp[run] = None
 
             if self.config.writeFits:
                 exp.writeFits(os.path.join(self.config.outputPath, 
@@ -566,6 +586,7 @@ class MatchBackgrounds(pipeBase.Task):
             if num.std(area) < self.config.maxBgRms:
                 self.bgMatchedExp[run] = exp
 
+            self.warpedExp[run] = None # Clear memory
 
 
     @pipeBase.timeMethod
