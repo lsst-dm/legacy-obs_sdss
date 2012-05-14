@@ -3,7 +3,7 @@
 import lsst.afw.table as afwTable
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
-import lsst.dadf.persistence as dafPersist
+import lsst.daf.persistence as dafPersist
 from lsst.pipe.tasks.forcedPhot import ForcedPhotTask, ForcedPhotConfig
 from lsst.pex.config import Field
 
