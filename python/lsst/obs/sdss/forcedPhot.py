@@ -14,6 +14,8 @@ class SdssForcedPhotConfig(ForcedPhotConfig):
 
 
 class SdssForcedPhotTask(ForcedPhotTask):
+    ConfigClass = SdssForcedPhotConfig
+    
     def getReferences(self, dataRef, exposure):
         """Get reference sources on (or close to) exposure"""
         coordList = self.getRaDecFromDatabase(dataRef)
@@ -21,7 +23,7 @@ class SdssForcedPhotTask(ForcedPhotTask):
         schema = afwTable.SimpleTable.makeMinimalSchema()
         references = afwTable.SimpleCatalog(schema)
         table = references.table
-        references.preallocate(len(dbRows))
+        references.preallocate(len(coordList))
         for ident, coord in coordList:
             ref = table.makeRecord()
             ref.setId(ident)
