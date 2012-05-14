@@ -18,7 +18,7 @@ class SdssForcedPhotTask(ForcedPhotTask):
     
     def getReferences(self, dataRef, exposure):
         """Get reference sources on (or close to) exposure"""
-        coordList = self.getRaDecFromDatabase(dataRef)
+        coordList = self.getRaDecFromDatabase(dataRef, exposure)
 
         schema = afwTable.SimpleTable.makeMinimalSchema()
         references = afwTable.SimpleCatalog(schema)
@@ -32,7 +32,7 @@ class SdssForcedPhotTask(ForcedPhotTask):
 
         return references
 
-    def getRaDecFromDatabase(self, dataRef):
+    def getRaDecFromDatabase(self, dataRef, exposure):
         """Get a list of RA, Dec from the database
 
         @param dataRef     Data reference, which includes the identifiers
@@ -93,17 +93,24 @@ class TestSdssForcedPhotTask(SdssForcedPhotTask):
             in (106, 206)
     }}}
 
-    Since we can, we will retrieve these by run,camcol,field instead of
-    using a cone search.
+    The Science_Ccd_Exposure table isn't populated, so we can't use the
+    above query; we'll just do a simple cone search.
     """
     
-    def getRaDecFromDatabase(self, dataRef):
+    def getRaDecFromDatabase(self, dataRef, exposure):
         """Get a list of RA, Dec from the database
 
         @param dataRef     Data reference, which includes the identifiers
         @return List of coordinates
         """
         dataId = dataRef.dataId
+
+        padding = 1.1 # Padding factor
+
+        wcs = exposure.getWcs()
+        width, height = exposure.getWidth(), exposure.getHeight()
+        center = wcs.pixelToSky(afwGeom.Point2D(width/2.0, height/2.0))
+        radius = center.angularSeparation(wcs.pixelToSky(afwGeom.Point2D(0.0, 0.0)))
 
         dbFullUrl = self.config.dbUrl + self.config.dbName
         db = dafPersist.DbStorage()
@@ -113,7 +120,9 @@ class TestSdssForcedPhotTask(SdssForcedPhotTask):
         db.outColumn("sdssObjectId")
         db.outColumn("ra")
         db.outColumn("decl")
-        db.setQueryWhere("run = %(run)d AND camcol = %(camcol)d AND field = %(frame)d" % dataId)
+        db.setQueryWhere("scisql_s2PtInCircle(ra, decl, %f, %f, %f) = 1" %
+                         (center.getLongitude().asDegrees(), center.getLatitude().asDegrees(),
+                          radius.asDegrees() * padding))
         db.query()
 
         coordList = []
