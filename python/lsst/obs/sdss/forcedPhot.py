@@ -20,8 +20,8 @@ class SdssForcedPhotTask(ForcedPhotTask):
         """Get reference sources on (or close to) exposure"""
         coordList = self.getRaDecFromDatabase(dataRef, exposure)
 
-        schema = afwTable.SimpleTable.makeMinimalSchema()
-        references = afwTable.SimpleCatalog(schema)
+        schema = afwTable.SourceTable.makeMinimalSchema()
+        references = afwTable.SourceCatalog(schema)
         table = references.table
         references.preallocate(len(coordList))
         for ident, coord in coordList:
