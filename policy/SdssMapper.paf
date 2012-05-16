@@ -153,48 +153,40 @@ datasets: {
         tables:        raw_skyTile
     }
     source: {
-        template:      "results/st%(skyTile)d/source.boost"
-        python:        "lsst.afw.detection.PersistableSourceVector"
-        persistable:        "PersistableSourceVector"
-        storage:    "BoostStorage"
+        template:      "results/st%(skyTile)d/source.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
     badSource: {
-        template:      "results/st%(skyTile)d/badSource.boost"
-        python:        "lsst.afw.detection.PersistableSourceVector"
-        persistable:        "PersistableSourceVector"
-        storage:    "BoostStorage"
+        template:      "results/st%(skyTile)d/badSource.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
     invalidSource: {
-        template:      "results/st%(skyTile)d/invalidSource.boost"
-        python:        "lsst.afw.detection.PersistableSourceVector"
-        persistable:        "PersistableSourceVector"
-        storage:    "BoostStorage"
+        template:      "results/st%(skyTile)d/invalidSource.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
     object: {
-        template:      "results/st%(skyTile)d/object.boost"
-        python:        "lsst.afw.detection.PersistableSourceClusterVector"
-        persistable:        "PersistableSourceClusterVector"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    badObject: {
-        template:      "results/st%(skyTile)d/badObject.boost"
-        python:        "lsst.afw.detection.PersistableSourceClusterVector"
-        persistable:        "PersistableSourceClusterVector"
-        storage:    "BoostStorage"
+        template:      "results/st%(skyTile)d/object.fits"
+        python:        "lsst.ap.cluster.SourceClusterCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
     processCcd_config: {
         template:      "processCcd_config/%(run)d/%(camcol)d/%(band)s/calexp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.py"
-        python:        "lsst.pex.config.Config"
+        python:        "lsst.pipe.tasks.processCcd.ProcessCcdConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -208,7 +200,22 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-
+    sourceAssoc_config: {
+        template:      "sourceAssoc_config/st%(skyTile)d/config.py"
+        python:        "lsst.pipe.tasks.sourceAssoc.SourceAssocConfig"
+        persistable:   "Config"
+        storage:       "ConfigStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+    sourceAssoc_metadata: {
+        template:      "sourceAssoc_metadata/st%(skyTile)d/metadata.boost"
+        python:        "lsst.daf.base.PropertySet"
+        persistable:   "PropertySet"
+        storage:       "BoostStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
     deepCoadd: {
         template:    "deepCoadd/%(band)s/%(tract)d/%(patch)s.fits"
         python:      "lsst.afw.image.ExposureF"
