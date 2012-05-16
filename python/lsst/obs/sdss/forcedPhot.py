@@ -4,30 +4,39 @@ import lsst.afw.table as afwTable
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
 import lsst.daf.persistence as dafPersist
-from lsst.pipe.tasks.forcedPhot import ForcedPhotTask, ForcedPhotConfig
+from lsst.pipe.tasks.forcedPhot import ReferencesTask, ReferencesConfig
 from lsst.pex.config import Field
+import collections
 
-class SdssForcedPhotConfig(ForcedPhotConfig):
+RefSource = collections.namedtuple("RefSource", ["ident", "coord"])
+
+
+class SdssReferencesConfig(ReferencesConfig):
     dbName = Field(dtype=str, doc="Name of database") # Note: no default, so must be set by an override
     dbUrl = Field(dtype=str, doc="URL for database (without the trailing database name)",
                   default="mysql://lsst10.ncsa.uiuc.edu:3390/")
 
 
-class SdssForcedPhotTask(ForcedPhotTask):
-    ConfigClass = SdssForcedPhotConfig
+class SdssReferencesTask(ReferencesTask):
+    ConfigClass = SdssReferencesConfig
     
     def getReferences(self, dataRef, exposure):
-        """Get reference sources on (or close to) exposure"""
-        coordList = self.getRaDecFromDatabase(dataRef, exposure)
+        """Get reference sources on (or close to) exposure
+
+        @param dataRef     Data reference from butler
+        @param exposure    Exposure that has been read
+        @return Catalog (lsst.afw.table.SourceCatalog) of reference sources
+        """
+        sourceList = self.getRaDecFromDatabase(dataRef, exposure)
 
         schema = afwTable.SourceTable.makeMinimalSchema()
         references = afwTable.SourceCatalog(schema)
         table = references.table
-        references.preallocate(len(coordList))
-        for ident, coord in coordList:
+        references.preallocate(len(sourceList))
+        for source in sourceList:
             ref = table.makeRecord()
-            ref.setId(ident)
-            ref.setCoord(coord)
+            ref.setId(source.ident)
+            ref.setCoord(source.coord)
             references.append(ref)
 
         return references
@@ -36,7 +45,7 @@ class SdssForcedPhotTask(ForcedPhotTask):
         """Get a list of RA, Dec from the database
 
         @param dataRef     Data reference, which includes the identifiers
-        @return List of coordinates
+        @return List of RefSources
         """
         dbFullUrl = self.config.dbUrl + self.config.dbName
 
@@ -57,20 +66,19 @@ class SdssForcedPhotTask(ForcedPhotTask):
            AND scisql_s2PtInCPoly(Object.ra_PS, Object.decl_PS, @poly) = 1""")
         db.query()
 
-        coordList = []
+        sourceList = []
         while db.next():
             ident = db.getColumnByPosInt64(0)
             ra = db.getColumnByPosDouble(1) * afwGeom.degrees
             dec = db.getColumnByPosDouble(2) * afwGeom.degrees
-            row = (ident, afwCoord.IcrsCoord(ra, dec))
-            coordList.append(row)
+            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec)))
 
         db.finishQuery()
         db.endTransaction()
-        return coordList
+        return sourceList
 
 
-class TestSdssForcedPhotTask(SdssForcedPhotTask):
+class TestSdssReferencesTask(SdssReferencesTask):
     """Get SDSS reference objects out of Mario Juric's
     custom database table.  Mario writes:
 
@@ -101,11 +109,11 @@ class TestSdssForcedPhotTask(SdssForcedPhotTask):
         """Get a list of RA, Dec from the database
 
         @param dataRef     Data reference, which includes the identifiers
-        @return List of coordinates
+        @return List of RefSources
         """
         dataId = dataRef.dataId
 
-        padding = 1.1 # Padding factor
+        padding = 1.1 # Padding factor; could live in a Config except this is just a temporary test...
 
         wcs = exposure.getWcs()
         width, height = exposure.getWidth(), exposure.getHeight()
@@ -125,14 +133,13 @@ class TestSdssForcedPhotTask(SdssForcedPhotTask):
                           radius.asDegrees() * padding))
         db.query()
 
-        coordList = []
+        sourceList = []
         while db.next():
             ident = db.getColumnByPosInt64(0)
             ra = db.getColumnByPosDouble(1) * afwGeom.degrees
             dec = db.getColumnByPosDouble(2) * afwGeom.degrees
-            row = (ident, afwCoord.IcrsCoord(ra, dec))
-            coordList.append(row)
+            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec)))
 
         db.finishQuery()
         db.endTransaction()
-        return coordList
+        return sourceList
