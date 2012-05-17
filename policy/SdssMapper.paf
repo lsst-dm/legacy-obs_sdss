@@ -136,6 +136,14 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
+    forcedsources: {
+        template:      "forcedsources/%(run)d/%(camcol)d/%(band)s/src-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:   "ignored"
+        storage:       "FitsCatalogStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
     sourceHist: {
         template:      "results/st%(skyTile)d/sourceHist.fits"
         python:        "lsst.afw.image.DecoratedImageU"
@@ -216,6 +224,23 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
+    forcedPhot_config: {
+        template:      "forcedPhot_config/%(run)d/%(camcol)d/%(band)s/calexp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.py"
+        python:        "lsst.pex.config.Config"
+        persistable:      "Config"
+        storage:    "ConfigStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+    forcedPhot_metadata: {
+        template:      "forcedPhot_metadata/%(run)d/%(camcol)d/%(band)s/calexp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.boost"
+        python:        "lsst.daf.base.PropertySet"
+        persistable:        "PropertySet"
+        storage:    "BoostStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+
     deepCoadd: {
         template:    "deepCoadd/%(band)s/%(tract)d/%(patch)s.fits"
         python:      "lsst.afw.image.ExposureF"
