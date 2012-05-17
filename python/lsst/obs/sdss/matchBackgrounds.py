@@ -718,10 +718,11 @@ if __name__ == '__main__':
     camcol  = int(sys.argv[2])
     filt    = sys.argv[3]
     field   = int(sys.argv[4])
+    nMax    = int(sys.argv[5])
 
     matcher = MatchBackgrounds(refrun, 40, camcol, filt, field)
     if True:
-        matcher.run(nMax = 100)
+        matcher.run(nMax = nMax)
         sys.exit(1)
 
     else:
