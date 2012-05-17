@@ -8,7 +8,7 @@ from lsst.pipe.tasks.forcedPhot import ReferencesTask, ReferencesConfig
 from lsst.pex.config import Field
 import collections
 
-RefSource = collections.namedtuple("RefSource", ["ident", "coord"])
+RefSource = collections.namedtuple("RefSource", ["ident", "coord", "mag", "magErr"])
 
 
 class SdssReferencesConfig(ReferencesConfig):
@@ -30,6 +30,9 @@ class SdssReferencesTask(ReferencesTask):
         sourceList = self.getRaDecFromDatabase(dataRef, exposure)
 
         schema = afwTable.SourceTable.makeMinimalSchema()
+        magKey = schema.addField("refMag", float, "Magnitude from database", "mag")
+        magErrKey = schema.addField("refMag.err", float, "Magnitude error from database", "mag")
+        
         references = afwTable.SourceCatalog(schema)
         table = references.table
         references.preallocate(len(sourceList))
@@ -37,6 +40,8 @@ class SdssReferencesTask(ReferencesTask):
             ref = table.makeRecord()
             ref.setId(source.ident)
             ref.setCoord(source.coord)
+            ref.set(magKey, source.mag)
+            ref.set(magErrKey, source.magErr)
             references.append(ref)
 
         return references
@@ -61,6 +66,7 @@ class SdssReferencesTask(ReferencesTask):
         db.outColumn("objectId")
         db.outColumn("ra")
         db.outColumn("decl")
+        # XXX Get magnitude, error
         db.setQueryWhere("""
            Object.htmId20 BETWEEN Region.htmMin AND Region.htmMax
            AND scisql_s2PtInCPoly(Object.ra_PS, Object.decl_PS, @poly) = 1""")
@@ -71,7 +77,9 @@ class SdssReferencesTask(ReferencesTask):
             ident = db.getColumnByPosInt64(0)
             ra = db.getColumnByPosDouble(1) * afwGeom.degrees
             dec = db.getColumnByPosDouble(2) * afwGeom.degrees
-            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec)))
+            mag = 0.0
+            magErr = 0.0
+            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec), mag, magErr))
 
         db.finishQuery()
         db.endTransaction()
@@ -115,6 +123,8 @@ class TestSdssReferencesTask(SdssReferencesTask):
 
         padding = 1.1 # Padding factor; could live in a Config except this is just a temporary test...
 
+        filtName = exposure.getFilter().getName()
+
         wcs = exposure.getWcs()
         width, height = exposure.getWidth(), exposure.getHeight()
         center = wcs.pixelToSky(afwGeom.Point2D(width/2.0, height/2.0))
@@ -128,6 +138,8 @@ class TestSdssReferencesTask(SdssReferencesTask):
         db.outColumn("sdssObjectId")
         db.outColumn("ra")
         db.outColumn("decl")
+        db.outColumn(filtName + "Mag")
+        db.outColumn(filtName + "Err")
         db.setQueryWhere("scisql_s2PtInCircle(ra, decl, %f, %f, %f) = 1" %
                          (center.getLongitude().asDegrees(), center.getLatitude().asDegrees(),
                           radius.asDegrees() * padding))
@@ -138,7 +150,9 @@ class TestSdssReferencesTask(SdssReferencesTask):
             ident = db.getColumnByPosInt64(0)
             ra = db.getColumnByPosDouble(1) * afwGeom.degrees
             dec = db.getColumnByPosDouble(2) * afwGeom.degrees
-            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec)))
+            mag = db.getColumnByPosFloat(3)
+            magErr = db.getColumnByPosFloat(4)
+            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec), mag, magErr))
 
         db.finishQuery()
         db.endTransaction()
