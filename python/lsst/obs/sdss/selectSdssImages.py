@@ -48,7 +48,7 @@ class _BandSpecificConfig(pexConfig.Config):
     )
         
 
-class SelectSdssImagesConfig(pexConfig.Config):
+class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
     """Config for SelectSdssImagesTask
     """
     BAND_CONFIG_DICT = {}
@@ -60,11 +60,6 @@ class SelectSdssImagesConfig(pexConfig.Config):
     band = pexConfig.ConfigChoiceField(
         doc = "Band-specific selection criteria",
         typemap = BAND_CONFIG_DICT,
-    )
-    database = pexConfig.Field(
-        doc = "Name of database",
-        dtype = str,
-        default = "krughoff_SDSS_quality_db",
     )
     table = pexConfig.Field(
         doc = "Name of database table",
@@ -89,6 +84,7 @@ class SelectSdssImagesConfig(pexConfig.Config):
         self.band['r'].maxFwhm = 1.31
         self.band['i'].maxFwhm = 1.25
         self.band['z'].maxFwhm = 1.29
+        self.database = "krughoff_SDSS_quality_db"
 
 
 class ExposureInfo(BaseExposureInfo):
@@ -135,7 +131,7 @@ class ExposureInfo(BaseExposureInfo):
 
 
 
-class SelectSdssImagesTask(pipeBase.Task):
+class SelectSdssImagesTask(BaseSelectImagesTask):
     """Select SDSS images suitable for coaddition
     """
     ConfigClass = SelectSdssImagesConfig
@@ -165,7 +161,7 @@ class SelectSdssImagesTask(pipeBase.Task):
         db.query()
         exposureInfoList = []
         while db.next():
-            exposureInfoList.append(ExposureInfo(db=db, band=band)
+            exposureInfoList.append(ExposureInfo(db=db, band=band))
 
         return pipeBase.Struct(
             exposureInfoList = exposureInfoList,
