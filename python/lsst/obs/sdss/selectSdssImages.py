@@ -25,8 +25,9 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.math as afwMath
 import lsst.pipe.base as pipeBase
 import lsst.daf.persistence as dafPersist
+from lsst.pipe.tasks.selectImages import BaseSelectImagesTask, BaseExposureInfo
 
-__all__ = ["SelectSDSSImagesTask"]
+__all__ = ["SelectSdssImagesTask"]
 
 class _BandSpecificConfig(pexConfig.Config):
     """Band-specific selection criteria
@@ -47,8 +48,8 @@ class _BandSpecificConfig(pexConfig.Config):
     )
         
 
-class SelectSDSSImagesConfig(pexConfig.Config):
-    """Config for SelectSDSSImagesTask
+class SelectSdssImagesConfig(pexConfig.Config):
+    """Config for SelectSdssImagesTask
     """
     BAND_CONFIG_DICT = {}
     BAND_CONFIG_DICT['u'] = _BandSpecificConfig 
@@ -90,11 +91,54 @@ class SelectSDSSImagesConfig(pexConfig.Config):
         self.band['z'].maxFwhm = 1.29
 
 
+class ExposureInfo(BaseExposureInfo):
+    """Data about a selected exposure
+    
+    Data includes:
+    - dataId: data ID of exposure (a dict)
+    - coordList: a list of corner coordinates of the exposure (list of IcrsCoord)
+    - fwhm: mean FWHM of exposure
+    - flags: flags field from Science_Ccd_Exposure table
+    """
+    def _setData(self, db, band):
+        """Set exposure information based on a query result from a db connection
+        """
+        self.dataId = dict(
+           run = db.getColumnByPosInt(self._nextInd),
+           rerun = db.getColumnByPosInt(self._nextInd),
+           camcol = db.getColumnByPosInt(self._nextInd),
+           frame = db.getColumnByPosInt(self._nextInd),
+           band = band,
+        )
+        self.coordList = []
+        for i in range(4):
+            self.coordList.append(
+                IcrsCoord(
+                    afwGeom.Angle(db.getColumnByPosDouble[self._nextInd], afwGeom.degrees),
+                    afwGeom.Angle(db.getColumnByPosDouble[self._nextInd], afwGeom.degrees),
+                )
+            )
+        self.fwhm = getColumnByPosFloat[self._nextInd]
+        self.sky = getColumnByPosFloat[self._nextInd]
+        self.airmass = getColumnByPosFloat[self._nextInd]
+        self.quality = getColumnByPosInt[self._nextInd]
+        self.isblacklisted = getColumnByPosChar[self._nextInd]
 
-class SelectSDSSImagesTask(pipeBase.Task):
+    @staticmethod
+    def getColumnNames():
+        """Get database columns to retrieve, in a format useful to the database interface
+        
+        @return database column names as list of strings
+        """
+        return "run rerun camcol field ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() + \
+            "psfWidth sky airmass quality isblacklisted".split()
+
+
+
+class SelectSdssImagesTask(pipeBase.Task):
     """Select SDSS images suitable for coaddition
     """
-    ConfigClass = SelectSDSSImagesConfig
+    ConfigClass = SelectSdssImagesConfig
     _DefaultName = "selectImages"
     
     @pipeBase.timeMethod
@@ -114,39 +158,17 @@ class SelectSDSSImagesTask(pipeBase.Task):
         db.setRetrieveLocation(loc) # was setPersistLocation, but K-T suggests setRetrieveLocation
         db.startTransaction()
         db.setTableForQuery(self.config.table)
-        db.outColumn("run")
-        db.outColumn("rerun")
-        db.outColumn("camcol")
-        db.outColumn("field")
+        for colName in ExposureInfo.getColumnNames():
+            db.outColumn(colName)
         wstr = self.getWhereString(band, coordList)
         db.setQueryWhere(wstr)
         db.query()
+        exposureInfoList = []
         while db.next():
-            run = db.getColumnByPosInt(0)
-            rerun = db.getColumnByPosInt(1)
-            camcol = db.getColumnByPosInt(2)
-            field = db.getColumnByPosInt(3)
-            dataId = {'run':run, 'rerun':rerun, 'camcol':camcol, 'frame':field, 'band':band}
-            idList.append(dataId)
+            exposureInfoList.append(ExposureInfo(db=db, band=band)
 
         return pipeBase.Struct(
-            dataIdList = idList,
-        )
-    
-    def runDataRef(self, dataRef, coordList):
-        """Run based on a data reference
-        
-        @param[in] dataRef: data reference; must contain key "band"
-        @param[in] coordList: list of coordinates defining region of interest
-        @return a pipeBase Struct containing:
-        - dataRefList: a list of data references
-        """
-        butler = dataRef.butlerSubset.butler
-        band = dataRef["band"]
-        dataIdList = self.run(band, coordList).dataIddList
-        dataRefList = [butler.dataRef(dataId=dataId, level="sensor") for dataId in dataIdList]
-        return pipeBase.Struct(
-            dataRefList = dataRefList,
+            exposureInfoList = exposureInfoList,
         )
 
     def getWhereString(self, band, coordList):
@@ -183,3 +205,12 @@ class SelectSDSSImagesTask(pipeBase.Task):
             whereTemplate += " and airmass < %f"%(self.config.band[band].maxAirmass)
         
         return whereTemplate
+
+    def _runArgDictFromDataId(self, dataId):
+        """Extract keyword arguments for run (other than coordList) from a data ID
+        
+        @return keyword arguments for run (other than coordList), as a dict
+        """
+        return dict(
+            band = dataId["band"]
+        )
