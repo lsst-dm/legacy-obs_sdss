@@ -1,3 +1,3 @@
 from lsst.obs.sdss.selectSdssImages import SelectSdssImagesTask
 
-root.skymap = "equat"
+root.skyMap = "equat"

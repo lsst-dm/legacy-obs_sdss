@@ -21,8 +21,8 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 import lsst.pex.config as pexConfig
+from lsst.afw.coord import IcrsCoord
 import lsst.afw.geom as afwGeom
-import lsst.afw.math as afwMath
 import lsst.pipe.base as pipeBase
 import lsst.daf.persistence as dafPersist
 from lsst.pipe.tasks.selectImages import BaseSelectImagesTask, BaseExposureInfo
@@ -77,14 +77,19 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         dtype = bool,
         default = True,
     )
+
     def setDefaults(self):
+        BaseSelectImagesTask.ConfigClass.setDefaults(self)
+        self.host = "lsst-db.ncsa.illinois.edu"
+        self.port = 3306
+        self.database = "krughoff_SDSS_quality_db"
         # These defaults are the mean seeing for the GOOD (quality = 3) fields in stripe 82 (per band of course) 
         self.band['u'].maxFwhm = 1.52
         self.band['g'].maxFwhm = 1.43
         self.band['r'].maxFwhm = 1.31
         self.band['i'].maxFwhm = 1.25
         self.band['z'].maxFwhm = 1.29
-        self.database = "krughoff_SDSS_quality_db"
+        self.band.name = "g" # to allow instantiation; the code retrieves the data by band name
 
 
 class ExposureInfo(BaseExposureInfo):
@@ -96,9 +101,10 @@ class ExposureInfo(BaseExposureInfo):
     - fwhm: mean FWHM of exposure
     - flags: flags field from Science_Ccd_Exposure table
     """
-    def _setData(self, db, band):
+    def __init__(self, db, band):
         """Set exposure information based on a query result from a db connection
         """
+        BaseExposureInfo.__init__(self)
         self.dataId = dict(
            run = db.getColumnByPosInt(self._nextInd),
            rerun = db.getColumnByPosInt(self._nextInd),
@@ -110,15 +116,15 @@ class ExposureInfo(BaseExposureInfo):
         for i in range(4):
             self.coordList.append(
                 IcrsCoord(
-                    afwGeom.Angle(db.getColumnByPosDouble[self._nextInd], afwGeom.degrees),
-                    afwGeom.Angle(db.getColumnByPosDouble[self._nextInd], afwGeom.degrees),
+                    afwGeom.Angle(db.getColumnByPosDouble(self._nextInd), afwGeom.degrees),
+                    afwGeom.Angle(db.getColumnByPosDouble(self._nextInd), afwGeom.degrees),
                 )
             )
-        self.fwhm = getColumnByPosFloat[self._nextInd]
-        self.sky = getColumnByPosFloat[self._nextInd]
-        self.airmass = getColumnByPosFloat[self._nextInd]
-        self.quality = getColumnByPosInt[self._nextInd]
-        self.isblacklisted = getColumnByPosChar[self._nextInd]
+        self.fwhm = db.getColumnByPosFloat(self._nextInd)
+        self.sky = db.getColumnByPosFloat(self._nextInd)
+        self.airmass = db.getColumnByPosFloat(self._nextInd)
+        self.quality = db.getColumnByPosInt(self._nextInd)
+        self.isblacklisted = db.getColumnByPosChar(self._nextInd)
 
     @staticmethod
     def getColumnNames():
@@ -138,7 +144,7 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
     _DefaultName = "selectImages"
     
     @pipeBase.timeMethod
-    def run(self, band, coordList):
+    def run(self, coordList, band):
         """Select SDSS images suitable for coaddition in a particular region
         
         @param[in] band: filter band for images (one of "u", "g", "r", "i" or "z")
@@ -156,7 +162,7 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         db.setTableForQuery(self.config.table)
         for colName in ExposureInfo.getColumnNames():
             db.outColumn(colName)
-        wstr = self.getWhereString(band, coordList)
+        wstr = self.getWhereString(coordList = coordList, band = band)
         db.setQueryWhere(wstr)
         db.query()
         exposureInfoList = []
@@ -167,40 +173,44 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
             exposureInfoList = exposureInfoList,
         )
 
-    def getWhereString(self, band, coordList):
+    def getWhereString(self, coordList, band):
         """Construct SQL query
         
         @return SQL query string
         """
-        skyBox = afwGeom.Box2D()
-        for coord in coordList:
-            skyBox.include(coord.getPosition(afwGeom.degrees))
-        minx = skyBox.getMinX()
-        miny = skyBox.getMinY()
-        maxx = skyBox.getMaxX()
-        maxy = skyBox.getMaxY()
-        bboxstr = "POLYGON((%f %f,%f %f,%f %f,%f %f,%f %f))" % \
-            (minx, miny, maxx, miny, maxx, maxy, minx, maxy, minx, miny)
-        whereTemplate = "MBRIntersects(GeomFromText('%s'), bbox) and filter = '%s' and psfWidth < %f" % \
-            (bboxstr, band, self.config.band[band].maxFwhm)
+        whereList = []
+        if coordList is not None:
+            skyBox = afwGeom.Box2D()
+            for coord in coordList:
+                skyBox.include(coord.getPosition(afwGeom.degrees))
+            minx = skyBox.getMinX()
+            miny = skyBox.getMinY()
+            maxx = skyBox.getMaxX()
+            maxy = skyBox.getMaxY()
+            bboxstr = "POLYGON((%f %f,%f %f,%f %f,%f %f,%f %f))" % \
+                (minx, miny, maxx, miny, maxx, maxy, minx, maxy, minx, miny)
+            whereList.append("MBRIntersects(GeomFromText('%s'), bbox)" % bboxstr)
+        
+        whereList.append("filter = %r" % (band,))
+        whereList.append("psfWidth < %f" % (self.config.band[band].maxFwhm,))
         
         if self.config.cullBlacklisted:
-            whereTemplate += " and isblacklisted is false"
+            whereList.append("isblacklisted is false")
 
         if self.config.quality == 1:
-            whereTemplate += " and quality in (1,2,3)"
+            whereList.append("quality in (1,2,3)")
         elif self.config.quality == 2:
-            whereTemplate += " and quality in (2,3)"
+            whereList.append("quality in (2,3)")
         else:
-            whereTemplate += " and quality = 3"
+            whereList.append("quality = 3")
 
         if self.config.band[band].maxSky:
-            whereTemplate += " and sky < %f"%(self.config.band[band].maxSky)
+            whereList.append("sky < %f" % (self.config.band[band].maxSky,))
 
         if self.config.band[band].maxAirmass:
-            whereTemplate += " and airmass < %f"%(self.config.band[band].maxAirmass)
+            whereList.append("airmass < %f" % (self.config.band[band].maxAirmass,))
         
-        return whereTemplate
+        return " and ".join(whereList)
 
     def _runArgDictFromDataId(self, dataId):
         """Extract keyword arguments for run (other than coordList) from a data ID
