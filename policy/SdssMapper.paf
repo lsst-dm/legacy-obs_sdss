@@ -37,8 +37,8 @@ exposures: {
     }
     coadd: {
         template:    "%(band)s/fpC-%(run)06d-%(band)s%(camcol)d-%(frame)04d_ts_coaddNorm_NN.fit.gz"
-        python:     "lsst.afw.image.ImageF"
-        persistable:         "ImageF"
+        python:     "lsst.afw.image.ExposureF"
+        persistable:         "ExposureF"
         storage:     "FitsStorage"
         level:       "None"
         tables:        raw
