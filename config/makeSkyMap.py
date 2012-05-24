@@ -1,3 +1,2 @@
-from lsst.obs.sdss.selectSdssImages import SelectSdssImagesTask
-
+# overrides for pipe_tasks MakeSkyMapTask.ConfigClass
 root.skyMap = "equat"
