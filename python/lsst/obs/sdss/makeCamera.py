@@ -21,7 +21,7 @@
 #
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom as cameraGeom
-from lsst.obs.sdss.convertOpECalib import SdssConfig
+from lsst.obs.sdss.convertOpECalib import SdssCameraState
 
 #
 # Make an Amp
@@ -59,7 +59,7 @@ def makeAmp(i, eparams):
 # Make a Ccd out of 2 Amps
 #
 def makeCcd(ccdName):
-    sc = SdssConfig("/lsst7/stripe82/dr7/opfiles", "opConfig-50000.par", "opECalib-50000.par")
+    sc = SdssCameraState("/lsst7/stripe82/dr7/opfiles", "opConfig-50000.par", "opECalib-50000.par")
     eparams = sc.getEParams(ccdName)
 
     pixelSize = 24e-3                   # pixel size in mm

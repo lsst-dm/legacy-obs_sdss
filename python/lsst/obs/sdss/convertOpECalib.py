@@ -3,7 +3,7 @@ import os
 from lsst.obs.sdss.yanny import yanny as Yanny
 import lsst.afw.cameraGeom as cameraGeom
 
-class SdssConfig(Yanny):
+class SdssCameraState(Yanny):
     _bands = dict(u = 1, g = 2, r = 3, i = 4, z = 5)
 
     def __init__(self, opDir, opConfig, opECalib):
@@ -16,7 +16,7 @@ class SdssConfig(Yanny):
         return band, int(camCol)
 
     def _getCamRow(self, band):
-        return SdssConfig._bands[band]
+        return SdssCameraState._bands[band]
 
     def getCcdIndex(self, ECALIB, ccdName):
         """Return the index for the given ccd (e.g. g1) into the arrays returned by a Yanny object"""
@@ -51,5 +51,5 @@ class SdssConfig(Yanny):
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 if __name__ == "__main__":
-    sc = SdssConfig("/lsst7/stripe82/dr7/opfiles", "opConfig-50000.par", "opECalib-50000.par")
+    sc = SdssCameraState("/lsst7/stripe82/dr7/opfiles", "opConfig-50000.par", "opECalib-50000.par")
     print [(i, ep.getGain(), ep.getReadNoise(), ep.getSaturationLevel()) for i, ep in sc.getEParams("g2")]
