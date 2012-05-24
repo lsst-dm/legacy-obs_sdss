@@ -77,6 +77,11 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         dtype = bool,
         default = True,
     )
+    camcols = pexConfig.ListField(
+        doc = "Which camcols to include? If None then include all",
+        dtype = int,
+        optional = True,
+    )
 
     def setDefaults(self):
         BaseSelectImagesTask.ConfigClass.setDefaults(self)
@@ -197,12 +202,15 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         if self.config.cullBlacklisted:
             whereList.append("isblacklisted is false")
 
-        if self.config.quality == 1:
-            whereList.append("quality in (1,2,3)")
-        elif self.config.quality == 2:
-            whereList.append("quality in (2,3)")
-        else:
-            whereList.append("quality = 3")
+        # It would be simpler to use str(tuple(range(...))), but that gives "(val,)" for a single value
+        # and the final comma may not be compatible with SQL queries
+        qualityFlagList = range(self.config.quality, 4)
+        qualityFlagStr = ",".join(str(v) for v in qualityFlagList)
+        whereList.append("quality in (%s)" % (qualityFlagStr,))
+        
+        if self.config.camcols is not None:
+            camColStr = ",".join(str(v) for v in self.config.camcols)
+            whereList.append("camcol in (%s)" % (camColStr,))
 
         if self.config.band[band].maxSky:
             whereList.append("sky < %f" % (self.config.band[band].maxSky,))
@@ -220,3 +228,9 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         return dict(
             band = dataId["band"]
         )
+
+def _formatList(valueList):
+    """Format a value list as "v0,v1,v2...vlast"
+    """
+    return ",".join(str(v) for v in valueList)
+    
