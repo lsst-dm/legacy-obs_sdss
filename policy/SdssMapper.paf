@@ -53,6 +53,13 @@ exposures: {
         tables:        raw
         tables:        raw_skyTile
     }
+    coaddTempExp: {
+        template:    "coaddTempExp/%(band)s/%(tract)d/%(run)d/%(camcol)d/coaddTemp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        python:      "lsst.afw.image.ExposureF"
+        persistable: "ExposureF"
+        storage:     "FitsStorage"
+        tables:      raw
+    }
 }
 
 datasets: {
@@ -263,7 +270,7 @@ datasets: {
         tables:      raw
     }
     deepCoadd_skyMap: {
-        template:    "deepCoadd/%(band)s/skyMap.pickle"
+        template:    "deepCoadd/skyMap.pickle"
         python:      "lsst.skymap.BaseSkyMap"
         persistable: "ignored"
         storage:     "PickleStorage"
@@ -291,7 +298,7 @@ datasets: {
         tables:      raw
     }
     goodSeeingCoadd_skyMap: {
-        template:    "goodSeeingCoadd/%(band)s/skyMap.pickle"
+        template:    "goodSeeingCoadd/skyMap.pickle"
         python:      "lsst.skymap.BaseSkyMap"
         persistable: "ignored"
         storage:     "PickleStorage"
@@ -316,13 +323,6 @@ datasets: {
         python:      "lsst.skymap.BaseSkyMap"
         persistable: "ignored"
         storage:     "PickleStorage"
-        tables:      raw
-    }
-    coaddTempExp: {
-        template:    "coaddTempExp/%(band)s/%(tract)d/%(run)d/%(camcol)d/coaddTemp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
-        python:      "lsst.afw.image.ExposureF"
-        persistable: "ExposureF"
-        storage:     "FitsStorage"
         tables:      raw
     }
 }
