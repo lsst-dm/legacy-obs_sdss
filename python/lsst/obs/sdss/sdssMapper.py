@@ -99,6 +99,11 @@ class SdssMapper(CameraMapper):
     def bypass_tsField(self, datasetType, pythonType, location, dataId):
         return converttsField(location.getLocations()[0], dataId['band'])
 
+    def bypass_ccdExposureId(self, datasetType, pythonType, location, dataId):
+        return self._computeCcdExposureId(dataId)
+    def bypass_ccdExposureId_bits(self, datasetType, pythonType, location, dataId):
+        return 38
+
 ###############################################################################
 
     def _addSources(self, dataId):
@@ -118,7 +123,7 @@ class SdssMapper(CameraMapper):
 
 for dsType in ("icSrc", "src"):
     setattr(SdssMapper, "add_" + dsType, SdssMapper._addSources)
-for dsType in ("source", "badSource", "invalidSource", "object", "badObject"):
+for dsType in ("source", "badSource", "invalidSource", "object"):
     setattr(SdssMapper, "add_" + dsType, SdssMapper._addSkytile)
 
 ###############################################################################
@@ -126,4 +131,4 @@ for dsType in ("source", "badSource", "invalidSource", "object", "badObject"):
 
 for dsType in ("fpC", "fpM", "calexp"):
     setattr(SdssMapper, "std_" + dsType + "_md",
-            lambda self, item, dataId: self._setCcdExposureId(item))
+            lambda self, item, dataId: self._setCcdExposureId(item, dataId))
