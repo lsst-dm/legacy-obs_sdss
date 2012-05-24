@@ -194,7 +194,7 @@ datasets: {
     }
     processCcd_config: {
         template:      "processCcd_config/%(run)d/%(camcol)d/%(band)s/calexp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.py"
-        python:        "lsst.pipe.tasks.processCcd.ProcessCcdConfig"
+        python:        "lsst.pipe.tasks.processCcdSdss.ProcessCcdSdssConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -210,7 +210,7 @@ datasets: {
     }
     sourceAssoc_config: {
         template:      "sourceAssoc_config/st%(skyTile)d/config.py"
-        python:        "lsst.pipe.tasks.sourceAssoc.SourceAssocConfig"
+        python:        "lsst.ap.tasks.sourceAssoc.SourceAssocConfig"
         persistable:   "Config"
         storage:       "ConfigStorage"
         tables:        raw
