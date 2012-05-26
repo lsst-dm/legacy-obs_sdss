@@ -20,11 +20,13 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+import MySQLdb
+
 import lsst.pex.config as pexConfig
 from lsst.afw.coord import IcrsCoord
 import lsst.afw.geom as afwGeom
+from lsst.daf.persistence import DbAuth
 import lsst.pipe.base as pipeBase
-import lsst.daf.persistence as dafPersist
 from lsst.pipe.tasks.selectImages import BaseSelectImagesTask, BaseExposureInfo
 
 __all__ = ["SelectSdssImagesTask"]
@@ -64,7 +66,7 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
     table = pexConfig.Field(
         doc = "Name of database table",
         dtype = str,
-        default = "SeasonFieldQuality",
+        default = "SeasonFieldQuality_Test",
     )
     quality = pexConfig.ChoiceField(
         doc = "SDSS quality flag",
@@ -104,32 +106,32 @@ class ExposureInfo(BaseExposureInfo):
     - dataId: data ID of exposure (a dict)
     - coordList: a list of corner coordinates of the exposure (list of IcrsCoord)
     - fwhm: mean FWHM of exposure
-    - flags: flags field from Science_Ccd_Exposure table
+    - quality: quality field from SeasonFieldQuality_Test table
     """
-    def __init__(self, db, band):
+    def __init__(self, result):
         """Set exposure information based on a query result from a db connection
         """
         BaseExposureInfo.__init__(self)
         self.dataId = dict(
-           run = db.getColumnByPosInt(self._nextInd),
-           rerun = db.getColumnByPosInt(self._nextInd),
-           camcol = db.getColumnByPosInt(self._nextInd),
-           frame = db.getColumnByPosInt(self._nextInd),
-           band = band,
+           run = result[self._nextInd],
+           rerun = result[self._nextInd],
+           camcol = result[self._nextInd],
+           frame = result[self._nextInd],
+           band = result[self._nextInd],
         )
         self.coordList = []
         for i in range(4):
             self.coordList.append(
                 IcrsCoord(
-                    afwGeom.Angle(db.getColumnByPosDouble(self._nextInd), afwGeom.degrees),
-                    afwGeom.Angle(db.getColumnByPosDouble(self._nextInd), afwGeom.degrees),
+                    afwGeom.Angle(result[self._nextInd], afwGeom.degrees),
+                    afwGeom.Angle(result[self._nextInd], afwGeom.degrees),
                 )
             )
-        self.fwhm = db.getColumnByPosFloat(self._nextInd)
-        self.sky = db.getColumnByPosFloat(self._nextInd)
-        self.airmass = db.getColumnByPosFloat(self._nextInd)
-        self.quality = db.getColumnByPosInt(self._nextInd)
-        self.isblacklisted = db.getColumnByPosChar(self._nextInd)
+        self.fwhm = result[self._nextInd]
+        self.sky = result[self._nextInd]
+        self.airmass = result[self._nextInd]
+        self.quality = result[self._nextInd]
+        self.isblacklisted = result[self._nextInd]
 
     @staticmethod
     def getColumnNames():
@@ -137,16 +139,16 @@ class ExposureInfo(BaseExposureInfo):
         
         @return database column names as list of strings
         """
-        return "run rerun camcol field ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() + \
+        return ", ".join(
+            "run rerun camcol field filter ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() + \
             "psfWidth sky airmass quality isblacklisted".split()
-
+        )
 
 
 class SelectSdssImagesTask(BaseSelectImagesTask):
     """Select SDSS images suitable for coaddition
     """
     ConfigClass = SelectSdssImagesConfig
-    _DefaultName = "selectImages"
     
     @pipeBase.timeMethod
     def run(self, coordList, band):
@@ -158,21 +160,51 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         @return a pipeBase Struct containing:
         - dataIdList: a list of data ID dicts
         """
-        idList = []
-        db = dafPersist.DbStorage()
-        loc = dafPersist.LogicalLocation("mysql://lsst-db.ncsa.illinois.edu:3306/%s"%(self.config.database))
+        db = MySQLdb.connect(
+            host = self.config.host,
+            port = self.config.port,
+            user = DbAuth.username(self.config.host, str(self.config.port)),
+            passwd = DbAuth.password(self.config.host, str(self.config.port)),
+            db = self.config.database,
+        )
+        cursor = db.cursor()
 
-        db.setRetrieveLocation(loc) # was setPersistLocation, but K-T suggests setRetrieveLocation
-        db.startTransaction()
-        db.setTableForQuery(self.config.table)
-        for colName in ExposureInfo.getColumnNames():
-            db.outColumn(colName)
-        wstr = self.getWhereString(coordList = coordList, band = band)
-        db.setQueryWhere(wstr)
-        db.query()
-        exposureInfoList = []
-        while db.next():
-            exposureInfoList.append(ExposureInfo(db=db, band=band))
+        if coordList is not None:
+            # look for exposures that overlap the specified region
+
+            # create table scisql.Region containing patch region
+            coordStrList = ["%s, %s" % (c.getLongitude().asDegrees(),
+                                        c.getLatitude().asDegrees()) for c in coordList]
+            coordStr = ", ".join(coordStrList)
+            coordCmd = "call scisql.scisql_s2CPolyRegion(scisql_s2CPolyToBin(%s), 10)" % (coordStr,)
+            cursor.execute(coordCmd)
+            cursor.nextset() # ignore one-line result of coordCmd
+        
+            # find exposures
+            queryStr = ("""select %s
+                from SeasonFieldQuality_Test as ccdExp,
+                    (select distinct fieldid
+                    from SeasonFieldQuality_To_Htm10 as ccdHtm inner join scisql.Region
+                    on (ccdHtm.htmId10 between scisql.Region.htmMin and scisql.Region.htmMax)
+                    where ccdHtm.filter = %%s) as idList
+                where ccdExp.fieldid = idList.fieldid
+                    and quality in (%%s)
+                    and psfWidth < %%s
+                """ % ExposureInfo.getColumnNames())
+        else:
+            # no region specified; look over the whole sky
+            queryStr = ("""select %s
+                from SeasonFieldQuality_Test
+                where filter = %%s
+                    and quality in (%%s)
+                    and psfWidth < %%s
+                """ % ExposureInfo.getColumnNames())
+        
+        if self.config.maxExposures:
+            queryStr += " limit %s" % (self.config.maxExposures,)
+
+        cursor.execute(queryStr, (band, self.config.quality, self.config.band[band].maxFwhm))
+        exposureInfoList = [ExposureInfo(result) for result in cursor]
 
         return pipeBase.Struct(
             exposureInfoList = exposureInfoList,
