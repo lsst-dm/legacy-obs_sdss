@@ -188,9 +188,11 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
                     on (ccdHtm.htmId10 between scisql.Region.htmMin and scisql.Region.htmMax)
                     where ccdHtm.filter = %%s) as idList
                 where ccdExp.fieldid = idList.fieldid
+                    and filter = %%s
                     and quality in (%%s)
                     and psfWidth < %%s
                 """ % ExposureInfo.getColumnNames())
+            dataTuple = (band, band, self.config.quality, self.config.band[band].maxFwhm)
         else:
             # no region specified; look over the whole sky
             queryStr = ("""select %s
@@ -199,58 +201,17 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
                     and quality in (%%s)
                     and psfWidth < %%s
                 """ % ExposureInfo.getColumnNames())
+            dataTuple = (band, self.config.quality, self.config.band[band].maxFwhm)
         
         if self.config.maxExposures:
             queryStr += " limit %s" % (self.config.maxExposures,)
 
-        cursor.execute(queryStr, (band, self.config.quality, self.config.band[band].maxFwhm))
+        cursor.execute(queryStr, dataTuple)
         exposureInfoList = [ExposureInfo(result) for result in cursor]
 
         return pipeBase.Struct(
             exposureInfoList = exposureInfoList,
         )
-
-    def getWhereString(self, coordList, band):
-        """Construct SQL query
-        
-        @return SQL query string
-        """
-        whereList = []
-        if coordList is not None:
-            skyBox = afwGeom.Box2D()
-            for coord in coordList:
-                skyBox.include(coord.getPosition(afwGeom.degrees))
-            minx = skyBox.getMinX()
-            miny = skyBox.getMinY()
-            maxx = skyBox.getMaxX()
-            maxy = skyBox.getMaxY()
-            bboxstr = "POLYGON((%f %f,%f %f,%f %f,%f %f,%f %f))" % \
-                (minx, miny, maxx, miny, maxx, maxy, minx, maxy, minx, miny)
-            whereList.append("MBRIntersects(GeomFromText('%s'), bbox)" % bboxstr)
-        
-        whereList.append("filter = %r" % (band,))
-        whereList.append("psfWidth < %f" % (self.config.band[band].maxFwhm,))
-        
-        if self.config.cullBlacklisted:
-            whereList.append("isblacklisted is false")
-
-        # It would be simpler to use str(tuple(range(...))), but that gives "(val,)" for a single value
-        # and the final comma may not be compatible with SQL queries
-        qualityFlagList = range(self.config.quality, 4)
-        qualityFlagStr = ",".join(str(v) for v in qualityFlagList)
-        whereList.append("quality in (%s)" % (qualityFlagStr,))
-        
-        if self.config.camcols is not None:
-            camColStr = ",".join(str(v) for v in self.config.camcols)
-            whereList.append("camcol in (%s)" % (camColStr,))
-
-        if self.config.band[band].maxSky:
-            whereList.append("sky < %f" % (self.config.band[band].maxSky,))
-
-        if self.config.band[band].maxAirmass:
-            whereList.append("airmass < %f" % (self.config.band[band].maxAirmass,))
-        
-        return " and ".join(whereList)
 
     def _runArgDictFromDataId(self, dataId):
         """Extract keyword arguments for run (other than coordList) from a data ID
