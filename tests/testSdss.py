@@ -83,7 +83,7 @@ class SdssMapperTestCase(unittest.TestCase):
                 mapper=SdssMapper(root="/lsst7/stripe82/uw-coadds")).create()
         coadd = butler.get("coadd", run=6383, camcol=3, frame=280, band="r")
         w, h = coadd.getWidth(), coadd.getHeight()
-        self.assertEqual(coadd.__class__, lsst.afw.image.ImageF)
+        self.assertEqual(coadd.__class__, lsst.afw.image.ExposureF)
         self.assertEqual(w, 1489)
         self.assertEqual(h, 2048)
 
