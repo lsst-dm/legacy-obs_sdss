@@ -126,7 +126,7 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
     spaFun = afwMath.PolynomialFunction2D(LSST_ORDER)
     spatialKernel = afwMath.LinearCombinationKernel(kernelList, spaFun)
     spatialKernel.setSpatialParameters(spaParList)
-    spatialPsf = afwDetect.KernelPsf(spatialKernel)
+    spatialPsf = afwDetect.createPsf("PCA", spatialKernel)
     return spatialPsf
 
 def directCompare(infile, filt, x, y, soft_bias = 1000, amp = 30000, outfile = "/tmp/sdss_psf.fits"):
