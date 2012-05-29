@@ -74,7 +74,7 @@ def makeCcd(ccdName):
 # Make a Raft (== SDSS dewar) out of 5 Ccds
 #
 def makeRaft(raftName):
-    dewar = cameraGeom.Raft(cameraGeom.Id(raftName), 1, 5)
+    dewar = cameraGeom.Raft(cameraGeom.Id(str(raftName)), 1, 5)
 
     filters = "riuzg"
     for i, c in enumerate(reversed(filters)):
