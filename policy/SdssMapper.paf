@@ -44,7 +44,7 @@ exposures: {
         tables:        raw
         tables:        raw_skyTile
     }
-    calexp: {
+    fpC_calexp: {
         template:      "calexp/%(run)d/%(camcol)d/%(band)s/calexp-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
         python:        "lsst.afw.image.ExposureF"
         persistable:        "ExposureF"
@@ -104,7 +104,7 @@ datasets: {
 
 
     fpC_icSrc: {
-        template:      "fpC-results/%(run)d/%(rerun)d/%(camcol)d/%(band)s/icSrc/icSrc-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        template:      "fpC-results/%(run)d/%(camcol)d/%(band)s/icSrc/icSrc-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
@@ -112,7 +112,7 @@ datasets: {
         tables:        raw_skyTile
     }
     fpC_icMatch: {
-        template:      "fpC-results/%(run)d/%(rerun)d/%(camcol)d/%(band)s/icMatch/icMatch-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        template:      "fpC-results/%(run)d/%(camcol)d/%(band)s/icMatch/icMatch-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
@@ -120,7 +120,7 @@ datasets: {
         tables:        raw_skyTile
     }
     fpC_psf: {
-        template:      "fpC-results/%(run)d/%(rerun)d/%(camcol)d/%(band)s/psf/psf-%(run)06d-%(band)s%(camcol)d-%(frame)04d.boost"
+        template:      "fpC-results/%(run)d/%(camcol)d/%(band)s/psf/psf-%(run)06d-%(band)s%(camcol)d-%(frame)04d.boost"
         python:        "lsst.afw.detection.Psf"
         persistable:        "Psf"
         storage:    "BoostStorage"
@@ -128,7 +128,7 @@ datasets: {
         tables:        raw_skyTile
     }
     fpC_apCorr: {
-        template:      "fpC-results/%(run)d/%(rerun)d/%(camcol)d/%(band)s/apCorr/apCorr-%(run)06d-%(band)s%(camcol)d-%(frame)04d.pickle"
+        template:      "fpC-results/%(run)d/%(camcol)d/%(band)s/apCorr/apCorr-%(run)06d-%(band)s%(camcol)d-%(frame)04d.pickle"
         python:        "lsst.meas.algorithms.ApertureCorrection"
         persistable:        "ApertureCorrection"
         storage:    "PickleStorage"
@@ -136,7 +136,7 @@ datasets: {
         tables:        raw_skyTile
     }
     fpC_src: {
-        template:      "fpC-results//%(run)d/%(rerun)d/%(camcol)d/%(band)s/src/src-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        template:      "fpC-results/%(run)d/%(camcol)d/%(band)s/src/src-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
@@ -186,7 +186,7 @@ datasets: {
     }
 
     forcedsources: {
-        template:      "fpC-results/%(rerun)d/%(run)d/%(camcol)d/%(band)s/forcedsources/forcedsources-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
+        template:      "fpC-results/%(run)d/%(camcol)d/%(band)s/forcedsources/forcedsources-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:   "ignored"
         storage:       "FitsCatalogStorage"
