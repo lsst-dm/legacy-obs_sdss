@@ -117,9 +117,9 @@ def createWcs(x, y, mapper, order = 4, cOffset = 1.0):
 
     # Minimial table + centroids for focal plane coordintes
     srcSchema   = afwTable.SourceTable.makeMinimalSchema()
-    centroidKey = srcSchema.addField("centroid", type="Point<F8>")
+    centroidKey = srcSchema.addField("centroid", type="PointD")
     flagKey     = srcSchema.addField("centroid.flags", type="Flag")
-    covKey      = srcSchema.addField("centroid.err", type="Cov<Point<F8>>")
+    covKey      = srcSchema.addField("centroid.err", type="CovPointD")
     srcTable    = afwTable.SourceTable.make(srcSchema)
     srcTable.defineCentroid("centroid")
 
