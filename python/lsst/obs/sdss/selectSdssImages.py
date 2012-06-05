@@ -84,6 +84,11 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         dtype = int,
         optional = True,
     )
+    strip = pexConfig.Field(
+        doc = "Strip: N, S or None for both",
+        dtype = str,
+        optional = True,
+    )
 
     def setDefaults(self):
         BaseSelectImagesTask.ConfigClass.setDefaults(self)
@@ -182,29 +187,39 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         
             # find exposures
             queryStr = ("""select %s
-                from SeasonFieldQuality_Test as ccdExp,
-                    (select distinct fieldid
-                    from SeasonFieldQuality_To_Htm10 as ccdHtm inner join scisql.Region
-                    on (ccdHtm.htmId10 between scisql.Region.htmMin and scisql.Region.htmMax)
-                    where ccdHtm.filter = %%s) as idList
-                where ccdExp.fieldid = idList.fieldid
-                    and filter = %%s
-                    and quality in (%%s)
-                    and psfWidth < %%s
-                """ % ExposureInfo.getColumnNames())
-            dataTuple = (band, band, self.config.quality, self.config.band[band].maxFwhm)
+from SeasonFieldQuality_Test as ccdExp,
+    (select distinct fieldid
+    from SeasonFieldQuality_To_Htm10 as ccdHtm inner join scisql.Region
+    on (ccdHtm.htmId10 between scisql.Region.htmMin and scisql.Region.htmMax)
+    where ccdHtm.filter = \"%s\") as idList
+where ccdExp.fieldid = idList.fieldid and """ % (ExposureInfo.getColumnNames(), band))
         else:
             # no region specified; look over the whole sky
             queryStr = ("""select %s
-                from SeasonFieldQuality_Test
-                where filter = %%s
-                    and quality in (%%s)
-                    and psfWidth < %%s
-                """ % ExposureInfo.getColumnNames())
-            dataTuple = (band, self.config.quality, self.config.band[band].maxFwhm)
+from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
+        
+        # compute where clauses as a list of (clause, data)
+        whereDataList = [
+            ("filter = %s", band),
+            ("quality in (%s)", self.config.quality),
+            ("psfWidth < %s", self.config.band[band].maxFwhm),
+        ]
+        if self.config.cullBlacklisted:
+            whereDataList.append(("isblacklisted = %s", False))
+
+        if self.config.camcols is not None:
+            whereDataList.append(("camcol in (%s)", self.config.camcols))
+        
+        if self.config.strip is not None:
+            whereDataList.append(("strip = %s", self.config.strip))
+        
+        queryStr += " and ".join(wd[0] for wd in whereDataList)
+        dataTuple = tuple(wd[1] for wd in whereDataList)
         
         if self.config.maxExposures:
             queryStr += " limit %s" % (self.config.maxExposures,)
+        
+        self.log.log(self.log.INFO, "queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
 
         cursor.execute(queryStr, dataTuple)
         exposureInfoList = [ExposureInfo(result) for result in cursor]
