@@ -129,6 +129,6 @@ for dsType in ("source", "badSource", "invalidSource", "object"):
 ###############################################################################
 
 
-for dsType in ("fpC", "fpM", "calexp"):
+for dsType in ("fpC", "fpM", "fpC_calexp"):
     setattr(SdssMapper, "std_" + dsType + "_md",
             lambda self, item, dataId: self._setCcdExposureId(item, dataId))
