@@ -49,15 +49,15 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
     if inputRegistry is None:
         # Create tables in new output registry.
         cmd = """CREATE TABLE raw (id INTEGER PRIMARY KEY AUTOINCREMENT,
-            run INT, band TEXT, camcol INT, frame INT)"""
-        # cmd += ", unique(run, band, camcol, frame))"
+            run INT, filter TEXT, camcol INT, field INT)"""
+        # cmd += ", unique(run, filter, camcol, field))"
         conn.execute(cmd)
         cmd = "CREATE TABLE raw_skyTile (id INTEGER, skyTile INTEGER)"
         # cmd += ", unique(id, skyTile), foreign key(id) references raw(id))"
         conn.execute(cmd)
     else:
-        cmd = """SELECT run || '_B' || band ||
-            '_C' || camcol || '_F' || frame FROM raw"""
+        cmd = """SELECT run || '_B' || filter ||
+            '_C' || camcol || '_F' || field FROM raw"""
         for row in conn.execute(cmd):
             done[row[0]] = True
 
@@ -65,8 +65,8 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
 
     try:
         for dir in dirList:
-            for bandDir in glob.iglob(os.path.join(dir, "*")):
-                processBand(bandDir, conn, done, qsp)
+            for filterDir in glob.iglob(os.path.join(dir, "*")):
+                processBand(filterDir, conn, done, qsp)
     finally:
         print >>sys.stderr, "Cleaning up..."
         conn.execute("CREATE INDEX ix_skyTile_id ON raw_skyTile (id)")
@@ -74,31 +74,31 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
         conn.commit()
         conn.close()
 
-def processBand(bandDir, conn, done, qsp):
+def processBand(filterDir, conn, done, qsp):
     nProcessed = 0
     nSkipped = 0
     nUnrecognized = 0
-    print >>sys.stderr, bandDir, "... started"
+    print >>sys.stderr, filterDir, "... started"
     for fits in glob.iglob(
-            os.path.join(bandDir, "fpC*_ts_coaddNorm_NN.fit.gz")):
+            os.path.join(filterDir, "fpC*_ts_coaddNorm_NN.fit.gz")):
         m = re.search(r'/([ugriz])/fpC-(\d{6})-\1(\d)-(\d{4})_ts_coaddNorm_NN.fit.gz', fits)
         if not m:
             print >>sys.stderr, "Warning: Unrecognized file:", fits
             nUnrecognized += 1
             continue
 
-        (band, run, camcol, frame) = m.groups()
+        (filter, run, camcol, field) = m.groups()
         camcol = int(camcol)
         run = int(run)
-        frame = int(frame)
-        key = "%d_B%s_C%d_F%d" % (run, band, camcol, frame)
+        field = int(field)
+        key = "%d_B%s_C%d_F%d" % (run, filter, camcol, field)
         if done.has_key(key):
             nSkipped += 1
             continue
 
         md = afwImage.readMetadata(fits)
         conn.execute("""INSERT INTO raw VALUES
-            (NULL, ?, ?, ?, ?)""", (run, band, camcol, frame))
+            (NULL, ?, ?, ?, ?)""", (run, filter, camcol, field))
    
         for row in conn.execute("SELECT last_insert_rowid()"):
             id = row[0]
@@ -118,14 +118,14 @@ def processBand(bandDir, conn, done, qsp):
             conn.commit()
 
     conn.commit()
-    print >>sys.stderr, bandDir, \
+    print >>sys.stderr, filterDir, \
             "... %d processed, %d skipped, %d unrecognized" % \
             (nProcessed, nSkipped, nUnrecognized)
 
 if __name__ == "__main__":
     parser = OptionParser(usage="""%prog [options] DIR ...
 
-DIR should contain a directory per band containing coadd pieces.""")
+DIR should contain a directory per filter containing coadd pieces.""")
     parser.add_option("-i", dest="inputRegistry", help="input registry")
     parser.add_option("-o", dest="outputRegistry", default="registry.sqlite3",
             help="output registry (default=registry.sqlite3)")
