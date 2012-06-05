@@ -201,9 +201,15 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         # compute where clauses as a list of (clause, data)
         whereDataList = [
             ("filter = %s", band),
-            ("quality in (%s)", self.config.quality),
             ("psfWidth < %s", self.config.band[band].maxFwhm),
         ]
+
+        qualityTuple = tuple(range(self.config.quality, 4))
+        if len(qualityTuple) == 1:
+            whereDataList.append(("quality = %s", qualityTuple[0]))
+        else:
+            whereDataList.append(("quality in %s", qualityTuple))
+
         if self.config.cullBlacklisted:
             whereDataList.append(("isblacklisted = %s", False))
 
