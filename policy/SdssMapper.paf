@@ -53,8 +53,8 @@ exposures: {
         tables:        raw
         tables:        raw_skyTile
     }
-    coadd_calexp: {
-        template:      "coadd-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp--%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+    keithCoadd_calexp: {
+        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp--%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.image.ExposureF"
         persistable:        "ExposureF"
         storage:    "FitsStorage"
@@ -113,7 +113,7 @@ datasets: {
 
 
     icSrc: {
-        template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/icSrc/icSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/icSrc/icSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
@@ -121,7 +121,7 @@ datasets: {
         tables:        raw_skyTile
     }
     icMatch: {
-        template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/icMatch/icMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/icMatch/icMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
@@ -129,7 +129,7 @@ datasets: {
         tables:        raw_skyTile
     }
     psf: {
-        template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/psf/psf-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
+        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/psf/psf-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
         python:        "lsst.afw.detection.Psf"
         persistable:        "Psf"
         storage:    "BoostStorage"
@@ -137,7 +137,7 @@ datasets: {
         tables:        raw_skyTile
     }
     apCorr: {
-        template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/apCorr/apCorr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.pickle"
+        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/apCorr/apCorr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.pickle"
         python:        "lsst.meas.algorithms.ApertureCorrection"
         persistable:        "ApertureCorrection"
         storage:    "PickleStorage"
@@ -145,7 +145,7 @@ datasets: {
         tables:        raw_skyTile
     }
     src: {
-        template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
@@ -153,40 +153,40 @@ datasets: {
         tables:        raw_skyTile
     }
 
-    coadd_icSrc: {
-        template:      "coadd-results/%(run)d/%(camcol)d/%(filter)s/icSrc/icSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+    keithCoadd_icSrc: {
+        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/icSrc/icSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
-    coadd_icMatch: {
-        template:      "coadd-results/%(run)d/%(camcol)d/%(filter)s/icMatch/icMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+    keithCoadd_icMatch: {
+        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/icMatch/icMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
-    coadd_psf: {
-        template:      "coadd-results/%(run)d/%(camcol)d/%(filter)s/psf/psf-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
+    keithCoadd_psf: {
+        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/psf/psf-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
         python:        "lsst.afw.detection.Psf"
         persistable:        "Psf"
         storage:    "BoostStorage"
         tables:        raw
         tables:        raw_skyTile
     }
-    coadd_apCorr: {
-        template:      "coadd-results/%(run)d/%(camcol)d/%(filter)s/apCorr/apCorr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.pickle"
+    keithCoadd_apCorr: {
+        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/apCorr/apCorr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.pickle"
         python:        "lsst.meas.algorithms.ApertureCorrection"
         persistable:        "ApertureCorrection"
         storage:    "PickleStorage"
         tables:        raw
         tables:        raw_skyTile
     }
-    coadd_src: {
-        template:      "coadd-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+    keithCoadd_src: {
+        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
@@ -195,7 +195,7 @@ datasets: {
     }
 
     forcedsources: {
-        template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/forcedsources/forcedsources-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/forcedsources/forcedsources-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:   "ignored"
         storage:       "FitsCatalogStorage"
