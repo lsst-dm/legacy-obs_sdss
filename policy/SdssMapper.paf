@@ -35,7 +35,7 @@ exposures: {
         tables:        raw
         tables:        raw_skyTile
     }
-    coadd: {
+    keithCoadd: {
         template:    "%(filter)s/fpC-%(run)06d-%(filter)s%(camcol)d-%(field)04d_ts_coaddNorm_NN.fit.gz"
         python:     "lsst.afw.image.ExposureF"
         persistable:         "ExposureF"
