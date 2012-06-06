@@ -45,7 +45,7 @@ exposures: {
         tables:        raw_skyTile
     }
     calexp: {
-        template:      "calexp/%(run)d/%(camcol)d/%(filter)s/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.image.ExposureF"
         persistable:        "ExposureF"
         storage:    "FitsStorage"
@@ -54,7 +54,7 @@ exposures: {
         tables:        raw_skyTile
     }
     keithCoadd_calexp: {
-        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp--%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.image.ExposureF"
         persistable:        "ExposureF"
         storage:    "FitsStorage"
