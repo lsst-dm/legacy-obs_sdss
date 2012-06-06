@@ -97,8 +97,7 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         self.filter['r'].maxFwhm = 1.31
         self.filter['i'].maxFwhm = 1.25
         self.filter['z'].maxFwhm = 1.29
-        self.filter.name = "g" # to allow instantiation; the code retrieves
-        the data by filter name
+        self.filter.name = "g" # to allow instantiation; the code retrieves the data by filter name
 
 
 class ExposureInfo(BaseExposureInfo):
