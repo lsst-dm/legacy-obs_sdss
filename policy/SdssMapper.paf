@@ -44,7 +44,7 @@ exposures: {
         tables:        raw
         tables:        raw_skyTile
     }
-    fpC_calexp: {
+    calexp: {
         template:      "calexp/%(run)d/%(camcol)d/%(filter)s/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.image.ExposureF"
         persistable:        "ExposureF"
@@ -112,7 +112,7 @@ datasets: {
     }
 
 
-    fpC_icSrc: {
+    icSrc: {
         template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/icSrc/icSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
@@ -120,7 +120,7 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    fpC_icMatch: {
+    icMatch: {
         template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/icMatch/icMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
@@ -128,7 +128,7 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    fpC_psf: {
+    psf: {
         template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/psf/psf-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
         python:        "lsst.afw.detection.Psf"
         persistable:        "Psf"
@@ -136,7 +136,7 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    fpC_apCorr: {
+    apCorr: {
         template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/apCorr/apCorr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.pickle"
         python:        "lsst.meas.algorithms.ApertureCorrection"
         persistable:        "ApertureCorrection"
@@ -144,7 +144,7 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    fpC_src: {
+    src: {
         template:      "fpC-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
