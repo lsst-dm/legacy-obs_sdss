@@ -49,16 +49,16 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
     if inputRegistry is None:
         # Create tables in new output registry.
         cmd = """CREATE TABLE raw (id INTEGER PRIMARY KEY AUTOINCREMENT,
-            run INT, rerun INT, band TEXT, camcol INT, frame INT,
+            run INT, rerun INT, filter TEXT, camcol INT, field INT,
             taiObs TEXT, strip TEXT)"""
-        # cmd += ", unique(run, band, camcol, frame))"
+        # cmd += ", unique(run, filter, camcol, field))"
         conn.execute(cmd)
         cmd = "CREATE TABLE raw_skyTile (id INTEGER, skyTile INTEGER)"
         # cmd += ", unique(id, skyTile), foreign key(id) references raw(id))"
         conn.execute(cmd)
     else:
-        cmd = """SELECT run || '_R' || rerun || '_B' || band ||
-            '_C' || camcol || '_F' || frame FROM raw"""
+        cmd = """SELECT run || '_R' || rerun || '_B' || filter ||
+            '_C' || camcol || '_F' || field FROM raw"""
         for row in conn.execute(cmd):
             done[row[0]] = True
 
@@ -74,7 +74,7 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
     finally:
         print >>sys.stderr, "Cleaning up..."
         conn.execute("""CREATE UNIQUE INDEX uq_raw ON raw
-                (run, band, camcol, frame)""")
+                (run, filter, camcol, field)""")
         conn.execute("CREATE INDEX ix_skyTile_id ON raw_skyTile (id)")
         conn.execute("CREATE INDEX ix_skyTile_tile ON raw_skyTile (skyTile)")
         conn.commit()
@@ -93,12 +93,12 @@ def processRun(runDir, conn, done, qsp):
             nUnrecognized += 1
             continue
 
-        (rerun, camcol, run, band, frame) = m.groups()
+        (rerun, camcol, run, filter, field) = m.groups()
         rerun = int(rerun)
         camcol = int(camcol)
         run = int(run)
-        frame = int(frame)
-        key = "%d_R%d_B%s_C%d_F%d" % (run, rerun, band, camcol, frame)
+        field = int(field)
+        key = "%d_R%d_B%s_C%d_F%d" % (run, rerun, filter, camcol, field)
         if done.has_key(key) or rerun < 40:
             nSkipped += 1
             continue
@@ -121,7 +121,7 @@ def processRun(runDir, conn, done, qsp):
         strip = "%d%s" % (md.get('STRIPE'), md.get('STRIP'))
         conn.execute("""INSERT INTO raw VALUES
             (NULL, ?, ?, ?, ?, ?, ?, ?)""",
-            (run, rerun, band, camcol, frame, taiObs, strip))
+            (run, rerun, filter, camcol, field, taiObs, strip))
    
         for row in conn.execute("SELECT last_insert_rowid()"):
             id = row[0]

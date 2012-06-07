@@ -22,7 +22,7 @@
 
 import re
 import lsst.pex.policy as pexPolicy
-from lsst.daf.butlerUtils import CameraMapper
+from lsst.daf.butlerUtils import CameraMapper, exposureFromImage
 from lsst.obs.sdss.convertfpM import convertfpM
 from lsst.obs.sdss.convertpsField import convertpsField
 from lsst.obs.sdss.convertasTrans import convertasTrans
@@ -58,12 +58,12 @@ class SdssMapper(CameraMapper):
     def _computeCcdExposureId(self, dataId):
         """Compute the 64-bit (long) identifier for a CCD exposure.
 
-        @param dataId (dict) Data identifier with run, rerun, band, camcol, frame
+        @param dataId (dict) Data identifier with run, rerun, filter, camcol, field
         """
         return ((long(dataId['run']) \
-                * 10 + self.filterIdMap[dataId['band']]) \
+                * 10 + self.filterIdMap[dataId['filter']]) \
                 * 10 + dataId['camcol']) \
-                * 10000 + dataId['frame']
+                * 10000 + dataId['field']
 
     def _setCcdExposureId(self, propertyList, dataId):
         propertyList.set("Computed_ccdExposureId", self._computeCcdExposureId(dataId))
@@ -90,14 +90,14 @@ class SdssMapper(CameraMapper):
         return convertfpM(location.getLocations()[0])
 
     def bypass_psField(self, datasetType, pythonType, location, dataId):
-        return convertpsField(location.getLocations()[0], dataId['band'])
+        return convertpsField(location.getLocations()[0], dataId['filter'])
 
     def bypass_asTrans(self, datasetType, pythonType, location, dataId):
-        return convertasTrans(location.getLocations()[0], dataId['band'],
-                dataId['camcol'], dataId['frame'])
+        return convertasTrans(location.getLocations()[0], dataId['filter'],
+                dataId['camcol'], dataId['field'])
 
     def bypass_tsField(self, datasetType, pythonType, location, dataId):
-        return converttsField(location.getLocations()[0], dataId['band'])
+        return converttsField(location.getLocations()[0], dataId['filter'])
 
     def bypass_ccdExposureId(self, datasetType, pythonType, location, dataId):
         return self._computeCcdExposureId(dataId)
@@ -111,7 +111,7 @@ class SdssMapper(CameraMapper):
         # Note that sources are identified by what is called an ampExposureId,
         # but in this case all we have is a CCD.
         ampExposureId = self._computeCcdExposureId(dataId)
-        filterId = self.filterIdMap[dataId['band']]
+        filterId = self.filterIdMap[dataId['filter']]
         ad = dict(ampExposureId=ampExposureId, filterId=filterId)
         if self.doFootprints:
             ad["doFootprints"] = True

@@ -4,24 +4,24 @@ from lsst.obs.sdss.yanny import yanny as Yanny
 import lsst.afw.cameraGeom as cameraGeom
 
 class SdssCameraState(Yanny):
-    _bands = dict(u = 1, g = 2, r = 3, i = 4, z = 5)
+    _filters = dict(u = 1, g = 2, r = 3, i = 4, z = 5)
 
     def __init__(self, opDir, opConfig, opECalib):
         self._ECalib = Yanny(os.path.join(opDir, opECalib))["ECALIB"]
         self._CcdConfig = Yanny(os.path.join(opDir, opConfig))["CCDCONFIG"]
 
     def _splitCcd(self, ccdName):
-        band, camCol = list(ccdName)
+        filter, camCol = list(ccdName)
 
-        return band, int(camCol)
+        return filter, int(camCol)
 
-    def _getCamRow(self, band):
-        return SdssCameraState._bands[band]
+    def _getCamRow(self, filter):
+        return SdssCameraState._filters[filter]
 
     def getCcdIndex(self, ECALIB, ccdName):
         """Return the index for the given ccd (e.g. g1) into the arrays returned by a Yanny object"""
-        band, camCol = self._splitCcd(ccdName)
-        camRow = self._getCamRow(band)
+        filter, camCol = self._splitCcd(ccdName)
+        camRow = self._getCamRow(filter)
 
         me = np.where(np.logical_and(np.equal(ECALIB["camCol"], camCol), np.equal(ECALIB["camRow"], camRow)))
         if len(me) != 1:

@@ -31,8 +31,8 @@ from lsst.pipe.tasks.selectImages import BaseSelectImagesTask, BaseExposureInfo
 
 __all__ = ["SelectSdssImagesTask"]
 
-class _BandSpecificConfig(pexConfig.Config):
-    """Band-specific selection criteria
+class _FilterSpecificConfig(pexConfig.Config):
+    """Filter-specific selection criteria
     """
     maxFwhm = pexConfig.Field(
         doc = "maximum FWHM (arcsec)",
@@ -53,15 +53,15 @@ class _BandSpecificConfig(pexConfig.Config):
 class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
     """Config for SelectSdssImagesTask
     """
-    BAND_CONFIG_DICT = {}
-    BAND_CONFIG_DICT['u'] = _BandSpecificConfig 
-    BAND_CONFIG_DICT['g'] = _BandSpecificConfig 
-    BAND_CONFIG_DICT['r'] = _BandSpecificConfig 
-    BAND_CONFIG_DICT['i'] = _BandSpecificConfig 
-    BAND_CONFIG_DICT['z'] = _BandSpecificConfig 
-    band = pexConfig.ConfigChoiceField(
-        doc = "Band-specific selection criteria",
-        typemap = BAND_CONFIG_DICT,
+    FILTER_CONFIG_DICT = {}
+    FILTER_CONFIG_DICT['u'] = _FilterSpecificConfig 
+    FILTER_CONFIG_DICT['g'] = _FilterSpecificConfig 
+    FILTER_CONFIG_DICT['r'] = _FilterSpecificConfig 
+    FILTER_CONFIG_DICT['i'] = _FilterSpecificConfig 
+    FILTER_CONFIG_DICT['z'] = _FilterSpecificConfig 
+    filter = pexConfig.ConfigChoiceField(
+        doc = "Filter-specific selection criteria",
+        typemap = FILTER_CONFIG_DICT,
     )
     table = pexConfig.Field(
         doc = "Name of database table",
@@ -95,13 +95,14 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         self.host = "lsst-db.ncsa.illinois.edu"
         self.port = 3306
         self.database = "krughoff_SDSS_quality_db"
-        # These defaults are the mean seeing for the GOOD (quality = 3) fields in stripe 82 (per band of course) 
-        self.band['u'].maxFwhm = 1.52
-        self.band['g'].maxFwhm = 1.43
-        self.band['r'].maxFwhm = 1.31
-        self.band['i'].maxFwhm = 1.25
-        self.band['z'].maxFwhm = 1.29
-        self.band.name = "g" # to allow instantiation; the code retrieves the data by band name
+        # These defaults are the mean seeing for the GOOD (quality = 3) fields
+        # in stripe 82 (per filter of course) 
+        self.filter['u'].maxFwhm = 1.52
+        self.filter['g'].maxFwhm = 1.43
+        self.filter['r'].maxFwhm = 1.31
+        self.filter['i'].maxFwhm = 1.25
+        self.filter['z'].maxFwhm = 1.29
+        self.filter.name = "g" # to allow instantiation; the code retrieves the data by filter name
 
 
 class ExposureInfo(BaseExposureInfo):
@@ -121,8 +122,8 @@ class ExposureInfo(BaseExposureInfo):
            run = result[self._nextInd],
            rerun = result[self._nextInd],
            camcol = result[self._nextInd],
-           frame = result[self._nextInd],
-           band = result[self._nextInd],
+           field = result[self._nextInd],
+           filter = result[self._nextInd],
         )
         self.coordList = []
         for i in range(4):
@@ -156,10 +157,10 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
     ConfigClass = SelectSdssImagesConfig
     
     @pipeBase.timeMethod
-    def run(self, coordList, band):
+    def run(self, coordList, filter):
         """Select SDSS images suitable for coaddition in a particular region
         
-        @param[in] band: filter band for images (one of "u", "g", "r", "i" or "z")
+        @param[in] filter: filter for images (one of "u", "g", "r", "i" or "z")
         @param[in] coordList: list of coordinates defining region of interest
         
         @return a pipeBase Struct containing:
@@ -192,7 +193,7 @@ from SeasonFieldQuality_Test as ccdExp,
     from SeasonFieldQuality_To_Htm10 as ccdHtm inner join scisql.Region
     on (ccdHtm.htmId10 between scisql.Region.htmMin and scisql.Region.htmMax)
     where ccdHtm.filter = \"%s\") as idList
-where ccdExp.fieldid = idList.fieldid and """ % (ExposureInfo.getColumnNames(), band))
+where ccdExp.fieldid = idList.fieldid and """ % (ExposureInfo.getColumnNames(), filter))
         else:
             # no region specified; look over the whole sky
             queryStr = ("""select %s
@@ -200,8 +201,8 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         
         # compute where clauses as a list of (clause, data)
         whereDataList = [
-            ("filter = %s", band),
-            ("psfWidth < %s", self.config.band[band].maxFwhm),
+            ("filter = %s", filter),
+            ("psfWidth < %s", self.config.filter[filter].maxFwhm),
         ]
 
         qualityTuple = tuple(range(self.config.quality, 4))
@@ -240,7 +241,7 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         @return keyword arguments for run (other than coordList), as a dict
         """
         return dict(
-            band = dataId["band"]
+            filter = dataId["filter"]
         )
 
 def _formatList(valueList):
