@@ -113,7 +113,7 @@ datasets: {
     }
     icMatch: {
         template:      "icMatch/%(run)d/%(camcol)d/%(band)s/icMatch-%(run)06d-%(band)s%(camcol)d-%(frame)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
+        python:        "lsst.afw.table.BaseCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
         tables:        raw
