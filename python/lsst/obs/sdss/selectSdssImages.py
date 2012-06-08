@@ -164,7 +164,7 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         @param[in] coordList: list of coordinates defining region of interest
         
         @return a pipeBase Struct containing:
-        - dataIdList: a list of data ID dicts
+        - exposureInfoList: a list of ExposureInfo objects
         """
         db = MySQLdb.connect(
             host = self.config.host,
@@ -206,16 +206,13 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         ]
 
         qualityTuple = tuple(range(self.config.quality, 4))
-        if len(qualityTuple) == 1:
-            whereDataList.append(("quality = %s", qualityTuple[0]))
-        else:
-            whereDataList.append(("quality in %s", qualityTuple))
+        whereDataList.append(_whereDataFromList("quality", qualityTuple))
 
         if self.config.cullBlacklisted:
             whereDataList.append(("isblacklisted = %s", False))
 
         if self.config.camcols is not None:
-            whereDataList.append(("camcol in %s", tuple(self.config.camcols)))
+            whereDataList.append(_whereDataFromList("camcol", self.config.camcols))
         
         if self.config.strip is not None:
             whereDataList.append(("strip = %s", self.config.strip))
@@ -248,4 +245,24 @@ def _formatList(valueList):
     """Format a value list as "v0,v1,v2...vlast"
     """
     return ",".join(str(v) for v in valueList)
+
+def _whereDataFromList(name, valueList):
+    """Return a where clause and associated value(s)
+    
+    For example if valueList has a single value then returns
+        "name = %s", valueList[0]
+    but if valueList has more values then returns
+        "name in %s", valueList
+    
+    This function exists because MySQL requires multiple values for "in" clauses.
+    
+    @raise RuntimeError if valueList is None or has length 0
+    """
+    if not valueList:
+        raise RuntimeError("%s valueList = %s; must be a list with at least one value" % (name, valueList))
+
+    if len(valueList) == 1:
+        return ("%s = %%s" % (name,), valueList[0])
+    else:
+        return ("%s in %%s" % (name,), tuple(valueList))
     
