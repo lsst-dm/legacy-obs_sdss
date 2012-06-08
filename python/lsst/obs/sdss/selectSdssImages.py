@@ -215,7 +215,7 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
             whereDataList.append(("isblacklisted = %s", False))
 
         if self.config.camcols is not None:
-            whereDataList.append(("camcol in (%s)", self.config.camcols))
+            whereDataList.append(("camcol in %s", tuple(self.config.camcols)))
         
         if self.config.strip is not None:
             whereDataList.append(("strip = %s", self.config.strip))
