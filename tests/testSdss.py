@@ -95,7 +95,9 @@ class SdssMapperTestCase(unittest.TestCase):
 def suite():
     utilsTests.init()
     suites = []
-    suites += unittest.makeSuite(SdssMapperTestCase)
+    print "WARNING: THIS UNIT TEST HAS BEEN DISABLED BECAUSE IT REQUIRES /lsst7"
+    if False:
+        suites += unittest.makeSuite(SdssMapperTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
