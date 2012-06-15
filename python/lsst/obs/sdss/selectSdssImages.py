@@ -31,12 +31,18 @@ from lsst.pipe.tasks.selectImages import BaseSelectImagesTask, BaseExposureInfo
 
 __all__ = ["SelectSdssImagesTask"]
 
-class _FilterSpecificConfig(pexConfig.Config):
-    """Filter-specific selection criteria
+class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
+    """Config for SelectSdssImagesTask
     """
+    table = pexConfig.Field(
+        doc = "Name of database table",
+        dtype = str,
+        default = "SeasonFieldQuality_Test",
+    )
     maxFwhm = pexConfig.Field(
         doc = "maximum FWHM (arcsec)",
         dtype = float,
+        optional = True,
     )
     maxSky = pexConfig.Field(
         doc = "maximum sky level (maggies/arcsec^2)",
@@ -47,26 +53,6 @@ class _FilterSpecificConfig(pexConfig.Config):
         doc = "Maximum airmass",
         dtype = float,
         optional = True,
-    )
-        
-
-class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
-    """Config for SelectSdssImagesTask
-    """
-    FILTER_CONFIG_DICT = {}
-    FILTER_CONFIG_DICT['u'] = _FilterSpecificConfig 
-    FILTER_CONFIG_DICT['g'] = _FilterSpecificConfig 
-    FILTER_CONFIG_DICT['r'] = _FilterSpecificConfig 
-    FILTER_CONFIG_DICT['i'] = _FilterSpecificConfig 
-    FILTER_CONFIG_DICT['z'] = _FilterSpecificConfig 
-    filter = pexConfig.ConfigChoiceField(
-        doc = "Filter-specific selection criteria",
-        typemap = FILTER_CONFIG_DICT,
-    )
-    table = pexConfig.Field(
-        doc = "Name of database table",
-        dtype = str,
-        default = "SeasonFieldQuality_Test",
     )
     quality = pexConfig.ChoiceField(
         doc = "SDSS quality flag",
@@ -95,14 +81,6 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         self.host = "lsst-db.ncsa.illinois.edu"
         self.port = 3306
         self.database = "krughoff_SDSS_quality_db"
-        # These defaults are the mean seeing for the GOOD (quality = 3) fields
-        # in stripe 82 (per filter of course) 
-        self.filter['u'].maxFwhm = 1.52
-        self.filter['g'].maxFwhm = 1.43
-        self.filter['r'].maxFwhm = 1.31
-        self.filter['i'].maxFwhm = 1.25
-        self.filter['z'].maxFwhm = 1.29
-        self.filter.name = "g" # to allow instantiation; the code retrieves the data by filter name
 
 
 class ExposureInfo(BaseExposureInfo):
@@ -202,8 +180,16 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         # compute where clauses as a list of (clause, data)
         whereDataList = [
             ("filter = %s", filter),
-            ("psfWidth < %s", self.config.filter[filter].maxFwhm),
         ]
+
+        if self.config.maxFwhm is not None:
+            whereDataList.append(("psfWidth < %s", self.config.maxFwhm))
+
+        if self.config.maxSky is not None:
+            whereDataList.append(("sky < %s", self.config.maxSky))
+
+        if self.config.maxAirmass is not None:
+            whereDataList.append(("airmass < %s", self.config.maxAirmass))
 
         qualityTuple = tuple(range(self.config.quality, 4))
         whereDataList.append(_whereDataFromList("quality", qualityTuple))
