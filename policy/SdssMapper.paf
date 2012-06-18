@@ -63,7 +63,7 @@ exposures: {
         tables:        raw_skyTile
     }
     coaddTempExp: {
-        template:    "coaddTempExp/%(filter)s/%(tract)d/%(run)d/%(camcol)d/coaddTemp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+        template:    "coaddTempExp/%(filter)s/%(tract)d/%(patch)s/%(run)d/%(camcol)d/coaddTemp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:      "lsst.afw.image.ExposureF"
         persistable: "ExposureF"
         storage:     "FitsStorage"
