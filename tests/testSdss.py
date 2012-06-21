@@ -37,7 +37,9 @@ class SdssMapperTestCase(unittest.TestCase):
 
     def testGetDR7(self):
         butler = dafPersist.ButlerFactory(
-                mapper=SdssMapper(root="/lsst7/stripe82/dr7/runs")).create()
+                mapper=SdssMapper(
+                    root=os.path.join(os.environ["OBS_SDSS_DIR"],
+                        "tests", "data", "dr7", "runs"))).create()
         sub = butler.subset("fpC", run=5754, camcol=3, field=280, filter="r")
         self.assertEqual(len(sub), 1)
         for ref in sub:
@@ -80,14 +82,17 @@ class SdssMapperTestCase(unittest.TestCase):
 
     def testGetCoadd(self):
         butler = dafPersist.ButlerFactory(
-                mapper=SdssMapper(root="/lsst7/stripe82/uw-coadds")).create()
-        coadd = butler.get("coadd", run=6383, camcol=3, field=280, filter="r")
+                mapper=SdssMapper(
+                    root=os.path.join(os.environ["OBS_SDSS_DIR"],
+                        "tests", "data", "uw-coadds"))).create()
+        coadd = butler.get("keithCoadd",
+                run=6383, camcol=3, field=280, filter="r")
         w, h = coadd.getWidth(), coadd.getHeight()
         self.assertEqual(coadd.__class__, lsst.afw.image.ExposureF)
         self.assertEqual(w, 1489)
         self.assertEqual(h, 2048)
 
-        coadd_md = butler.get("coadd_md",
+        coadd_md = butler.get("keithCoadd_md",
                 run=6383, camcol=3, field=280, filter="r")
         self.assertAlmostEqual(coadd_md.get("CRPIX1"), -0.047789988341666, 9)
         self.assertAlmostEqual(coadd_md.get("CRPIX2"), 0.083988780414136, 9)
@@ -95,9 +100,7 @@ class SdssMapperTestCase(unittest.TestCase):
 def suite():
     utilsTests.init()
     suites = []
-    print "WARNING: THIS UNIT TEST HAS BEEN DISABLED BECAUSE IT REQUIRES /lsst7"
-    if False:
-        suites += unittest.makeSuite(SdssMapperTestCase)
+    suites += unittest.makeSuite(SdssMapperTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
