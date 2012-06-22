@@ -345,7 +345,7 @@ datasets: {
     }
     deep_coadd_config: {
         template:      "deep_coadd_config/%(filter)s/%(tract)d/%(patch)s/config-%(filter)s-%(tract)d-%(patch)s.py"
-        python:        "lsst.pipe.tasks.processCcdSdssCoadd.ProcessCcdSdssCoaddConfig"
+        python:        "lsst.pipe.tasks.outlierRejectedCoadd.OutlierRejectedCoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -454,7 +454,7 @@ datasets: {
     }
     goodSeeing_coadd_config: {
         template:      "goodSeeing_coadd_config/%(filter)s/%(tract)d/%(patch)s/config-%(filter)s-%(tract)d-%(patch)s.py"
-        python:        "lsst.pipe.tasks.processCcdSdssCoadd.ProcessCcdSdssCoaddConfig"
+        python:        "lsst.pipe.tasks.outlierRejectedCoadd.OutlierRejectedCoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -563,7 +563,7 @@ datasets: {
     }
     chiSquared_coadd_config: {
         template:      "chiSquared_coadd_config/%(tract)d/%(patch)s/config-%(tract)d-%(patch)s.py"
-        python:        "lsst.pipe.tasks.processCcdSdssCoadd.ProcessCcdSdssCoaddConfig"
+        python:        "lsst.pipe.tasks.chiSquaredCoadd.ChiSquaredCoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
