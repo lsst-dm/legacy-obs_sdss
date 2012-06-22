@@ -554,6 +554,13 @@ datasets: {
         storage:     "BoostStorage"
         tables:      raw
     }
+    chiSquaredCoadd_skyMap: {
+        template:    "chiSquaredCoadd/skyMap.pickle"
+        python:      "lsst.skymap.BaseSkyMap"
+        persistable: "ignored"
+        storage:     "PickleStorage"
+        tables:      raw
+    }
     chiSquared_coadd_config: {
         template:      "chiSquared_coadd_config/%(filter)s/%(tract)d/%(patch)s/config-%(filter)s-%(tract)d-%(patch)s.py"
         python:        "lsst.pipe.tasks.processCcdSdssCoadd.ProcessCcdSdssCoaddConfig"
@@ -569,13 +576,6 @@ datasets: {
         storage:    "BoostStorage"
         tables:        raw
         tables:        raw_skyTile
-    }
-    chiSquaredCoadd_skyMap: {
-        template:    "chiSquaredCoadd/skyMap.pickle"
-        python:      "lsst.skymap.BaseSkyMap"
-        persistable: "ignored"
-        storage:     "PickleStorage"
-        tables:      raw
     }
     chiSquaredCoadd_calexp: {
         template:      "chiSquaredCoadd-results/%(tract)d/%(patch)s/calexp-%(tract)d-%(patch)s.fits"
