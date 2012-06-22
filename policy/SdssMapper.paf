@@ -562,7 +562,7 @@ datasets: {
         tables:      raw
     }
     chiSquared_coadd_config: {
-        template:      "chiSquared_coadd_config/%(filter)s/%(tract)d/%(patch)s/config-%(filter)s-%(tract)d-%(patch)s.py"
+        template:      "chiSquared_coadd_config/%(tract)d/%(patch)s/config-%(tract)d-%(patch)s.py"
         python:        "lsst.pipe.tasks.processCcdSdssCoadd.ProcessCcdSdssCoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
@@ -570,7 +570,7 @@ datasets: {
         tables:        raw_skyTile
     }
     chiSquared_coadd_metadata: {
-        template:      "chiSquared_coadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.boost"
+        template:      "chiSquared_coadd_metadata/%(tract)d/%(patch)s/metadata-%(tract)d-%(patch)s.boost"
         python:        "lsst.daf.base.PropertySet"
         persistable:        "PropertySet"
         storage:    "BoostStorage"
