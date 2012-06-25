@@ -21,6 +21,7 @@
 #
 
 import lsst.daf.base as dafBase
+import lsst.pipe.base as pipeBase
 import lsst.pex.config as pexConfig
 import lsst.meas.algorithms as measAlg
 import lsst.meas.astrom as measAstrom
@@ -45,11 +46,19 @@ class SdssCalibratePerFilterConfig(pexConfig.Config):
     )
     useInputPsf = pexConfig.Field(
         dtype=bool,
+        default=False,
         doc=("If True, discard the PSF produced by the psfDeterminer and use the one "
              "attached to the exposure (this would be the SDSS PSF for SFM, and the analytic "
              "matched-to PSF on coadds).  This also means we skip initial measurement with a "
              "simple guess-PSF.")
     )
+
+    def setDefaults(self):
+        self.starSelector["secondMoment"].clumpNSigma = 2.0
+        self.psfDeterminer["pca"].nEigenComponents = 4
+        self.psfDeterminer["pca"].kernelSize = 7
+        self.psfDeterminer["pca"].spatialOrder = 2
+        self.psfDeterminer["pca"].kernelSizeMin = 25
 
 # Note that this class does not inherit from CalibrateConfig; that has lots of things we don't want,
 # and duck-typing means we don't need the inheritance for its own sake.
@@ -66,6 +75,11 @@ class SdssCalibrateConfig(pexConfig.Config):
         doc = "Compute aperture correction?",
         default = True,
     )    
+    doPhotoCal = pexConfig.Field(
+        dtype = bool,
+        doc = "Compute photometric zeropoint?",
+        default = True,
+    )
     repair = pexConfig.ConfigurableField(target = RepairTask, doc = "")
     background = pexConfig.ConfigField(
         dtype = measAlg.estimateBackground.ConfigClass,
@@ -79,7 +93,14 @@ class SdssCalibrateConfig(pexConfig.Config):
         target = measAlg.SourceMeasurementTask,
         doc = "Initial measurements used to feed PSF determination and astrometry",
     )
-    astrometry = pexConfig.ConfigurableField(target=AstrometryTask, doc="")
+    measurement = pexConfig.ConfigurableField(
+        target = measAlg.SourceMeasurementTask,
+        doc = "Post-PSF-determination measurements used to feed other calibrations",
+    )
+    computeApCorr = pexConfig.ConfigField(dtype = measAlg.ApertureCorrectionConfig,
+                                          doc = measAlg.ApertureCorrectionConfig.__doc__)
+    astrometry    = pexConfig.ConfigurableField(target = AstrometryTask, doc = "")
+    photocal      = pexConfig.ConfigurableField(target = PhotoCalTask, doc="")
 
     u = pexConfig.ConfigField(dtype=SdssCalibratePerFilterConfig, doc="u-band specific config fields")
     g = pexConfig.ConfigField(dtype=SdssCalibratePerFilterConfig, doc="g-band specific config fields")
@@ -102,6 +123,7 @@ class SdssCalibrateConfig(pexConfig.Config):
         self.initialMeasurement.prefix = "initial."
         self.initialMeasurement.doApplyApCorr = False
         self.initialMeasurement.algorithms.names = ["flags.pixel", "shape.sdss", "flux.psf", "flux.sinc"]
+        self.initialMeasurement.slots.apFlux = "flux.sinc"
         self.initialMeasurement.slots.modelFlux = None
         self.initialMeasurement.slots.instFlux = None
         self.background.binSize = 512
@@ -160,15 +182,17 @@ class SdssCalibrateTask(CalibrateTask):
 
         filterName = exposure.getFilter().getName()
 
-        useInputPsf = getattr(self.config, filterName).useInputPsf
+        filterConfig = getattr(self.config, filterName) 
 
-        if useInputPsf and inputPsf is None:
-            raise ValueError("Cannot run with useInputPsf=Trie when there is no input PSF.")
+        if filterConfig.useInputPsf and inputPsf is None:
+            raise ValueError("Cannot run with useInputPsf=True when there is no input PSF.")
 
-        if not useInputPsf:
+        if not filterConfig.useInputPsf:
             self.installInitialPsf(exposure)
+            self.log.log(self.log.INFO, "Ignoring input (psField or matched-to) PSF.")
             keepCRs = True   # we'll remove them when we have a better PSF
         else:
+            self.log.log(self.log.INFO, "Running with input (psField or matched-to) PSF.")
             keepCRs = None  # this is the last repair we need to run; defer to config values
 
         self.repair.run(exposure, defects=defects, keepCRs=keepCRs)
@@ -187,7 +211,8 @@ class SdssCalibrateTask(CalibrateTask):
 
         # If we're using the input PSF, we only need to do one measurement step, and we do that now.
         # If not, we do the initial measurement with the fake PSF in a prefixed part of the schema.
-        if useInputPsf:
+
+        if not filterConfig.useInputPsf:
             self.initialMeasurement.measure(exposure, sources)
         else:
             self.measurement.measure(exposure, sources)
@@ -202,19 +227,20 @@ class SdssCalibrateTask(CalibrateTask):
         # We always run star selection, but you can set 'starSelector.name = "catalog"'
         # to use stars from the astrometry.net catalog.
         psfCandidateList = self.starSelectors[filterName].selectStars(exposure, sources)
-        self.log.log(self.log.INFO, "PSF star selector found %d candidates" % len(psfCandidateList))
+        self.log.log(self.log.INFO, "'%s' PSF star selector found %d candidates" 
+                     % (filterConfig.starSelector.name, len(psfCandidateList)))
 
         # We always run PSF determination
         psf, cellSet = self.psfDeterminers[filterName].determinePsf(exposure, psfCandidateList, self.metadata)
         self.log.log(self.log.INFO, "PSF determination using %d/%d stars." % 
                      (self.metadata.get("numGoodStars"), self.metadata.get("numAvailStars")))
-        if useInputPsf:
+        if  filterConfig.useInputPsf:
             psf = inputPsf
         exposure.setPsf(psf)
         
         # If we aren't using the input PSF, we need to re-repair and re-measure before doing
         # aperture corrections and photometric calibration.
-        if not useInputPsf:
+        if not filterConfig.useInputPsf:
             self.repair.run(exposure, defects=defects, keepCRs=None)
             self.display('repair', exposure=exposure)
             self.measurement.measure(exposure, sources)   # don't use run, because we don't have apCorr yet
