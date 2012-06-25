@@ -6,8 +6,8 @@ root.calibrate.retarget(SdssCalibrateTask)
 # Defaults here just do one, final step to tweak it up, assuming that there's no big
 # DC value to begin with.
 root.calibrate.doBackground = False
-root.calibrate.detection.reestimateBackground = False
-root.detection.reestimateBackground = True
+root.calibrate.detection.reEstimateBackground = False
+root.detection.reEstimateBackground = True
 
 useMatchedToPsf = True
 
