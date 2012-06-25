@@ -3,7 +3,8 @@ root.calibrate.retarget(SdssCalibrateTask)
 
 # Inputs to coadd have already been background-subtracted; do we need to do it again?
 # (answer obviously changes if we implement background-matching).
-# JFB's proposal is to just do one, final step to tweak it up.
+# Defaults here just do one, final step to tweak it up, assuming that there's no big
+# DC value to begin with.
 root.calibrate.doBackground = False
 root.calibrate.detection.reestimateBackground = False
 root.detection.reestimateBackground = True
