@@ -261,6 +261,11 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         self.log.log(self.log.INFO, "After quality cuts, found %d exposures in %d runs" % \
             (len(exposureInfoList), len(goodRunSet)))
 
+        if self.config.maxExposures is not None:
+            exposureInfoList = exposureInfoList[0:self.config.maxExposures]
+            self.log.log(self.log.INFO, "After maxExposures cut, found %d exposures" % \
+                (len(exposureInfoList),))
+
         return pipeBase.Struct(
             exposureInfoList = exposureInfoList,
         )
