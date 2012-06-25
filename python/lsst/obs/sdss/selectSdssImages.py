@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 import MySQLdb
+import numpy
 
 import lsst.pex.config as pexConfig
 from lsst.afw.coord import IcrsCoord
@@ -76,7 +77,7 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         optional = True,
     )
     rejectWholeRuns = pexConfig.Field(
-        doc = "If any exposure in the region is bad, then reject the whole run?",
+        doc = "If any exposure in the region is bad or the run does not cover thew hole region, then reject the whole run?",
         dtype = bool,
         default = True,
     )
@@ -218,15 +219,34 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         goodExposureInfoList = []
         if self.config.rejectWholeRuns:
             # reject runs for which any exposure does not meet our quality criteria
+            # or the run begins or ends in the region
+            regionRaRange = None
+            if coordList is not None:
+                regionRaRange = _computeRaRange(coordList)
+
+            numRangeCuts = 0
             for run, expInfoSet in runExpInfoSetDict.iteritems():
+                runRaRange = None
                 for expInfo in expInfoSet:
                     if self._isBadExposure(expInfo):
                         break
+                    
+                    if regionRaRange is not None:
+                        expRaRange = _computeRaRange(expInfo.coordList)
+                        if runRaRange is None:
+                            runRaRange = expRaRange
+                        else:
+                            runRaRange = (min(runRaRange[0], expRaRange[0]), max(runRaRange[1], expRaRange[1]))
                 else:
+                    if regionRaRange is not None:
+                        if (runRaRange[0] > regionRaRange[0]) or (runRaRange[1] < regionRaRange[1]):
+                            numRangeCuts += 1
+                            continue
+
                     goodExposureInfoList += list(expInfoSet)
                     goodRunSet.add(run)
-            self.log.log(self.log.INFO, "Rejected %d whole runs" % \
-                (len(runExpInfoSetDict) - len(goodRunSet),))
+            self.log.log(self.log.INFO, "Rejected %d whole runs, including %d for incomplete range" % \
+                (len(runExpInfoSetDict) - len(goodRunSet), numRangeCuts))
         else:
             # reject individual exposures which do not meet our quality criteria
             for expInfo in exposureInfoList:
@@ -256,7 +276,7 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
             or ((self.config.maxFwhm is not None) and (expInfo.fwhm > self.config.maxFwhm)) \
             or ((self.config.maxSky is not None) and (expInfo.sky > self.config.maxSky)) \
             or ((self.config.maxAirmass is not None) and (expInfo.airmass > self.config.maxAirmass))
-
+    
     def _runArgDictFromDataId(self, dataId):
         """Extract keyword arguments for run (other than coordList) from a data ID
         
@@ -291,4 +311,13 @@ def _whereDataFromList(name, valueList):
         return ("%s = %%s" % (name,), valueList[0])
     else:
         return ("%s in %%s" % (name,), tuple(valueList))
+
+def _computeRaRange(coordList):
+    """Compute RA range from a list of coords
+    
+    @param[in] coordList: list of afwCoord.Coord
+    @return RA range, in degrees, as ICRS (minRa, maxRa)
+    """
+    raList = numpy.array([c.toIcrs().getLongitude().asDegrees() for c in coordList])
+    return numpy.min(raList), numpy.max(raList)
     
