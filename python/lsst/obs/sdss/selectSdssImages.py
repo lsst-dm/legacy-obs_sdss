@@ -75,6 +75,11 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         dtype = str,
         optional = True,
     )
+    rejectWholeRuns = pexConfig.Field(
+        doc = "If any exposure in the region is bad, then reject the whole run?",
+        dtype = bool,
+        default = True,
+    )
 
     def setDefaults(self):
         BaseSelectImagesTask.ConfigClass.setDefaults(self)
@@ -115,7 +120,7 @@ class ExposureInfo(BaseExposureInfo):
         self.sky = result[self._nextInd]
         self.airmass = result[self._nextInd]
         self.quality = result[self._nextInd]
-        self.isblacklisted = result[self._nextInd]
+        self.isBlacklisted = result[self._nextInd]
 
     @staticmethod
     def getColumnNames():
@@ -164,7 +169,8 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
             cursor.execute(coordCmd)
             cursor.nextset() # ignore one-line result of coordCmd
         
-            # find exposures
+            # find exposures that meet fundamental criteria: geometry, filter, camcol and strip.
+            # Handle quality-related criteria later to allow rejecting runs that don't fully cover the patch.
             queryStr = ("""select %s
 from SeasonFieldQuality_Test as ccdExp,
     (select distinct fieldid
@@ -182,21 +188,6 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
             ("filter = %s", filter),
         ]
 
-        if self.config.maxFwhm is not None:
-            whereDataList.append(("psfWidth < %s", self.config.maxFwhm))
-
-        if self.config.maxSky is not None:
-            whereDataList.append(("sky < %s", self.config.maxSky))
-
-        if self.config.maxAirmass is not None:
-            whereDataList.append(("airmass < %s", self.config.maxAirmass))
-
-        qualityTuple = tuple(range(self.config.quality, 4))
-        whereDataList.append(_whereDataFromList("quality", qualityTuple))
-
-        if self.config.cullBlacklisted:
-            whereDataList.append(("isblacklisted = %s", False))
-
         if self.config.camcols is not None:
             whereDataList.append(_whereDataFromList("camcol", self.config.camcols))
         
@@ -206,21 +197,70 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         queryStr += " and ".join(wd[0] for wd in whereDataList)
         dataTuple = tuple(wd[1] for wd in whereDataList)
         
-        if self.config.maxExposures:
-            queryStr += " limit %s" % (self.config.maxExposures,)
-        
         self.log.log(self.log.INFO, "queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
 
         cursor.execute(queryStr, dataTuple)
         exposureInfoList = [ExposureInfo(result) for result in cursor]
+        
+        runExpInfoSetDict = dict()
+        for expInfo in exposureInfoList:
+            run = expInfo.dataId["run"]
+            expInfoSet = runExpInfoSetDict.get(run)
+            if expInfoSet:
+                expInfoSet.add(expInfo)
+            else:
+                runExpInfoSetDict[run] = set([expInfo])
+        
+        self.log.log(self.log.INFO, "Before quality cuts found %d exposures in %d runs" % \
+            (len(exposureInfoList), len(runExpInfoSetDict)))
+        
+        goodRunSet = set()
+        goodExposureInfoList = []
+        if self.config.rejectWholeRuns:
+            # reject runs for which any exposure does not meet our quality criteria
+            for run, expInfoSet in runExpInfoSetDict.iteritems():
+                for expInfo in expInfoSet:
+                    if self._isBadExposure(expInfo):
+                        break
+                else:
+                    goodExposureInfoList += list(expInfoSet)
+                    goodRunSet.add(run)
+            self.log.log(self.log.INFO, "Rejected %d whole runs" % \
+                (len(runExpInfoSetDict) - len(goodRunSet),))
+        else:
+            # reject individual exposures which do not meet our quality criteria
+            for expInfo in exposureInfoList:
+                if not self._isBadExposure(expInfo):
+                    goodExposureInfoList.append(expInfo)
+                    goodRunSet.add(expInfo.dataId["run"])
+            self.log.log(self.log.INFO, "Rejected %d individual exposures" % \
+                (len(exposureInfoList) - len(goodExposureInfoList),))
+
+        exposureInfoList = goodExposureInfoList
+        
+        self.log.log(self.log.INFO, "After quality cuts, found %d exposures in %d runs" % \
+            (len(exposureInfoList), len(goodRunSet)))
 
         return pipeBase.Struct(
             exposureInfoList = exposureInfoList,
         )
+    
+    def _isBadExposure(self, expInfo):
+        """Return True of exposure does not meet quality criteria
+        
+        @param[in] expInfo: exposure info (an ExposureInfo)
+        @return True if exposure does not meet quality criteria
+        """
+        return (expInfo.quality < self.config.quality) \
+            or (self.config.cullBlacklisted and expInfo.isBlacklisted) \
+            or ((self.config.maxFwhm is not None) and (expInfo.fwhm > self.config.maxFwhm)) \
+            or ((self.config.maxSky is not None) and (expInfo.sky > self.config.maxSky)) \
+            or ((self.config.maxAirmass is not None) and (expInfo.airmass > self.config.maxAirmass))
 
     def _runArgDictFromDataId(self, dataId):
         """Extract keyword arguments for run (other than coordList) from a data ID
         
+        @param[in] dataId: a data ID dict
         @return keyword arguments for run (other than coordList), as a dict
         """
         return dict(
