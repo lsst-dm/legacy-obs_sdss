@@ -36,16 +36,20 @@ root.calibrate.photocal.badFlags = ('flags.pixel.edge','flags.pixel.saturated.an
 root.calibrate.detection.thresholdType = "pixel_stdev"
 root.detection.thresholdType = "pixel_stdev"
 
-# Enable multiShapelet for model mags.
-import lsst.meas.extensions.multiShapelet
-root.measurement.algorithms.names += ("multishapelet.psf", "multishapelet.exp", "multishapelet.dev", 
-                                      "multishapelet.combo")
-root.measurement.apCorrFluxes += ("multishapelet.exp.flux", "multishapelet.dev.flux",
-                                  "multishapelet.combo.flux")
-root.measurement.slots.modelFlux = "multishapelet.combo.flux"
-# PSF should be exactly double-Gaussian (zeroth-order shapelet)
-root.measurement.algorithms["multishapelet.psf"].innerOrder = 0
-root.measurement.algorithms["multishapelet.psf"].outerOrder = 0
-# too many INTERP pixels on coadds, so we relax the masking in modeling
-for name in ("exp", "dev", "combo"):
-    root.measurement.algorithms["multishapelet." + name].badMaskPlanes = ["EDGE", "SAT"]
+try:
+    # Enable multiShapelet for model mags.
+    import lsst.meas.extensions.multiShapelet
+    root.measurement.algorithms.names += ("multishapelet.psf", "multishapelet.exp", "multishapelet.dev", 
+                                          "multishapelet.combo")
+    root.measurement.apCorrFluxes += ("multishapelet.exp.flux", "multishapelet.dev.flux",
+                                      "multishapelet.combo.flux")
+    root.measurement.slots.modelFlux = "multishapelet.combo.flux"
+    # PSF should be exactly double-Gaussian (zeroth-order shapelet)
+    root.measurement.algorithms["multishapelet.psf"].innerOrder = 0
+    root.measurement.algorithms["multishapelet.psf"].outerOrder = 0
+    # too many INTERP pixels on coadds, so we relax the masking in modeling
+    for name in ("exp", "dev", "combo"):
+        root.measurement.algorithms["multishapelet." + name].badMaskPlanes = ["EDGE", "SAT"]
+except ImportError:
+    # TODO: find a better way to log this
+    print "WARNING: Could not import lsst.meas.extensions.multiShapelet; model fluxes not enabled!"
