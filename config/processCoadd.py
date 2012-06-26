@@ -43,6 +43,9 @@ root.measurement.algorithms.names += ("multishapelet.psf", "multishapelet.exp", 
 root.measurement.apCorrFluxes += ("multishapelet.exp.flux", "multishapelet.dev.flux",
                                   "multishapelet.combo.flux")
 root.measurement.slots.modelFlux = "multishapelet.combo.flux"
+# PSF should be exactly double-Gaussian (zeroth-order shapelet)
+root.measurement.algorithms["multishapelet.psf"].innerOrder = 0
+root.measurement.algorithms["multishapelet.psf"].outerOrder = 0
 # too many INTERP pixels on coadds, so we relax the masking in modeling
 for name in ("exp", "dev", "combo"):
     root.measurement.algorithms["multishapelet." + name].badMaskPlanes = ["EDGE", "SAT"]
