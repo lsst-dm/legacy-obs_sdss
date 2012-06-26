@@ -9,5 +9,6 @@ root.detection.background.binSize = 512
 import lsst.meas.extensions.multiShapelet
 root.measurement.algorithms.names += ("multishapelet.psf", "multishapelet.exp", "multishapelet.dev", 
                                       "multishapelet.combo")
-root.measurement.apCorrFluxes.names += ("multishapelet.exp", "multishapelet.dev", "multishapelet.combo")
+root.measurement.apCorrFluxes += ("multishapelet.exp.flux", "multishapelet.dev.flux",
+                                  "multishapelet.combo.flux")
 root.measurement.slots.modelFlux = "multishapelet.combo.flux"

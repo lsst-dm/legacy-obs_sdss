@@ -38,7 +38,8 @@ root.detection.thresholdType = "pixel_stdev"
 import lsst.meas.extensions.multiShapelet
 root.measurement.algorithms.names += ("multishapelet.psf", "multishapelet.exp", "multishapelet.dev", 
                                       "multishapelet.combo")
-root.measurement.apCorrFluxes.names += ("multishapelet.exp", "multishapelet.dev", "multishapelet.combo")
+root.measurement.apCorrFluxes += ("multishapelet.exp.flux", "multishapelet.dev.flux",
+                                  "multishapelet.combo.flux")
 root.measurement.slots.modelFlux = "multishapelet.combo.flux"
 # too many INTERP pixels on coadds, so we relax the masking in modeling
 for name in ("exp", "dev", "combo"):
