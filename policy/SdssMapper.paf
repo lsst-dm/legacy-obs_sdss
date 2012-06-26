@@ -259,7 +259,7 @@ datasets: {
     }
     keith_processCoadd_config: {
         template:      "keith_processCoadd_config/%(run)d/%(camcol)d/%(filter)s/config-%(run)06d-%(filter)s%(camcol)d-%(field)04d.py"
-        python:        "lsst.pipe.tasks.processCcdSdssCoaddV3.ProcessCcdSdssCoaddV3Config"
+        python:        "lsst.pipe.tasks.processKeithCoadd.ProcessKeithCoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -487,7 +487,7 @@ datasets: {
     }
     deep_processCoadd_config: {
         template:      "deep_processCoadd_config/%(filter)s/%(tract)d/%(patch)s/config-%(filter)s-%(tract)d-%(patch)s.py"
-        python:        "lsst.pipe.tasks.processCcdSdssCoadd.ProcessCcdSdssCoaddConfig"
+        python:        "lsst.pipe.tasks.processCoadd.ProcessCoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -610,7 +610,7 @@ datasets: {
     }
     goodSeeing_processCoadd_config: {
         template:      "goodSeeing_processCoadd_config/%(filter)s/%(tract)d/%(patch)s/config-%(filter)s-%(tract)d-%(patch)s.py"
-        python:        "lsst.pipe.tasks.processCcdSdssCoadd.ProcessCcdSdssCoaddConfig"
+        python:        "lsst.pipe.tasks.processCoadd.ProcessCoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -726,7 +726,7 @@ datasets: {
     }
     chiSquared_processCoadd_config: {
         template:      "chiSquared_processCoadd_config/%(tract)d/%(patch)s/config-%(tract)d-%(patch)s.py"
-        python:        "lsst.pipe.tasks.processCcdSdssCoadd.ProcessCcdSdssCoaddConfig"
+        python:        "lsst.pipe.tasks.processCoadd.ProcessCoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
