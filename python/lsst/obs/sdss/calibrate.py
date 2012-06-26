@@ -128,6 +128,8 @@ class SdssCalibrateConfig(pexConfig.Config):
         self.initialMeasurement.slots.instFlux = None
         self.background.binSize = 512
         self.detection.background.binSize = 512
+        self.repair.doInterpolate = False
+        self.repair.doCosmicRay = False
         self.computeApCorr.alg1.name = "flux.psf"
         self.computeApCorr.alg2.name = "flux.sinc"
         

@@ -22,9 +22,6 @@ for filterName in ("u", "g", "r", "i", "z"):
     # go into aperture correction; we determine the PSF then throw it away
     subConfig.useInputPsf = useMatchedToPsf
 
-root.calibrate.repair.doInterpolate = False
-root.calibrate.repair.doCosmicRay = False
-
 root.calibrate.astrometry.forceKnownWcs = True
 root.calibrate.astrometry.solver.calculateSip = False
 
