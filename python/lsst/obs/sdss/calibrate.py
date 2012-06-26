@@ -25,7 +25,10 @@ import lsst.pipe.base as pipeBase
 import lsst.pex.config as pexConfig
 import lsst.meas.algorithms as measAlg
 import lsst.meas.astrom as measAstrom
+from lsst.meas.astrom.catalogStarSelector import CatalogStarSelector
 import lsst.afw.table as afwTable
+import lsst.afw.image as afwImage
+import lsst.afw.math as afwMath
 from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateConfig, CalibrateTask
 
 from lsst.meas.photocal import PhotoCalTask
@@ -113,6 +116,11 @@ class SdssCalibrateConfig(pexConfig.Config):
         doc=("Whether to use the input (psField or matched-to) PSF instead of using the determined "
              "PSF.  If None (the default), the per-filter options will be used instead.")
     )
+    minPsfCandidates = pexConfig.Field(
+        dtype=int, default=1,
+        doc=("If the number of candidates returned by the star selector is less than this amount, "
+             "retry with the catalog star selector")
+    )
     
     def validate(self):
         pexConfig.Config.validate(self)
@@ -176,21 +184,26 @@ class SdssCalibrateTask(CalibrateTask):
         @param[in]      defects    List of defects on exposure
         @param[in]      idFactory  afw.table.IdFactory to use for source catalog.
         @return a pipeBase.Struct with fields:
-        - psf: Point spread function (always the computed Psf, even if useInputPsf is True)
+        - psf: Point spread function
         - apCorr: Aperture correction
         - sources: Sources used in calibration
         - matches: Astrometric matches
         - matchMeta: Metadata for astrometric matches
         """
 
-        inputPsf = exposure.getPsf()
+        psf = None
+        apCorr = None
+        matches = None
+        matchMeta = None
 
+        inputPsf = exposure.getPsf()
+        
         if idFactory is None:
             idFactory = afwTable.IdFactory.makeSimple()
 
         filterName = exposure.getFilter().getName()
-
         filterConfig = getattr(self.config, filterName)
+
         if self.config.useInputPsf is None:
             useInputPsf = filterConfig.useInputPsf
         else:
@@ -238,16 +251,39 @@ class SdssCalibrateTask(CalibrateTask):
 
         # We always run star selection, but you can set 'starSelector.name = "catalog"'
         # to use stars from the astrometry.net catalog.
+        # If we fail, we fall back to a default-constructed catalog star selector.
         psfCandidateList = self.starSelectors[filterName].selectStars(exposure, sources)
-        self.log.log(self.log.INFO, "'%s' PSF star selector found %d candidates" 
-                     % (filterConfig.starSelector.name, len(psfCandidateList)))
+        if (len(psfCandidateList) < self.config.minPsfCandidates
+            and filterConfig.starSelector.name != "catalog"):
+            self.log.warn("'%s' PSF star selector found %d < %d candidates; trying catalog star selector" 
+                          % (filterConfig.starSelector.name, len(psfCandidateList),
+                             self.config.minPsfCandidates))
+            self.metadata.add("StarSelectorStatus", "failed; had to fall back to catalog")
+            selector = CatalogStarSelector()
+            psfCandidateList = selector.selectStars(exposure, sources)
+            self.log.log(self.log.INFO, "'catalog' PSF star selector found %d candidates" 
+                         % len(psfCandidateList))
+        else:
+            self.log.log(self.log.INFO, "'%s' PSF star selector found %d candidates" 
+                         % (filterConfig.starSelector.name, len(psfCandidateList)))
 
-        # We always run PSF determination
-        psf, cellSet = self.psfDeterminers[filterName].determinePsf(exposure, psfCandidateList, self.metadata)
-        self.log.log(self.log.INFO, "PSF determination using %d/%d stars." % 
-                     (self.metadata.get("numGoodStars"), self.metadata.get("numAvailStars")))
         if not useInputPsf:
-            exposure.setPsf(psf)
+            try:
+                psf, cellSet = self.psfDeterminers[filterName].determinePsf(exposure, psfCandidateList,
+                                                                            self.metadata)
+                self.log.log(self.log.INFO, "PSF determination using %d/%d stars." % 
+                             (self.metadata.get("numGoodStars"), self.metadata.get("numAvailStars")))
+                exposure.setPsf(psf)
+            except Exception, err:
+                if inputPsf:
+                    self.log.warn("PSF determination failed; falling back to input PSF: %s" % err)
+                    self.metadata.add("PsfDeterminerStatus", "failed; had to fall back to input PSF")
+                    psf = inputPsf
+                    cellSet = self.makeCellSet(exposure, psfCandidateList)
+                else:
+                    raise
+        else:
+            psf = inputPsf
         
         # If we aren't using the input PSF, we need to re-repair and re-measure before doing
         # aperture corrections and photometric calibration.
@@ -256,8 +292,9 @@ class SdssCalibrateTask(CalibrateTask):
             self.display('repair', exposure=exposure)
             self.measurement.measure(exposure, sources)   # don't use run, because we don't have apCorr yet
 
-        apCorr = None
         if self.config.doComputeApCorr:
+            if useInputPsf:
+                cellSet = self.makeCellSet(exposure, psfCandidateList)
             apCorr = self.computeApCorr(exposure, cellSet)
 
         if self.measurement.config.doApplyApCorr:
@@ -280,3 +317,31 @@ class SdssCalibrateTask(CalibrateTask):
             matches = matches,
             matchMeta = matchMeta,
         )
+
+    def makeCellSet(self, exposure, psfCandidateList):
+        """
+        Make a spatial cell set that's more-or-less like the one the a psfDeterminer
+        would have created, if it had succeeded.
+
+        TODO: this code should be refactored into meas_algorithms, probably as a way
+        to construct aperture corrections without an input spatial cell set, or as
+        an alternate method on PsfDeterminers that always succeeds or at least succeeds
+        more often.
+        """
+        bbox = exposure.getBBox(afwImage.PARENT)
+        filterName = exposure.getFilter().getName()
+        filterConfig = getattr(self.config, filterName)
+        # This is slightly dangerous: we assume PsfDeterminerConfig has sizeCellX/sizeCellY,
+        # which may only be true for PcaPsfDeterminer, but that's the only one we're likely
+        # to use now, and others will probably have at least those settings.
+        psfDeterminerConfig = filterConfig.psfDeterminer.active
+        cellSet = afwMath.SpatialCellSet(
+            bbox, psfDeterminerConfig.sizeCellX, psfDeterminerConfig.sizeCellY
+        )
+        for i, psfCandidate in enumerate(psfCandidateList):
+            try:
+                cellSet.insertCandidate(psfCandidate)
+            except Exception, e:
+                self.log.logdebug("Skipping PSF candidate %d of %d: %s" % (i, len(psfCandidateList), e))
+                continue
+        return cellSet
