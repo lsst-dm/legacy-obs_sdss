@@ -5,9 +5,11 @@ root.calibrate.retarget(SdssCalibrateTask)
 # (answer obviously changes if we implement background-matching).
 # Defaults here just do one, final step to tweak it up, assuming that there's no big
 # DC value to begin with.
+# Open question: what binSize?  Current setting is the same used to process fpCs.
 root.calibrate.doBackground = False
 root.calibrate.detection.reEstimateBackground = False
 root.detection.reEstimateBackground = True
+root.detection.background.binSize = 512
 
 useMatchedToPsf = True
 
@@ -33,5 +35,14 @@ root.calibrate.photocal.badFlags = ('flags.pixel.edge','flags.pixel.saturated.an
 # JFB: this wasn't being set before #2188, but it probably should have been changed when the other detection
 # threshold was.
 root.calibrate.detection.thresholdType = "pixel_stdev"
-
 root.detection.thresholdType = "pixel_stdev"
+
+# Enable multiShapelet for model mags.
+import lsst.meas.extensions.multiShapelet
+root.measurement.algorithms.names += ("multishapelet.psf", "multishapelet.exp", "multishapelet.dev", 
+                                      "multishapelet.combo")
+root.measurement.apCorrFluxes.names += ("multishapelet.exp", "multishapelet.dev", "multishapelet.combo")
+root.measurement.slots.modelFlux = "multishapelet.combo.flux"
+# too many INTERP pixels on coadds, so we relax the masking in modeling
+for name in ("exp", "dev", "combo"):
+    root.measurement.algorithms["multishapelet." + name].badMaskPlanes = ["EDGE", "SAT"]
