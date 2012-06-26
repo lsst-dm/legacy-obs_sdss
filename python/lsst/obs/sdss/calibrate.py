@@ -171,11 +171,12 @@ class SdssCalibrateTask(CalibrateTask):
     def run(self, exposure, defects=None, idFactory=None):
         """Calibrate an exposure: measure PSF, subtract background, measure astrometry and photometry
 
-        @param[in,out]  exposure   Exposure to calibrate; measured PSF will be installed there as well
+        @param[in,out]  exposure   Exposure to calibrate; measured PSF will be installed there unless
+                                   useInputPsf=True.
         @param[in]      defects    List of defects on exposure
         @param[in]      idFactory  afw.table.IdFactory to use for source catalog.
         @return a pipeBase.Struct with fields:
-        - psf: Point spread function
+        - psf: Point spread function (always the computed Psf, even if useInputPsf is True)
         - apCorr: Aperture correction
         - sources: Sources used in calibration
         - matches: Astrometric matches
@@ -245,9 +246,8 @@ class SdssCalibrateTask(CalibrateTask):
         psf, cellSet = self.psfDeterminers[filterName].determinePsf(exposure, psfCandidateList, self.metadata)
         self.log.log(self.log.INFO, "PSF determination using %d/%d stars." % 
                      (self.metadata.get("numGoodStars"), self.metadata.get("numAvailStars")))
-        if  useInputPsf:
-            psf = inputPsf
-        exposure.setPsf(psf)
+        if not useInputPsf:
+            exposure.setPsf(psf)
         
         # If we aren't using the input PSF, we need to re-repair and re-measure before doing
         # aperture corrections and photometric calibration.
@@ -256,10 +256,9 @@ class SdssCalibrateTask(CalibrateTask):
             self.display('repair', exposure=exposure)
             self.measurement.measure(exposure, sources)   # don't use run, because we don't have apCorr yet
 
+        apCorr = None
         if self.config.doComputeApCorr:
             apCorr = self.computeApCorr(exposure, cellSet)
-        else:
-            apCorr = None
 
         if self.measurement.config.doApplyApCorr:
             assert(apCorr is not None)
