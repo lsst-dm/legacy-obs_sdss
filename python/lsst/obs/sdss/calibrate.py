@@ -107,6 +107,12 @@ class SdssCalibrateConfig(pexConfig.Config):
     r = pexConfig.ConfigField(dtype=SdssCalibratePerFilterConfig, doc="r-band specific config fields")
     i = pexConfig.ConfigField(dtype=SdssCalibratePerFilterConfig, doc="i-band specific config fields")
     z = pexConfig.ConfigField(dtype=SdssCalibratePerFilterConfig, doc="z-band specific config fields")
+
+    useInputPsf = pexConfig.Field(
+        dtype=bool, optional=True, default=None,
+        doc=("Whether to use the input (psField or matched-to) PSF instead of using the determined "
+             "PSF.  If None (the default), the per-filter options will be used instead.")
+    )
     
     def validate(self):
         pexConfig.Config.validate(self)
@@ -175,7 +181,6 @@ class SdssCalibrateTask(CalibrateTask):
         - matches: Astrometric matches
         - matchMeta: Metadata for astrometric matches
         """
-        assert exposure is not None, "No exposure provided"
 
         inputPsf = exposure.getPsf()
 
@@ -184,12 +189,16 @@ class SdssCalibrateTask(CalibrateTask):
 
         filterName = exposure.getFilter().getName()
 
-        filterConfig = getattr(self.config, filterName) 
+        filterConfig = getattr(self.config, filterName)
+        if self.config.useInputPsf is None:
+            useInputPsf = filterConfig.useInputPsf
+        else:
+            useInputPsf = self.config.useInputPsf
 
-        if filterConfig.useInputPsf and inputPsf is None:
+        if useInputPsf and inputPsf is None:
             raise ValueError("Cannot run with useInputPsf=True when there is no input PSF.")
 
-        if not filterConfig.useInputPsf:
+        if not useInputPsf:
             self.installInitialPsf(exposure)
             self.log.log(self.log.INFO, "Ignoring input (psField or matched-to) PSF.")
             keepCRs = True   # we'll remove them when we have a better PSF
@@ -214,7 +223,7 @@ class SdssCalibrateTask(CalibrateTask):
         # If we're using the input PSF, we only need to do one measurement step, and we do that now.
         # If not, we do the initial measurement with the fake PSF in a prefixed part of the schema.
 
-        if not filterConfig.useInputPsf:
+        if not useInputPsf:
             self.initialMeasurement.measure(exposure, sources)
         else:
             self.measurement.measure(exposure, sources)
@@ -236,13 +245,13 @@ class SdssCalibrateTask(CalibrateTask):
         psf, cellSet = self.psfDeterminers[filterName].determinePsf(exposure, psfCandidateList, self.metadata)
         self.log.log(self.log.INFO, "PSF determination using %d/%d stars." % 
                      (self.metadata.get("numGoodStars"), self.metadata.get("numAvailStars")))
-        if  filterConfig.useInputPsf:
+        if  useInputPsf:
             psf = inputPsf
         exposure.setPsf(psf)
         
         # If we aren't using the input PSF, we need to re-repair and re-measure before doing
         # aperture corrections and photometric calibration.
-        if not filterConfig.useInputPsf:
+        if not useInputPsf:
             self.repair.run(exposure, defects=defects, keepCRs=None)
             self.display('repair', exposure=exposure)
             self.measurement.measure(exposure, sources)   # don't use run, because we don't have apCorr yet

@@ -11,16 +11,18 @@ root.calibrate.detection.reEstimateBackground = False
 root.detection.reEstimateBackground = True
 root.detection.background.binSize = 512
 
-useMatchedToPsf = True
+# Setting this to True means we use the matched-to PSF ("initPsf") in all bands.
+# The generic default is None, which defers to the per-filter configs, because
+# that's what we need for fpC processing.
+root.calibrate.useInputPsf = True
 
+# The settings below only matter for determining stars to pass to the aperture corrections unless
+# useInputPsf is not True.
 for filterName in ("u", "g", "r", "i", "z"):
     subConfig = getattr(root.calibrate, filterName)
     subConfig.psfDeterminer["pca"].spatialOrder    = 1  # Should be spatially invariant
     subConfig.psfDeterminer["pca"].kernelSizeMin   = 31 # Larger Psfs
     subConfig.starSelector["secondMoment"].fluxLim = 3000.0
-    # If useMatchedToPsf=True, the previous three lines only get used for determining the sources that
-    # go into aperture correction; we determine the PSF then throw it away
-    subConfig.useInputPsf = useMatchedToPsf
 
 root.calibrate.astrometry.forceKnownWcs = True
 root.calibrate.astrometry.solver.calculateSip = False
