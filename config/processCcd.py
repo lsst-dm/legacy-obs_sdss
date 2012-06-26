@@ -4,6 +4,8 @@ root.calibrate.retarget(SdssCalibrateTask)
 import lsst.meas.astrom.catalogStarSelector
 root.calibrate.u.starSelector.name = "catalog"
 root.calibrate.z.starSelector.name = "catalog"
+root.calibrate.u.useInputPsf = True
+root.calibrate.z.useInputPsf = True
 root.detection.background.binSize = 512
 
 import lsst.meas.extensions.multiShapelet
