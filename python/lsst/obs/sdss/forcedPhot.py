@@ -8,6 +8,8 @@ from lsst.pipe.tasks.forcedPhot import ReferencesTask, ReferencesConfig
 from lsst.pex.config import Field
 import collections
 
+__all__ = ["SdssReferencesConfig", "SdssReferencesTask", "PolySdssReferencesTask", "TestSdssReferencesTask"]
+
 RefSource = collections.namedtuple("RefSource", ["ident", "coord", "mag", "magErr"])
 
 
@@ -15,7 +17,8 @@ class SdssReferencesConfig(ReferencesConfig):
     dbName = Field(dtype=str, doc="Name of database") # Note: no default, so must be set by an override
     dbUrl = Field(dtype=str, doc="URL for database (without the trailing database name)",
                   default="mysql://lsst10.ncsa.uiuc.edu:3390/")
-
+    padding = Field(dtype=float, doc="Padding factor for cone search", default=1.1,
+                    check=lambda x: x >= 1.0)
 
 class SdssReferencesTask(ReferencesTask):
     ConfigClass = SdssReferencesConfig
@@ -54,6 +57,58 @@ class SdssReferencesTask(ReferencesTask):
         """
         dbFullUrl = self.config.dbUrl + self.config.dbName
 
+        filtName = exposure.getFilter().getName()
+
+        wcs = exposure.getWcs()
+        width, height = exposure.getWidth(), exposure.getHeight()
+        center = wcs.pixelToSky(afwGeom.Point2D(width/2.0, height/2.0))
+        radius = center.angularSeparation(wcs.pixelToSky(afwGeom.Point2D(0.0, 0.0)))
+
+        db = dafPersist.DbStorage()
+        db.setPersistLocation(dafPersist.LogicalLocation(dbFullUrl))
+        db.startTransaction()
+        db.setTableListForQuery(["RefObject"])
+        db.outColumn("refObjectId")
+        db.outColumn("ra")
+        db.outColumn("decl")
+        db.outColumn(filtName + "Mag")
+        db.outColumn(filtName + "MagSigma")
+        db.setQueryWhere("scisql_s2PtInCircle(ra, decl, %f, %f, %f) = 1" %
+                         (center.getLongitude().asDegrees(), center.getLatitude().asDegrees(),
+                          radius.asDegrees() * self.config.padding))
+        db.query()
+
+        sourceList = []
+        while db.next():
+            ident = db.getColumnByPosInt64(0)
+            ra = db.getColumnByPosDouble(1) * afwGeom.degrees
+            dec = db.getColumnByPosDouble(2) * afwGeom.degrees
+            mag = db.getColumnByPosFloat(3)
+            magErr = db.getColumnByPosFloat(4)
+            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec), mag, magErr))
+
+        db.finishQuery()
+        db.endTransaction()
+        return sourceList
+
+
+class PolySdssReferencesTask(SdssReferencesTask):
+    """Use exposure polygons to get reference objects out of the database.
+    
+    This may be slightly more efficient since the polygons will describe the
+    exposure on the sky much better than a simple cone search, saving us from
+    doing more refinement.  However, I (PAP) haven't been able to get it to
+    work yet.  The query was originally provided by KTL, but the schema has
+    changed since then.
+    """
+    def getRaDecFromDatabase(self, dataRef, exposure):
+        """Get a list of RA, Dec from the database
+
+        @param dataRef     Data reference, which includes the identifiers
+        @return List of RefSources
+        """
+        dbFullUrl = self.config.dbUrl + self.config.dbName
+
         db = dafPersist.DbStorage()
         db.setPersistLocation(dafPersist.LogicalLocation(dbFullUrl))
         db.startTransaction()
@@ -62,7 +117,7 @@ class SdssReferencesTask(ReferencesTask):
                WHERE scienceCcdExposureId = %d
                INTO @poly;""" % dataRef.get("ccdExposureId"))
         db.executeSql("CALL scisql.scisql_s2CPolyRegion(@poly, 20)")
-        db.setTableListForQuery(["Object", "Region"])
+        db.setTableListForQuery(["RefObject", "Region"])
         db.outColumn("objectId")
         db.outColumn("ra")
         db.outColumn("decl")
@@ -86,9 +141,15 @@ class SdssReferencesTask(ReferencesTask):
         return sourceList
 
 
+
 class TestSdssReferencesTask(SdssReferencesTask):
-    """Get SDSS reference objects out of Mario Juric's
-    custom database table.  Mario writes:
+    """Get SDSS reference objects out of Mario Juric's custom database table.
+
+    This was originally provided for testing the forced photometry functionality,
+    and serves as a useful example.  This one-off database schema is slightly
+    different from the LSST database, so hence this override.
+
+    Mario writes:
 
     {{{
     I just imported the DR7 Stripe 82 co-add catalog object table to table
@@ -119,8 +180,6 @@ class TestSdssReferencesTask(SdssReferencesTask):
         @param dataRef     Data reference, which includes the identifiers
         @return List of RefSources
         """
-        dataId = dataRef.dataId
-
         padding = 1.1 # Padding factor; could live in a Config except this is just a temporary test...
 
         filtName = exposure.getFilter().getName()
