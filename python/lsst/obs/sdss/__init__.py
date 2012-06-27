@@ -21,5 +21,4 @@
 #
 from .version import *
 from sdssMapper import *
-from .forcedPhot import *
 import makeCamera
