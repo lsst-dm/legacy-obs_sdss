@@ -1,5 +1,5 @@
 # Currently set up to use Mario's test database
-from lsst.obs.sdss import SdssReferencesTask
+from lsst.obs.sdss.forcedPhot import SdssReferencesTask
 root.references.retarget(SdssReferencesTask)
 root.references.dbUrl = "mysql://lsst10.ncsa.uiuc.edu:3306/"
 
