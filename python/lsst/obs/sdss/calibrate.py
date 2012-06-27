@@ -252,7 +252,7 @@ class SdssCalibrateTask(CalibrateTask):
         # We always run star selection, but you can set 'starSelector.name = "catalog"'
         # to use stars from the astrometry.net catalog.
         # If we fail, we fall back to a default-constructed catalog star selector.
-        psfCandidateList = self.starSelectors[filterName].selectStars(exposure, sources)
+        psfCandidateList = self.starSelectors[filterName].selectStars(exposure, sources, matches=matches)
         if (len(psfCandidateList) < self.config.minPsfCandidates
             and filterConfig.starSelector.name != "catalog"):
             self.log.warn("'%s' PSF star selector found %d < %d candidates; trying catalog star selector" 
@@ -260,7 +260,7 @@ class SdssCalibrateTask(CalibrateTask):
                              self.config.minPsfCandidates))
             self.metadata.add("StarSelectorStatus", "failed; had to fall back to catalog")
             selector = CatalogStarSelector()
-            psfCandidateList = selector.selectStars(exposure, sources)
+            psfCandidateList = selector.selectStars(exposure, sources, matches=matches)
             self.log.log(self.log.INFO, "'catalog' PSF star selector found %d candidates" 
                          % len(psfCandidateList))
         else:
