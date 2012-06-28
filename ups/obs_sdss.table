@@ -4,6 +4,7 @@ setupRequired(afw >= 5.0.2.0)
 setupRequired(meas_algorithms >= 5.0.2.0)
 setupRequired(meas_astrom >= 5.0.2.0)
 setupRequired(mysqlpython)
+setupRequired(pipe_tasks)
 setupOptional(meas_extensions_multiShapelet >= 5.1.0.5)
 
 envAppend(PYTHONPATH, ${PRODUCT_DIR}/python)
