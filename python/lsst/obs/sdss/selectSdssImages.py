@@ -20,6 +20,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+import math
 import MySQLdb
 import numpy
 
@@ -31,6 +32,9 @@ import lsst.pipe.base as pipeBase
 from lsst.pipe.tasks.selectImages import BaseSelectImagesTask, BaseExposureInfo
 
 __all__ = ["SelectSdssImagesTask"]
+
+# n_eff = NScale fwhm^2
+NScale = math.pi / (2.0 * math.log(2.0))
 
 class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
     """Config for SelectSdssImagesTask
@@ -122,6 +126,11 @@ class ExposureInfo(BaseExposureInfo):
         self.airmass = result[self._nextInd]
         self.quality = result[self._nextInd]
         self.isBlacklisted = result[self._nextInd]
+        
+        # compute RHL quality factor
+        n_eff = NScale * (self.fwhm**2)
+        self.q = self.sky / n_eff
+        self.qscore = None # not known yet
 
     @staticmethod
     def getColumnNames():
@@ -260,6 +269,14 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         
         self.log.log(self.log.INFO, "After quality cuts, found %d exposures in %d runs" % \
             (len(exposureInfoList), len(goodRunSet)))
+        
+        # compute qscore according to RHL's formula and sort by it
+        qArr = numpy.array([expInfo.q for expInfo in exposureInfoList])
+        qMax = numpy.percentile(qArr, 95.0)
+        for expInfo in exposureInfoList:
+            expInfo.qscore = expInfo.quality + (expInfo.q / qMax)
+        exposureInfoList.sort(key=lambda ei: ei.qscore)
+        exposureInfoList.reverse()
 
         if self.config.maxExposures is not None:
             exposureInfoList = exposureInfoList[0:self.config.maxExposures]
