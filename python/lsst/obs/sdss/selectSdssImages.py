@@ -22,6 +22,7 @@
 #
 import MySQLdb
 import numpy
+import os
 
 import lsst.pex.config as pexConfig
 from lsst.afw.coord import IcrsCoord
@@ -150,12 +151,25 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         @return a pipeBase Struct containing:
         - exposureInfoList: a list of ExposureInfo objects
         """
+        read_default_file=os.path.expanduser("~/.my.cnf")
+
+        try:
+            open(read_default_file)
+            kwargs = dict(
+                read_default_file=read_default_file,
+                )
+        except IOError:
+            kwargs = dict(
+                user = DbAuth.username(self.config.host, str(self.config.port)),
+                passwd = DbAuth.password(self.config.host, str(self.config.port)),
+                )
+
+
         db = MySQLdb.connect(
             host = self.config.host,
             port = self.config.port,
-            user = DbAuth.username(self.config.host, str(self.config.port)),
-            passwd = DbAuth.password(self.config.host, str(self.config.port)),
             db = self.config.database,
+            **kwargs
         )
         cursor = db.cursor()
 
