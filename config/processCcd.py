@@ -6,7 +6,9 @@ root.calibrate.u.starSelector.name = "catalog"
 root.calibrate.z.starSelector.name = "catalog"
 root.calibrate.u.useInputPsf = True
 root.calibrate.z.useInputPsf = True
-root.detection.background.binSize = 512
+root.calibrate.background.binSize = 256
+root.calibrate.detection.background.binSize = 256
+root.detection.background.binSize = 256
 
 try:
     import lsst.meas.extensions.multiShapelet
