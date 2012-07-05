@@ -274,6 +274,14 @@ datasets: {
         tables:        raw_skyTile
     }
 
+    forcedsources: {
+        template:      "forcedPhot/%(run)d/%(camcol)d/%(filter)s/forcedsources-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:   "ignored"
+        storage:       "FitsCatalogStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
     sourceHist: {
         template:      "results/st%(skyTile)d/sourceHist.fits"
         python:        "lsst.afw.image.DecoratedImageU"
@@ -351,6 +359,22 @@ datasets: {
         python:        "lsst.daf.base.PropertySet"
         persistable:   "PropertySet"
         storage:       "BoostStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+    forcedPhot_config: {
+        template:      "forcedPhot_config/%(run)d/%(camcol)d/%(filter)s/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.py"
+        python:        "lsst.pex.config.Config"
+        persistable:      "Config"
+        storage:    "ConfigStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+    forcedPhot_metadata: {
+        template:      "forcedPhot_metadata/%(run)d/%(camcol)d/%(filter)s/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
+        python:        "lsst.daf.base.PropertySet"
+        persistable:        "PropertySet"
+        storage:    "BoostStorage"
         tables:        raw
         tables:        raw_skyTile
     }
@@ -477,30 +501,6 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    deepCoadd_forcedPhot_config: {
-        template:      "deepCoadd/forced/%(run)d/%(camcol)d/%(filter)s/forcedPhot_config/forcedPhot_config-%(run)06d-%(filter)s%(camcol)d-%(field)04d.py"
-        python:        "lsst.pex.config.Config"
-        persistable:      "Config"
-        storage:    "ConfigStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    deepCoadd_forcedPhot_metadata: {
-        template:      "deepCoadd/forced/%(run)d/%(camcol)d/%(filter)s/forcedPhot_metadata/forcedPhot_metadata-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    deepCoadd_forcedsources: {
-        template:      "deepCoadd/forced/%(run)d/%(camcol)d/%(filter)s/forcedsources/forcedsources-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:   "ignored"
-        storage:       "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
 
     goodSeeingCoadd: {
         template:    "goodSeeingCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits"
@@ -624,30 +624,6 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    goodSeeingCoadd_forcedPhot_config: {
-        template:      "goodSeeingCoadd/forced/%(run)d/%(camcol)d/%(filter)s/forcedPhot_config/forcedPhot_config-%(run)06d-%(filter)s%(camcol)d-%(field)04d.py"
-        python:        "lsst.pex.config.Config"
-        persistable:      "Config"
-        storage:    "ConfigStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    goodSeeingCoadd_forcedPhot_metadata: {
-        template:      "goodSeeingCoadd/forced/%(run)d/%(camcol)d/%(filter)s/forcedPhot_metadata/forcedPhot_metadata-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    goodSeeingCoadd_forcedsources: {
-        template:      "goodSeeingCoadd/forced/%(run)d/%(camcol)d/%(filter)s/forcedsources/forcedsources-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:   "ignored"
-        storage:       "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
 
     chiSquaredCoadd: {
         template:    "chiSquaredCoadd/%(tract)d/%(patch)s/coadd-%(tract)d-%(patch)s.fits"
@@ -761,30 +737,6 @@ datasets: {
         python:        "lsst.daf.base.PropertySet"
         persistable:        "PropertySet"
         storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    chiSquaredCoadd_forcedPhot_config: {
-        template:      "chiSquaredCoadd/forced/%(run)d/%(camcol)d/%(filter)s/forcedPhot_config/forcedPhot_config-%(run)06d-%(filter)s%(camcol)d-%(field)04d.py"
-        python:        "lsst.pex.config.Config"
-        persistable:      "Config"
-        storage:    "ConfigStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    chiSquaredCoadd_forcedPhot_metadata: {
-        template:      "chiSquaredCoadd/forced/%(run)d/%(camcol)d/%(filter)s/forcedPhot_metadata/forcedPhot_metadata-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    chiSquaredCoadd_forcedsources: {
-        template:      "chiSquaredCoadd/forced/%(run)d/%(camcol)d/%(filter)s/forcedsources/forcedsources-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:   "ignored"
-        storage:       "FitsCatalogStorage"
         tables:        raw
         tables:        raw_skyTile
     }
