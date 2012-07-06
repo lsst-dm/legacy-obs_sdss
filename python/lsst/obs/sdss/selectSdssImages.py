@@ -33,9 +33,6 @@ from lsst.pipe.tasks.selectImages import BaseSelectImagesTask, BaseExposureInfo
 
 __all__ = ["SelectSdssImagesTask"]
 
-# n_eff = NScale fwhm^2
-NScale = math.pi / (2.0 * math.log(2.0))
-
 class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
     """Config for SelectSdssImagesTask
     """
@@ -81,7 +78,7 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         optional = True,
     )
     rejectWholeRuns = pexConfig.Field(
-        doc = "If any exposure in the region is bad or the run does not cover thew hole region, then reject the whole run?",
+        doc = "If any exposure in the region is bad or the run does not cover the whole region, then reject the whole run?",
         dtype = bool,
         default = True,
     )
@@ -132,15 +129,15 @@ class ExposureInfo(BaseExposureInfo):
                     afwGeom.Angle(result[self._nextInd], afwGeom.degrees),
                 )
             )
+        self.strip = result[self._nextInd]
         self.fwhm = result[self._nextInd]
         self.sky = result[self._nextInd]
         self.airmass = result[self._nextInd]
         self.quality = result[self._nextInd]
         self.isBlacklisted = result[self._nextInd]
         
-        # compute RHL quality factor
-        n_eff = NScale * (self.fwhm**2)
-        self.q = self.sky / n_eff
+        # compute RHL quality factors
+        self.q = self.sky * (self.fwhm**2)
         self.qscore = None # not known yet
 
     @staticmethod
@@ -151,7 +148,7 @@ class ExposureInfo(BaseExposureInfo):
         """
         return ", ".join(
             "run rerun camcol field filter ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() + \
-            "psfWidth sky airmass quality isblacklisted".split()
+            "strip psfWidth sky airmass quality isblacklisted".split()
         )
 
 
@@ -281,43 +278,42 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         self.log.log(self.log.INFO, "After quality cuts, found %d exposures in %d runs" % \
             (len(exposureInfoList), len(goodRunSet)))
         
-        # compute qscore according to RHL's formula and sort by it
-        qArr = numpy.array([expInfo.q for expInfo in exposureInfoList])
-        qMax = numpy.percentile(qArr, 95.0)
-        for expInfo in exposureInfoList:
-            expInfo.qscore = expInfo.quality + (expInfo.q / qMax)
-        exposureInfoList.sort(key=lambda ei: ei.qscore)
-        exposureInfoList.reverse()
-
-        if self.config.maxExposures is not None:
-            # select config.maxExposures exposures with the highest qscore
-            exposureInfoList = exposureInfoList[0:self.config.maxExposures]
-            self.log.log(self.log.INFO, "After maxExposures cut, found %d exposures" % \
-                (len(exposureInfoList),))
-
-        elif self.config.maxRuns is not None:
-            # select config.maxRuns runs with the highest mean qscore
-            # (of those exposures that overlap the patch)
-            runQualListDict = dict()
+        if exposureInfoList:
+            # compute qscore according to RHL's formula and sort by it
+            qArr = numpy.array([expInfo.q for expInfo in exposureInfoList])
+            qMax = numpy.percentile(qArr, 95.0)
             for expInfo in exposureInfoList:
-                run = expInfo.dataId["run"]
-                qualList = runQualListDict.get(run)
-                if qualList:
-                    qualList.append(expInfo.qscore)
-                else:
-                    runQualListDict[run] = [expInfo.qscore]
-            
-            if len(runQualListDict) > self.config.maxRuns:
-                qualRunList = []
-                for run, qualList in runQualListDict.iteritems():
-                    runQscore = numpy.median(qualList)
-                    qualRunList.append((runQscore, run))
-                qualRunList.sort()
-                qualRunList.reverse()
-                qualRunList = qualRunList[0:self.config.maxRuns]
+                expInfo.qscore = (expInfo.q / qMax) - expInfo.quality
+            exposureInfoList.sort(key=lambda expInfo: expInfo.qscore)
+    
+            if self.config.maxExposures is not None:
+                # select config.maxExposures exposures with the highest qscore
+                exposureInfoList = exposureInfoList[0:self.config.maxExposures]
+                self.log.log(self.log.INFO, "After maxExposures cut, found %d exposures" % \
+                    (len(exposureInfoList),))
+    
+            elif self.config.maxRuns is not None:
+                # select config.maxRuns runs with the highest median qscore
+                # (of those exposures that overlap the patch)
+                runQualListDict = dict()
+                for expInfo in exposureInfoList:
+                    run = expInfo.dataId["run"]
+                    qualList = runQualListDict.get(run)
+                    if qualList:
+                        qualList.append(expInfo.qscore)
+                    else:
+                        runQualListDict[run] = [expInfo.qscore]
                 
-                goodRunSet = set(qr[1] for qr in qualRunList)
-                exposureInfoList = [ei for ei in exposureInfoList if ei.dataId["run"] in goodRunSet]
+                if len(runQualListDict) > self.config.maxRuns:
+                    qualRunList = []
+                    for run, qualList in runQualListDict.iteritems():
+                        runQscore = numpy.median(qualList)
+                        qualRunList.append((runQscore, run))
+                    qualRunList.sort()
+                    qualRunList = qualRunList[0:self.config.maxRuns]
+                    
+                    goodRunSet = set(qr[1] for qr in qualRunList)
+                    exposureInfoList = [ei for ei in exposureInfoList if ei.dataId["run"] in goodRunSet]
 
         return pipeBase.Struct(
             exposureInfoList = exposureInfoList,
