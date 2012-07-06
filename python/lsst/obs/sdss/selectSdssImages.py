@@ -20,8 +20,10 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+import math
 import MySQLdb
 import numpy
+import os
 
 import lsst.pex.config as pexConfig
 from lsst.afw.coord import IcrsCoord
@@ -77,9 +79,14 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         optional = True,
     )
     rejectWholeRuns = pexConfig.Field(
-        doc = "If any exposure in the region is bad or the run does not cover thew hole region, then reject the whole run?",
+        doc = "If any exposure in the region is bad or the run does not cover the whole region, then reject the whole run?",
         dtype = bool,
         default = True,
+    )
+    maxRuns = pexConfig.Field(
+        doc = "maximum runs to select; ignored if None; cannot be specified with maxExposures",
+        dtype = int,
+        optional = True,
     )
 
     def setDefaults(self):
@@ -87,6 +94,12 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         self.host = "lsst-db.ncsa.illinois.edu"
         self.port = 3306
         self.database = "krughoff_SDSS_quality_db"
+    
+    def validate(self):
+        BaseSelectImagesTask.ConfigClass.validate(self)
+        if (self.maxRuns is not None) and (self.maxExposures is not None):
+            raise RuntimeError("maxRuns=%s or maxExposures=%s must be None" % \
+                (self.maxRuns, self.maxExposures))
 
 
 class ExposureInfo(BaseExposureInfo):
@@ -117,11 +130,16 @@ class ExposureInfo(BaseExposureInfo):
                     afwGeom.Angle(result[self._nextInd], afwGeom.degrees),
                 )
             )
+        self.strip = result[self._nextInd]
         self.fwhm = result[self._nextInd]
         self.sky = result[self._nextInd]
         self.airmass = result[self._nextInd]
         self.quality = result[self._nextInd]
         self.isBlacklisted = result[self._nextInd]
+        
+        # compute RHL quality factors
+        self.q = self.sky * (self.fwhm**2)
+        self.qscore = None # not known yet
 
     @staticmethod
     def getColumnNames():
@@ -131,7 +149,7 @@ class ExposureInfo(BaseExposureInfo):
         """
         return ", ".join(
             "run rerun camcol field filter ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() + \
-            "psfWidth sky airmass quality isblacklisted".split()
+            "strip psfWidth sky airmass quality isblacklisted".split()
         )
 
 
@@ -150,12 +168,25 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         @return a pipeBase Struct containing:
         - exposureInfoList: a list of ExposureInfo objects
         """
+        read_default_file=os.path.expanduser("~/.my.cnf")
+
+        try:
+            open(read_default_file)
+            kwargs = dict(
+                read_default_file=read_default_file,
+                )
+        except IOError:
+            kwargs = dict(
+                user = DbAuth.username(self.config.host, str(self.config.port)),
+                passwd = DbAuth.password(self.config.host, str(self.config.port)),
+                )
+
+
         db = MySQLdb.connect(
             host = self.config.host,
             port = self.config.port,
-            user = DbAuth.username(self.config.host, str(self.config.port)),
-            passwd = DbAuth.password(self.config.host, str(self.config.port)),
             db = self.config.database,
+            **kwargs
         )
         cursor = db.cursor()
 
@@ -260,11 +291,43 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         
         self.log.log(self.log.INFO, "After quality cuts, found %d exposures in %d runs" % \
             (len(exposureInfoList), len(goodRunSet)))
-
-        if self.config.maxExposures is not None:
-            exposureInfoList = exposureInfoList[0:self.config.maxExposures]
-            self.log.log(self.log.INFO, "After maxExposures cut, found %d exposures" % \
-                (len(exposureInfoList),))
+        
+        if exposureInfoList:
+            # compute qscore according to RHL's formula and sort by it
+            qArr = numpy.array([expInfo.q for expInfo in exposureInfoList])
+            qMax = numpy.percentile(qArr, 95.0)
+            for expInfo in exposureInfoList:
+                expInfo.qscore = (expInfo.q / qMax) - expInfo.quality
+            exposureInfoList.sort(key=lambda expInfo: expInfo.qscore)
+    
+            if self.config.maxExposures is not None:
+                # select config.maxExposures exposures with the highest qscore
+                exposureInfoList = exposureInfoList[0:self.config.maxExposures]
+                self.log.log(self.log.INFO, "After maxExposures cut, found %d exposures" % \
+                    (len(exposureInfoList),))
+    
+            elif self.config.maxRuns is not None:
+                # select config.maxRuns runs with the highest median qscore
+                # (of those exposures that overlap the patch)
+                runQualListDict = dict()
+                for expInfo in exposureInfoList:
+                    run = expInfo.dataId["run"]
+                    qualList = runQualListDict.get(run)
+                    if qualList:
+                        qualList.append(expInfo.qscore)
+                    else:
+                        runQualListDict[run] = [expInfo.qscore]
+                
+                if len(runQualListDict) > self.config.maxRuns:
+                    qualRunList = []
+                    for run, qualList in runQualListDict.iteritems():
+                        runQscore = numpy.median(qualList)
+                        qualRunList.append((runQscore, run))
+                    qualRunList.sort()
+                    qualRunList = qualRunList[0:self.config.maxRuns]
+                    
+                    goodRunSet = set(qr[1] for qr in qualRunList)
+                    exposureInfoList = [ei for ei in exposureInfoList if ei.dataId["run"] in goodRunSet]
 
         return pipeBase.Struct(
             exposureInfoList = exposureInfoList,

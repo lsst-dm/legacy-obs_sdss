@@ -140,8 +140,6 @@ class SdssCalibrateConfig(pexConfig.Config):
         self.initialMeasurement.slots.apFlux = "flux.sinc"
         self.initialMeasurement.slots.modelFlux = None
         self.initialMeasurement.slots.instFlux = None
-        self.background.binSize = 512
-        self.detection.background.binSize = 512
         self.repair.doInterpolate = False
         self.repair.doCosmicRay = False
         self.computeApCorr.alg1.name = "flux.psf"
@@ -163,15 +161,20 @@ class SdssCalibrateTask(CalibrateTask):
         self.makeSubtask("astrometry", schema=self.schema)
         self.starSelectors = {}
         self.psfDeterminers = {}
+        self.starSelectorKey = self.schema.addField(
+            "classification.selectedstar", type="Flag", 
+            doc="Set if the source was selected by the star selector algorithm"
+        )
+        self.psfDeterminerKey = self.schema.addField(
+            "classification.psfstar", type="Flag",
+            doc="Set if the source was used in PSF determination"
+        )                                          
         for filterName in ("u", "g", "r", "i", "z"):
             # We don't pass a schema to the star selectors and PSF determiners (it's optional) because we
             # don't currently have a way to make them all share the same flag field.
             subConfig = getattr(self.config, filterName)
-            self.starSelectors[filterName] = subConfig.starSelector.apply()
-            if subConfig.psfDeterminer.active is None:
-                self.psfDeterminers[filterName] = None
-            else:
-                self.psfDeterminers[filterName] = subConfig.psfDeterminer.apply()
+            self.starSelectors[filterName] = subConfig.starSelector.apply(key=self.starSelectorKey)
+            self.psfDeterminers[filterName] = subConfig.psfDeterminer.apply(key=self.psfDeterminerKey)
         self.makeSubtask("measurement", schema=self.schema, algMetadata=self.algMetadata)
         self.makeSubtask("photocal", schema=self.schema)
 
@@ -252,15 +255,15 @@ class SdssCalibrateTask(CalibrateTask):
         # We always run star selection, but you can set 'starSelector.name = "catalog"'
         # to use stars from the astrometry.net catalog.
         # If we fail, we fall back to a default-constructed catalog star selector.
-        psfCandidateList = self.starSelectors[filterName].selectStars(exposure, sources)
+        psfCandidateList = self.starSelectors[filterName].selectStars(exposure, sources, matches=matches)
         if (len(psfCandidateList) < self.config.minPsfCandidates
             and filterConfig.starSelector.name != "catalog"):
             self.log.warn("'%s' PSF star selector found %d < %d candidates; trying catalog star selector" 
                           % (filterConfig.starSelector.name, len(psfCandidateList),
                              self.config.minPsfCandidates))
             self.metadata.add("StarSelectorStatus", "failed; had to fall back to catalog")
-            selector = CatalogStarSelector()
-            psfCandidateList = selector.selectStars(exposure, sources)
+            selector = CatalogStarSelector(key=self.starSelectorKey)
+            psfCandidateList = selector.selectStars(exposure, sources, matches=matches)
             self.log.log(self.log.INFO, "'catalog' PSF star selector found %d candidates" 
                          % len(psfCandidateList))
         else:
@@ -291,7 +294,10 @@ class SdssCalibrateTask(CalibrateTask):
             self.repair.run(exposure, defects=defects, keepCRs=None)
             self.display('repair', exposure=exposure)
             self.measurement.measure(exposure, sources)   # don't use run, because we don't have apCorr yet
-
+            self.log.log(self.log.INFO, "Re-running astrometry after measurement with improved PSF.")
+            astromRet = self.astrometry.run(exposure, sources)
+            matches = astromRet.matches
+            matchMeta = astromRet.matchMeta
         if self.config.doComputeApCorr:
             if useInputPsf:
                 cellSet = self.makeCellSet(exposure, psfCandidateList)

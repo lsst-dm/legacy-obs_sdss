@@ -6,10 +6,12 @@ root.calibrate.retarget(SdssCalibrateTask)
 # Defaults here just do one, final step to tweak it up, assuming that there's no big
 # DC value to begin with.
 # Open question: what binSize?  Current setting is the same used to process fpCs.
-root.calibrate.doBackground = False
-root.calibrate.detection.reEstimateBackground = False
+root.calibrate.doBackground = True
+root.calibrate.detection.reEstimateBackground = True
 root.detection.reEstimateBackground = True
-root.detection.background.binSize = 512
+root.calibrate.background.binSize = 256
+root.calibrate.detection.background.binSize = 256
+root.detection.background.binSize = 256
 
 # Setting this to True means we use the matched-to PSF ("initPsf") in all bands.
 # The generic default is None, which defers to the per-filter configs, because
@@ -29,6 +31,7 @@ root.calibrate.astrometry.solver.calculateSip = False
 
  # Remove flags.pixel.interpolated.any
 root.calibrate.computeApCorr.badFlags = ("flags.pixel.edge", "flags.pixel.saturated.any")
+root.calibrate.computeApCorr.order = 0
 root.calibrate.photocal.badFlags = ('flags.pixel.edge','flags.pixel.saturated.any')
 
 # JFB: this wasn't being set before #2188, but it probably should have been changed when the other detection
