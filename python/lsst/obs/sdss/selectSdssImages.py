@@ -85,12 +85,23 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         dtype = bool,
         default = True,
     )
+    maxRuns = pexConfig.Field(
+        doc = "maximum runs to select; ignored if None; cannot be specified with maxExposures",
+        dtype = int,
+        optional = True,
+    )
 
     def setDefaults(self):
         BaseSelectImagesTask.ConfigClass.setDefaults(self)
         self.host = "lsst-db.ncsa.illinois.edu"
         self.port = 3306
         self.database = "krughoff_SDSS_quality_db"
+    
+    def validate(self):
+        BaseSelectImagesTask.ConfigClass.validate(self)
+        if (self.maxRuns is not None) and (self.maxExposures is not None):
+            raise RuntimeError("maxRuns=%s or maxExposures=%s must be None" % \
+                (self.maxRuns, self.maxExposures))
 
 
 class ExposureInfo(BaseExposureInfo):
@@ -279,9 +290,34 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
         exposureInfoList.reverse()
 
         if self.config.maxExposures is not None:
+            # select config.maxExposures exposures with the highest qscore
             exposureInfoList = exposureInfoList[0:self.config.maxExposures]
             self.log.log(self.log.INFO, "After maxExposures cut, found %d exposures" % \
                 (len(exposureInfoList),))
+
+        elif self.config.maxRuns is not None:
+            # select config.maxRuns runs with the highest mean qscore
+            # (of those exposures that overlap the patch)
+            runQualListDict = dict()
+            for expInfo in exposureInfoList:
+                run = expInfo.dataId["run"]
+                qualList = runQualListDict.get(run)
+                if qualList:
+                    qualList.append(expInfo.qscore)
+                else:
+                    runQualListDict[run] = [expInfo.qscore]
+            
+            if len(runQualListDict) > self.config.maxRuns:
+                qualRunList = []
+                for run, qualList in runQualListDict.iteritems():
+                    runQscore = numpy.median(qualList)
+                    qualRunList.append((runQscore, run))
+                qualRunList.sort()
+                qualRunList.reverse()
+                qualRunList = qualRunList[0:self.config.maxRuns]
+                
+                goodRunSet = set(qr[1] for qr in qualRunList)
+                exposureInfoList = [ei for ei in exposureInfoList if ei.dataId["run"] in goodRunSet]
 
         return pipeBase.Struct(
             exposureInfoList = exposureInfoList,
