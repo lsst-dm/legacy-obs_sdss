@@ -43,7 +43,7 @@ def getCoordList(minRa, minDec, maxRa, maxDec):
 
 class SdssMapperTestCase(unittest.TestCase):
     """A test case for SelectSdssImagesTask."""
-    def xtestMaxFwhm(self):
+    def testMaxFwhm(self):
         """Test config.maxFwhm
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -55,7 +55,7 @@ class SdssMapperTestCase(unittest.TestCase):
             expInfoList = task.run(coordList, filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.fwhm > maxFwhm), ())
 
-    def xtestMaxAirmass(self):
+    def testMaxAirmass(self):
         """Test config.maxAirmass
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -67,7 +67,7 @@ class SdssMapperTestCase(unittest.TestCase):
             expInfoList = task.run(coordList, filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.airmass > maxAirmass), ())
 
-    def xtestMaxSky(self):
+    def testMaxSky(self):
         """Test config.maxSky
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -79,7 +79,7 @@ class SdssMapperTestCase(unittest.TestCase):
             expInfoList = task.run(coordList, filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.sky > maxSky), ())
     
-    def xtestQuality(self):
+    def testQuality(self):
         """Test config.quality
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -108,7 +108,7 @@ class SdssMapperTestCase(unittest.TestCase):
             else:
                 self.assertGreater(len(blacklistedList), 0)
     
-    def xtestCamcols(self):
+    def testCamcols(self):
         """Test config.camcols
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -120,7 +120,7 @@ class SdssMapperTestCase(unittest.TestCase):
             expInfoList = task.run(coordList, filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.dataId["camcol"] not in camcols), ())
 
-    def xtestStrip(self):
+    def testStrip(self):
         """Test config.strip
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -132,7 +132,7 @@ class SdssMapperTestCase(unittest.TestCase):
             expInfoList = task.run(coordList, filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.strip != strip), ())
 
-    def xtestRejectWholeRuns(self):
+    def testRejectWholeRuns(self):
         """Test config.rejectWholeRuns
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -160,7 +160,7 @@ class SdssMapperTestCase(unittest.TestCase):
             self.assertGreaterEqual(minRa, raList[0])
             self.assertGreaterEqual(raList[-1], maxRa)
     
-    def xtestMaxExposures(self):
+    def testMaxExposures(self):
         """Test config.maxExposures
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -172,7 +172,7 @@ class SdssMapperTestCase(unittest.TestCase):
             expInfoList = task.run(coordList, filter).exposureInfoList
             self.assertEqual(len(expInfoList), maxExposures)
         
-    def xtestMaxRuns(self):                
+    def testMaxRuns(self):                
         """Test config.maxRuns
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -185,7 +185,7 @@ class SdssMapperTestCase(unittest.TestCase):
             runSet = set(expInfo.dataId["run"] for expInfo in expInfoList)
             self.assertEqual(len(runSet), maxRuns)
     
-    def xtestQScore(self):
+    def testQScore(self):
         """Test QScore sorting
         """
         config = SelectSdssImagesTask.ConfigClass()
@@ -204,7 +204,7 @@ class SdssMapperTestCase(unittest.TestCase):
         self.assertGreater(bestExp.quality, worstExp.quality)
         self.assertEqual(bestExp.quality, 3)
     
-    def xtestConfigValidate(self):
+    def testConfigValidate(self):
         config = SelectSdssImagesTask.ConfigClass()
         for maxExposures in (None, 1):
             config.maxExposures = maxExposures
