@@ -20,8 +20,6 @@ try:
     import lsst.meas.extensions.multiShapelet
     root.measurement.algorithms.names += ("multishapelet.psf", "multishapelet.exp", "multishapelet.dev", 
                                           "multishapelet.combo")
-    root.measurement.apCorrFluxes += ("multishapelet.exp.flux", "multishapelet.dev.flux",
-                                      "multishapelet.combo.flux")
     root.measurement.slots.modelFlux = "multishapelet.combo.flux"
 except ImportError:
     # TODO: find a better way to log this
