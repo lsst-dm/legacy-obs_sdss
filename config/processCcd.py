@@ -8,9 +8,9 @@ root.calibrate.r.starSelector.name = "catalog"
 root.calibrate.i.starSelector.name = "catalog"
 root.calibrate.z.starSelector.name = "catalog"
 root.calibrate.useInputPsf = True
-root.calibrate.background.binSize = 256
-root.calibrate.detection.background.binSize = 256
-root.detection.background.binSize = 256
+root.calibrate.background.binSize = 512
+root.calibrate.detection.background.binSize = 512
+root.detection.background.binSize = 512
 
 root.loadSdssWcs = True
 root.calibrate.astrometry.forceKnownWcs = True
