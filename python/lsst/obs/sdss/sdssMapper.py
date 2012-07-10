@@ -20,6 +20,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import cPickle
 import re
 import lsst.pex.policy as pexPolicy
 from lsst.daf.butlerUtils import CameraMapper, exposureFromImage
@@ -142,6 +143,56 @@ class SdssMapper(CameraMapper):
     bypass_keithCoaddId = bypass_ccdExposureId
     bypass_keithCoaddId_bits = bypass_ccdExposureId_bits
 
+    def _query_coadd(self, key, format, dataId, datasetType):
+
+        def _patchResult(patchInfo, results):
+            if datasetType != "chiSquaredCoadd":
+                if 'filter' in dataId and dataId['filter'] in self.filterIdMap:
+                    patchInfo['filter'] = dataId['filter']
+                else:
+                    for filter in self.filterIdMap:
+                        patchInfo['filter'] = filter
+                        result = []
+                        for f in format:
+                            result.append(patchInfo[f])
+                        results.add(tuple(result))
+                    return
+            result = []
+            for f in format:
+                result.append(patchInfo[f])
+            results.add(tuple(result))
+
+        location = self.map(datasetType + "_skyMap", {}).getLocations()[0]
+        location = self._parentSearch(location)
+        with open(location, "rb") as infile:
+            skymap = cPickle.load(infile)
+
+        results = set()
+        patchInfo = dict()
+        for tract in skymap:
+            patchInfo['tract'] = tract.getId()
+            if 'tract' in dataId and patchInfo['tract'] != dataId['tract']:
+                continue
+            xMax, yMax = tract.getNumPatches()
+            if 'patch' in dataId:
+                patchXStr, patchYStr = dataId['patch'].split(",")
+                patchX, patchY = int(patchXStr), int(patchYStr)
+                if patchX < xMax and patchY < yMax:
+                    patchInfo['patch'] = dataId['patch']
+                    _patchResult(patchInfo, results)
+                continue
+            for x in xrange(xMax):
+                for y in xrange(yMax):
+                    patchInfo['patch'] = "%d,%d" % (x, y)
+                    _patchResult(patchInfo, results)
+        return results
+
+    def query_goodSeeingCoadd(self, key, format, dataId):
+        return self._query_coadd(key, format, dataId, "goodSeeingCoadd")
+    def query_deepCoadd(self, key, format, dataId):
+        return self._query_coadd(key, format, dataId, "deepCoadd")
+    def query_chiSquaredCoadd(self, key, format, dataId):
+        return self._query_coadd(key, format, dataId, "chiSquaredCoadd")
 
 ###############################################################################
 
