@@ -76,6 +76,15 @@ class SdssReferencesTask(ReferencesTask):
         fluxErr = db.getColumnByPosFloat(4)
         return RefSource(ident, afwCoord.IcrsCoord(ra, dec), flux, fluxErr)
 
+    def whereClause(self, base):
+        """Update a basic spatial search where clause with other conditions.
+        
+        @param base (str)  SQL WHERE clause for spatial search
+        @return (str)      Modified SQL WHERE clause"""
+
+        # By default, do nothing
+        return base
+
     def getRaDecFromDatabase(self, dataRef, exposure):
         """Get a list of RA, Dec from the database
 
@@ -98,9 +107,11 @@ class SdssReferencesTask(ReferencesTask):
         columns = self.getColumns(dataRef, exposure)
         for col in columns:
             db.outColumn(col)
-        db.setQueryWhere("scisql_s2PtInCircle(ra, decl, %f, %f, %f) = 1" %
-                         (center.getLongitude().asDegrees(), center.getLatitude().asDegrees(),
-                          radius.asDegrees() * self.config.padding))
+        coneSearch = "scisql_s2PtInCircle(ra, decl, %f, %f, %f) = 1" % \
+                (center.getLongitude().asDegrees(),
+                        center.getLatitude().asDegrees(),
+                        radius.asDegrees() * self.config.padding)
+        db.setQueryWhere(self.whereClause(coneSearch))
         db.query()
 
         sourceList = []
@@ -132,6 +143,9 @@ class SdssCoaddReferencesTask(SdssReferencesTask):
         ident = ident[0].lower() + ident[1:]
         return [ident, "ra", "decl", "psfFlux", "psfFluxSigma"]
 
+    def whereClause(self, base):
+        # Use r filter sources only; cheat and don't join to Filter table.
+        return base + " AND filterId = 2"
 
 class SdssCoaddFileReferencesTask(SdssReferencesTask):
     """Forsake the database altogether, and use files available on disk.
