@@ -53,6 +53,24 @@ class GetIdTestCase(unittest.TestCase):
                         camcol=3, filter='g', field=748)
                 self.assertEqual(id, 4933130748)
 
+                bits = self.butler.get("keithCoaddId_bits")
+                id = self.butler.get("keithCoaddId", run=4933,
+                        camcol=3, filter='g', field=748)
+                self.assertEqual(bits, 38)
+                self.assertEqual(id, 4933130748)
+                dataId = dict(tract=1, patch='2,3', filter='z')
+                bits = self.butler.get("goodSeeingCoaddId_bits", dataId)
+                id = self.butler.get("goodSeeingCoaddId", dataId)
+                self.assertEqual(bits, 37)
+                self.assertEqual(id, ((((1L * 8192) + 2) * 8192) + 3)*8 + 4)
+                self.assertEqual(self.butler.get("deepCoaddId_bits", dataId), bits)
+                self.assertEqual(self.butler.get("deepCoaddId", dataId), id)
+                bits = self.butler.get("chiSquaredCoaddId_bits", dataId)
+                id = self.butler.get("chiSquaredCoaddId", dataId)
+                self.assertEqual(bits, 34)
+                self.assertEqual(id, (((1L * 8192) + 2) * 8192) + 3)
+
+
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 def suite():
