@@ -4,14 +4,14 @@ import lsst.afw.table as afwTable
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
 import lsst.daf.persistence as dafPersist
+from lsst.pipe.base import Struct
 from lsst.pipe.tasks.forcedPhot import ReferencesTask, ReferencesConfig
 from lsst.pex.config import Field
 import collections
 
 __all__ = ["SdssReferencesConfig", "SdssReferencesTask", "PolySdssReferencesTask", "TestSdssReferencesTask"]
 
-RefSource = collections.namedtuple("RefSource", ["ident", "coord", "mag", "magErr"])
-
+RefSource = collections.namedtuple("RefSource", ["ident", "coord", "flux", "fluxErr"])
 
 class SdssReferencesConfig(ReferencesConfig):
     dbName = Field(dtype=str, doc="Name of database") # Note: no default, so must be set by an override
@@ -33,8 +33,8 @@ class SdssReferencesTask(ReferencesTask):
         sourceList = self.getRaDecFromDatabase(dataRef, exposure)
 
         schema = afwTable.SourceTable.makeMinimalSchema()
-        magKey = schema.addField("refMag", float, "Magnitude from database", "mag")
-        magErrKey = schema.addField("refMag.err", float, "Magnitude error from database", "mag")
+        fluxKey = schema.addField("refFlux", float, "Flux from database", "counts")
+        fluxErrKey = schema.addField("refFlux.err", float, "Flux error from database", "counts")
         
         references = afwTable.SourceCatalog(schema)
         table = references.table
@@ -43,53 +43,137 @@ class SdssReferencesTask(ReferencesTask):
             ref = table.makeRecord()
             ref.setId(source.ident)
             ref.setCoord(source.coord)
-            ref.set(magKey, source.mag)
-            ref.set(magErrKey, source.magErr)
+            ref.set(fluxKey, source.flux)
+            ref.set(fluxErrKey, source.fluxErr)
             references.append(ref)
 
         return references
+
+    def getTables(self):
+        """Return a list of which tables to include in the query"""
+        return ["Object"]
+
+    def getColumns(self, dataRef, exposure):
+        """Return which columns to get in the query
+
+        @param dataRef     Data reference from butler
+        @param exposure    Exposure that has been read
+        @return List of column names
+        """
+        filterName = exposure.getFilter().getName()
+        return ["objectId", "ra", "decl", filterName + "PsfFlux", filterName + "PsfFluxSigma"]
+
+    def parseRow(self, db):
+        """Parse a row returned from the query
+
+        @param db Database handle
+        @return RefSource
+        """
+        ident = db.getColumnByPosInt64(0)
+        ra = db.getColumnByPosDouble(1) * afwGeom.degrees
+        dec = db.getColumnByPosDouble(2) * afwGeom.degrees
+        flux = db.getColumnByPosFloat(3)
+        fluxErr = db.getColumnByPosFloat(4)
+        return RefSource(ident, afwCoord.IcrsCoord(ra, dec), flux, fluxErr)
+
+    def whereClause(self, base):
+        """Update a basic spatial search where clause with other conditions.
+        
+        @param base (str)  SQL WHERE clause for spatial search
+        @return (str)      Modified SQL WHERE clause"""
+
+        # By default, do nothing
+        return base
 
     def getRaDecFromDatabase(self, dataRef, exposure):
         """Get a list of RA, Dec from the database
 
         @param dataRef     Data reference, which includes the identifiers
+        @param exposure    Exposure that has been read
         @return List of RefSources
         """
         dbFullUrl = self.config.dbUrl + self.config.dbName
 
-        filtName = exposure.getFilter().getName()
-
         wcs = exposure.getWcs()
         width, height = exposure.getWidth(), exposure.getHeight()
         center = wcs.pixelToSky(afwGeom.Point2D(width/2.0, height/2.0))
-        radius = center.angularSeparation(wcs.pixelToSky(afwGeom.Point2D(0.0, 0.0)))
+        llc = wcs.pixelToSky(afwGeom.Point2D(0.0, 0.0))
+        radius = center.angularSeparation(llc)
 
         db = dafPersist.DbStorage()
         db.setPersistLocation(dafPersist.LogicalLocation(dbFullUrl))
         db.startTransaction()
-        db.setTableListForQuery(["RefObject"])
-        db.outColumn("refObjectId")
-        db.outColumn("ra")
-        db.outColumn("decl")
-        db.outColumn(filtName + "Mag")
-        db.outColumn(filtName + "MagSigma")
-        db.setQueryWhere("scisql_s2PtInCircle(ra, decl, %f, %f, %f) = 1" %
-                         (center.getLongitude().asDegrees(), center.getLatitude().asDegrees(),
-                          radius.asDegrees() * self.config.padding))
+        db.setTableListForQuery(self.getTables())
+        columns = self.getColumns(dataRef, exposure)
+        for col in columns:
+            db.outColumn(col)
+        coneSearch = "scisql_s2PtInCircle(ra, decl, %f, %f, %f) = 1" % \
+                (center.getLongitude().asDegrees(),
+                        center.getLatitude().asDegrees(),
+                        radius.asDegrees() * self.config.padding)
+        db.setQueryWhere(self.whereClause(coneSearch))
         db.query()
 
         sourceList = []
         while db.next():
-            ident = db.getColumnByPosInt64(0)
-            ra = db.getColumnByPosDouble(1) * afwGeom.degrees
-            dec = db.getColumnByPosDouble(2) * afwGeom.degrees
-            mag = db.getColumnByPosFloat(3)
-            magErr = db.getColumnByPosFloat(4)
-            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec), mag, magErr))
+            source = self.parseRow(db)
+            sourceList.append(source)
 
         db.finishQuery()
         db.endTransaction()
         return sourceList
+
+
+class SdssCoaddReferencesConfig(SdssReferencesConfig):
+    """Configuration for references from a coadd table"""
+    coaddName = Field(dtype=str, default="goodSeeing", doc="Name of coadd reference")
+
+class SdssCoaddReferencesTask(SdssReferencesTask):
+    """Use a coadd table instead of the Object table."""
+
+    ConfigClass = SdssCoaddReferencesConfig
+    
+    def getTables(self):
+        table = self.config.coaddName + "Source"
+        table = table[0].upper() + table[1:]
+        return [table]
+
+    def getColumns(self, dataRef, exposure):
+        ident = self.config.coaddName + "SourceId"
+        ident = ident[0].lower() + ident[1:]
+        return [ident, "ra", "decl", "psfFlux", "psfFluxSigma"]
+
+    def whereClause(self, base):
+        # Use r filter sources only; cheat and don't join to Filter table.
+        return base + " AND filterId = 2"
+
+class SdssCoaddFileReferencesTask(SdssReferencesTask):
+    """Forsake the database altogether, and use files available on disk.
+
+    This can be useful for testing.
+    """
+    def getRaDecFromDatabase(self, dataRef, exposure):
+        butler = dataRef.getButler()
+
+        sourceList = []
+
+        wcs = exposure.getWcs()
+        width, height = exposure.getWidth(), exposure.getHeight()
+        pointList = [(0,0), (width, 0), (width, height), (0, height)]
+        coordList = [wcs.pixelToSky(afwGeom.Point2D(x, y)) for x, y in pointList]
+        skymap = butler.get(self.config.coaddName + "Coadd_skyMap")
+        tractPatchList = skymap.findTractPatchList(coordList)
+
+        for tractInfo, patchInfoList in tractPatchList:
+            for patchInfo in patchInfoList:
+                catalog = butler.get(self.config.coaddName + "Coadd_src",
+                                     filter=exposure.getFilter().getName(),
+                                     tract=tractInfo.getId(), patch="%d,%d" % patchInfo.getIndex())
+                for src in catalog:
+                    sourceList.append(RefSource(src.getId(), src.getCoord(),
+                                                src.getPsfFlux(), src.getPsfFluxErr()))
+
+        return sourceList                                 
 
 
 class PolySdssReferencesTask(SdssReferencesTask):

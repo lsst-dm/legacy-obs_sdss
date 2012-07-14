@@ -9,9 +9,9 @@ root.calibrate.retarget(SdssCalibrateTask)
 root.calibrate.doBackground = True
 root.calibrate.detection.reEstimateBackground = True
 root.detection.reEstimateBackground = True
-root.calibrate.background.binSize = 256
-root.calibrate.detection.background.binSize = 256
-root.detection.background.binSize = 256
+root.calibrate.background.binSize = 512
+root.calibrate.detection.background.binSize = 512
+root.detection.background.binSize = 512
 
 # Setting this to True means we use the matched-to PSF ("initPsf") in all bands.
 # The generic default is None, which defers to the per-filter configs, because
@@ -44,8 +44,6 @@ try:
     import lsst.meas.extensions.multiShapelet
     root.measurement.algorithms.names += ("multishapelet.psf", "multishapelet.exp", "multishapelet.dev", 
                                           "multishapelet.combo")
-    root.measurement.apCorrFluxes += ("multishapelet.exp.flux", "multishapelet.dev.flux",
-                                      "multishapelet.combo.flux")
     root.measurement.slots.modelFlux = "multishapelet.combo.flux"
     # PSF should be exactly double-Gaussian (zeroth-order shapelet)
     root.measurement.algorithms["multishapelet.psf"].innerOrder = 0
