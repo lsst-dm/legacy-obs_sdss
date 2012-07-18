@@ -29,13 +29,12 @@ for filterName in ("u", "g", "r", "i", "z"):
 root.calibrate.astrometry.forceKnownWcs = True
 root.calibrate.astrometry.solver.calculateSip = False
 
- # Remove flags.pixel.interpolated.any
+# Remove flags.pixel.interpolated.any
 root.calibrate.computeApCorr.badFlags = ("flags.pixel.edge", "flags.pixel.saturated.any")
 root.calibrate.computeApCorr.order = 0
 root.calibrate.photocal.badFlags = ('flags.pixel.edge','flags.pixel.saturated.any')
 
-# JFB: this wasn't being set before #2188, but it probably should have been changed when the other detection
-# threshold was.
+# Official config for Summer 2012
 root.calibrate.detection.thresholdType = "pixel_stdev"
 root.detection.thresholdType = "pixel_stdev"
 
