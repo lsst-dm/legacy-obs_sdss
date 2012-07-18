@@ -22,9 +22,10 @@ root.calibrate.useInputPsf = False
 # useInputPsf is not True.
 for filterName in ("u", "g", "r", "i", "z"):
     subConfig = getattr(root.calibrate, filterName)
-    subConfig.psfDeterminer["pca"].spatialOrder    = 1  # Should be spatially invariant
+    subConfig.psfDeterminer["pca"].spatialOrder    = 2  
     subConfig.psfDeterminer["pca"].kernelSizeMin   = 31 # Larger Psfs
     subConfig.starSelector["secondMoment"].fluxLim = 3000.0
+    subConfig.starSelector.name = "catalog"
 
 root.calibrate.astrometry.forceKnownWcs = True
 root.calibrate.astrometry.solver.calculateSip = False
