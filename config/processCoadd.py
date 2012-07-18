@@ -5,10 +5,10 @@ root.calibrate.retarget(SdssCalibrateTask)
 # (answer obviously changes if we implement background-matching).
 # Defaults here just do one, final step to tweak it up, assuming that there's no big
 # DC value to begin with.
-# Open question: what binSize?  Current setting is the same used to process fpCs.
 root.calibrate.doBackground = True
 root.calibrate.detection.reEstimateBackground = True
 root.detection.reEstimateBackground = True
+# Official Summer2012 background binSize
 root.calibrate.background.binSize = 512
 root.calibrate.detection.background.binSize = 512
 root.detection.background.binSize = 512
