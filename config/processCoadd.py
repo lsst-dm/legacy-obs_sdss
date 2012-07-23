@@ -39,6 +39,9 @@ root.calibrate.photocal.badFlags = ('flags.pixel.edge','flags.pixel.saturated.an
 root.calibrate.detection.thresholdType = "pixel_stdev"
 root.detection.thresholdType = "pixel_stdev"
 
+# For detection
+root.calibrate.initialPsf.fwhm=1.7
+
 try:
     # Enable multiShapelet for model mags.
     import lsst.meas.extensions.multiShapelet
