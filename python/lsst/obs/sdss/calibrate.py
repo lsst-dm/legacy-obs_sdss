@@ -299,6 +299,7 @@ class SdssCalibrateTask(CalibrateTask):
                 self.metadata.add("PsfDeterminerStatus", "failed; had to fall back to initial PSF")
                 psf = initialPsf
         else:
+            self.log.log(self.log.INFO, "Not running PSF determination")
             psf = initialPsf
         
         # If we aren't using the input PSF, we need to re-repair and re-measure before doing
