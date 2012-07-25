@@ -124,6 +124,11 @@ class SdssCalibrateConfig(pexConfig.Config):
             "If False, use the PSF defined by initialPsf (and ignore the PSF in the exposure)."
             "See also doPsf, which controls whether a better PSF is determined.")
     )
+    doPsf = pexConfig.Field(
+        dtype=bool,
+        optional = True,
+        doc=("Do PSF fitting?")
+    )
     minPsfCandidates = pexConfig.Field(
         dtype=int, default=1,
         doc=("If the number of candidates returned by the star selector is less than this amount, "
