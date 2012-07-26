@@ -13,10 +13,11 @@ root.calibrate.background.binSize = 512
 root.calibrate.detection.background.binSize = 512
 root.detection.background.binSize = 512
 
-# Setting this to True means we use the matched-to PSF ("initPsf") in all bands.
-# The generic default is None, which defers to the per-filter configs, because
-# that's what we need for fpC processing.
-root.calibrate.useInputPsf = False
+# Our non-PSF-matched coadds have lousy PSFs so don't try to fit a PSF
+# Also: use a double Gaussian as the initialPsf model because a SingleGaussian cannot be persisted.
+root.calibrate.useExposurePsf = False
+root.calibrate.doPsf = False
+root.calibrate.initialPsf.model='DoubleGaussian'
 
 # The settings below only matter for determining stars to pass to the aperture corrections unless
 # useInputPsf is not True.
