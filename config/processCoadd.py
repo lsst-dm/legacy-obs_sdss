@@ -42,8 +42,7 @@ root.detection.thresholdType = "pixel_stdev"
 try:
     # Enable multiShapelet for model mags.
     import lsst.meas.extensions.multiShapelet
-    root.measurement.algorithms.names += ("multishapelet.psf", "multishapelet.exp", "multishapelet.dev", 
-                                          "multishapelet.combo")
+    root.measurement.algorithms.names.update(lsst.meas.extensions.multiShapelet.algorithms)
     root.measurement.slots.modelFlux = "multishapelet.combo.flux"
     # PSF should be exactly double-Gaussian (zeroth-order shapelet)
     root.measurement.algorithms["multishapelet.psf"].innerOrder = 0
