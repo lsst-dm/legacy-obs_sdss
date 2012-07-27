@@ -308,7 +308,7 @@ class SdssCalibrateTask(CalibrateTask):
             self.measurement.applyApCorr(sources, apCorr)
 
         if self.config.doPhotoCal:
-            photocalRet = self.photocal.run(matches, exposure.getFilter().getName())
+            photocalRet = self.photocal.run(exposure, matches)
             zp = photocalRet.photocal
             self.log.log(self.log.INFO, "Photometric zero-point: %f" % zp.getMag(1.0))
             exposure.getCalib().setFluxMag0(zp.getFlux(0))
