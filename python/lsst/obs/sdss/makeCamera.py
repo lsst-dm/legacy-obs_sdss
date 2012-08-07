@@ -59,7 +59,8 @@ def makeAmp(i, eparams):
 # Make a Ccd out of 2 Amps
 #
 def makeCcd(ccdName):
-    sc = SdssCameraState("/lsst7/stripe82/dr7/opfiles", "opConfig-50000.par", "opECalib-50000.par")
+    opDir = os.path.join(os.environ['OBS_SDSS_DIR'], "etc")
+    sc = SdssCameraState(opDir, "opConfig-50000.par", "opECalib-50000.par")
     eparams = sc.getEParams(ccdName)
 
     pixelSize = 24e-3                   # pixel size in mm
