@@ -205,6 +205,8 @@ class SdssMapperTestCase(unittest.TestCase):
         self.assertEqual(bestExp.quality, 3)
     
     def testConfigValidate(self):
+        """Test validation of config
+        """
         config = SelectSdssImagesTask.ConfigClass()
         for maxExposures in (None, 1):
             config.maxExposures = maxExposures
@@ -214,6 +216,33 @@ class SdssMapperTestCase(unittest.TestCase):
                     self.assertRaises(Exception, config.validate)
                 else:
                     config.validate() # should not raise an exception
+    
+    def testTable(self):
+        """Test config.table
+        """
+        config = SelectSdssImagesTask.ConfigClass()
+        config.table = "Bad_table_name_JutmgQEXm76O38VDtcNAICLrtQiSQ64y"
+        task = SelectSdssImagesTask(config=config)
+        for coordList in [None, getCoordList(333.746,-0.63606,334.522,-0.41341)]:
+            filter = "g"
+            self.assertRaises(Exception, task.run, coordList, filter)
+        
+    def testWholeSky(self):
+        """Test whole-sky search (slow so don't do much)
+        """
+        config = SelectSdssImagesTask.ConfigClass()
+        config.camcols = (2,)
+        config.quality = 1
+        config.rejectWholeRuns = False
+        task = SelectSdssImagesTask(config=config)
+        coordList = None
+        filter = "g"
+        expInfoList = task.run(coordList, filter).exposureInfoList
+        self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.quality < config.quality), ())
+        print "found %s exposures" % (len(expInfoList),)
+        self.assertEqual(tuple(expInfo for expInfo in expInfoList \
+            if expInfo.dataId["camcol"] not in config.camcols), ())
+    
 
 def suite():
     utilsTests.init()

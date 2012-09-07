@@ -109,7 +109,7 @@ class ExposureInfo(BaseExposureInfo):
     - dataId: data ID of exposure (a dict)
     - coordList: a list of corner coordinates of the exposure (list of IcrsCoord)
     - fwhm: mean FWHM of exposure
-    - quality: quality field from SeasonFieldQuality_Test table
+    - quality: quality field from self.config.table
     """
     def __init__(self, result):
         """Set exposure information based on a query result from a db connection
@@ -203,17 +203,17 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         
             # find exposures that meet fundamental criteria: geometry, filter, camcol and strip.
             # Handle quality-related criteria later to allow rejecting runs that don't fully cover the patch.
-            queryStr = ("""select %s
-from SeasonFieldQuality_Test as ccdExp,
+            queryStr = """select %s
+from %s as ccdExp,
     (select distinct fieldid
     from SeasonFieldQuality_To_Htm10 as ccdHtm inner join scisql.Region
     on (ccdHtm.htmId10 between scisql.Region.htmMin and scisql.Region.htmMax)
     where ccdHtm.filter = \"%s\") as idList
-where ccdExp.fieldid = idList.fieldid and """ % (ExposureInfo.getColumnNames(), filter))
+where ccdExp.fieldid = idList.fieldid and """ % (ExposureInfo.getColumnNames(), self.config.table, filter)
         else:
             # no region specified; look over the whole sky
-            queryStr = ("""select %s
-from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
+            queryStr = """select %s
+from %s as ccdExp where """ % (ExposureInfo.getColumnNames(), self.config.table)
         
         # compute where clauses as a list of (clause, data)
         whereDataList = [
