@@ -161,22 +161,25 @@ class SdssCalibrateTask(CalibrateTask):
         self.makeSubtask("astrometry", schema=self.schema)
         self.starSelectors = {}
         self.psfDeterminers = {}
-        self.starSelectorKey = self.schema.addField(
-            "classification.selectedstar", type="Flag", 
+        self.psfCandidateKey = self.schema.addField(
+            "calib.psf.candidate", type="Flag", 
             doc="Set if the source was selected by the star selector algorithm"
         )
-        self.psfDeterminerKey = self.schema.addField(
-            "classification.psfstar", type="Flag",
+        self.psfUsedKey = self.schema.addField(
+            "calib.psf.used", type="Flag",
             doc="Set if the source was used in PSF determination"
         )                                          
         for filterName in ("u", "g", "r", "i", "z"):
             # We don't pass a schema to the star selectors and PSF determiners (it's optional) because we
             # don't currently have a way to make them all share the same flag field.
             subConfig = getattr(self.config, filterName)
-            self.starSelectors[filterName] = subConfig.starSelector.apply(key=self.starSelectorKey)
-            self.psfDeterminers[filterName] = subConfig.psfDeterminer.apply(key=self.psfDeterminerKey)
+            self.starSelectors[filterName] = subConfig.starSelector.apply()
+            self.psfDeterminers[filterName] = subConfig.psfDeterminer.apply()
         self.makeSubtask("measurement", schema=self.schema, algMetadata=self.algMetadata)
         self.makeSubtask("photocal", schema=self.schema)
+
+    def getCalibKeys(self):
+        return (self.psfCandidateKey, self.psfUsedKey)
 
     @pipeBase.timeMethod
     def run(self, exposure, defects=None, idFactory=None):
@@ -262,18 +265,23 @@ class SdssCalibrateTask(CalibrateTask):
                           % (filterConfig.starSelector.name, len(psfCandidateList),
                              self.config.minPsfCandidates))
             self.metadata.add("StarSelectorStatus", "failed; had to fall back to catalog")
-            selector = CatalogStarSelector(key=self.starSelectorKey)
+            selector = CatalogStarSelector()
             psfCandidateList = selector.selectStars(exposure, sources, matches=matches)
             self.log.log(self.log.INFO, "'catalog' PSF star selector found %d candidates" 
                          % len(psfCandidateList))
         else:
             self.log.log(self.log.INFO, "'%s' PSF star selector found %d candidates" 
                          % (filterConfig.starSelector.name, len(psfCandidateList)))
+        if psfCandidateList and self.psfCandidateKey is not None:
+            for cand in psfCandidateList:
+                source = cand.getSource()
+                source.set(self.psfCandidateKey, True)
 
         if not useInputPsf:
             try:
                 psf, cellSet = self.psfDeterminers[filterName].determinePsf(exposure, psfCandidateList,
-                                                                            self.metadata)
+                                                                            self.metadata,
+                                                                            flagKey=self.psfUsedKey)
                 self.log.log(self.log.INFO, "PSF determination using %d/%d stars." % 
                              (self.metadata.get("numGoodStars"), self.metadata.get("numAvailStars")))
                 exposure.setPsf(psf)
