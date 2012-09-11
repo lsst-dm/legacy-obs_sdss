@@ -31,6 +31,8 @@ import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
 from lsst.obs.sdss.selectSdssImages import SelectSdssImagesTask
 
+Database = "test_select_sdss_images"
+
 
 def getCoordList(minRa, minDec, maxRa, maxDec):
     degList = (
@@ -48,6 +50,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         for maxFwhm in (1.2, 1.3):
             config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxFwhm = maxFwhm
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
@@ -60,6 +63,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         for maxAirmass in (1.2, 1.3):
             config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxAirmass = maxAirmass
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
@@ -72,6 +76,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         for maxSky in (5.0e-9, 1.0e-8):
             config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxSky = maxSky
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
@@ -84,6 +89,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         for quality in (1, 2, 3):
             config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.quality = quality
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
@@ -96,6 +102,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         for cullBlacklisted in (False, True):
             config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.quality = 1
             config.cullBlacklisted = cullBlacklisted
             task = SelectSdssImagesTask(config=config)
@@ -113,6 +120,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         for camcols in ((1, 3, 4), (2,)):
             config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.camcols = camcols
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
@@ -125,6 +133,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         for strip in ("S", "N"):
             config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.strip = strip
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
@@ -136,6 +145,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """Test config.rejectWholeRuns
         """
         config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
         config.maxFwhm = 1.25 # make sure to cut out some partial runs
         config.rejectWholeRuns = True
         task = SelectSdssImagesTask(config=config)
@@ -165,6 +175,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         for maxExposures in (0, 6):
             config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxExposures = maxExposures
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
@@ -177,6 +188,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         for maxRuns in (0, 2):
             config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxRuns = maxRuns
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
@@ -189,6 +201,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """Test QScore sorting
         """
         config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
         config.quality = 1
         config.rejectWholeRuns = False
         task = SelectSdssImagesTask(config=config)
@@ -210,6 +223,7 @@ class SdssMapperTestCase(unittest.TestCase):
         for maxExposures in (None, 1):
             for maxRuns in (None, 1):
                 config = SelectSdssImagesTask.ConfigClass()
+                config.database = Database
                 config.maxExposures = maxExposures
                 config.maxRuns = maxRuns
                 if maxExposures and maxRuns:
@@ -218,6 +232,7 @@ class SdssMapperTestCase(unittest.TestCase):
                     config.validate() # should not raise an exception
         
         config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
         config.table = "invalid*name"
         self.assertRaises(Exception, config.validate)
     
@@ -226,6 +241,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         coordList = getCoordList(333.7,-0.6,333.71,-0.59)
         config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
         task = SelectSdssImagesTask(config=config)
         for charVal in range(ord("a"), ord("z")+1):
             filter = chr(charVal)
@@ -248,6 +264,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """Test whole-sky search (slow so don't do much)
         """
         config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
         config.camcols = (2,)
         config.quality = 1
         config.rejectWholeRuns = False
