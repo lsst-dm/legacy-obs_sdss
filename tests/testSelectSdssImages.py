@@ -31,6 +31,8 @@ import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
 from lsst.obs.sdss.selectSdssImages import SelectSdssImagesTask
 
+Database = "test_select_sdss_images"
+
 
 def getCoordList(minRa, minDec, maxRa, maxDec):
     degList = (
@@ -46,62 +48,67 @@ class SdssMapperTestCase(unittest.TestCase):
     def testMaxFwhm(self):
         """Test config.maxFwhm
         """
-        config = SelectSdssImagesTask.ConfigClass()
         for maxFwhm in (1.2, 1.3):
+            config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxFwhm = maxFwhm
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
             filter = "g"
-            expInfoList = task.run(coordList, filter).exposureInfoList
+            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.fwhm > maxFwhm), ())
 
     def testMaxAirmass(self):
         """Test config.maxAirmass
         """
-        config = SelectSdssImagesTask.ConfigClass()
         for maxAirmass in (1.2, 1.3):
+            config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxAirmass = maxAirmass
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
             filter = "g"
-            expInfoList = task.run(coordList, filter).exposureInfoList
+            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.airmass > maxAirmass), ())
 
     def testMaxSky(self):
         """Test config.maxSky
         """
-        config = SelectSdssImagesTask.ConfigClass()
         for maxSky in (5.0e-9, 1.0e-8):
+            config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxSky = maxSky
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
             filter = "g"
-            expInfoList = task.run(coordList, filter).exposureInfoList
+            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.sky > maxSky), ())
     
     def testQuality(self):
         """Test config.quality
         """
-        config = SelectSdssImagesTask.ConfigClass()
         for quality in (1, 2, 3):
+            config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.quality = quality
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
             filter = "g"
-            expInfoList = task.run(coordList, filter).exposureInfoList
+            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.quality < quality), ())
     
     def testCullBlacklisted(self):
         """Test config.cullBlacklisted
         """
-        config = SelectSdssImagesTask.ConfigClass()
         for cullBlacklisted in (False, True):
+            config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.quality = 1
             config.cullBlacklisted = cullBlacklisted
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(300,-0.63606,302,-0.41341)
             filter = "g"
-            expInfoList = task.run(coordList, filter).exposureInfoList
+            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             blacklistedList = tuple(expInfo for expInfo in expInfoList if expInfo.isBlacklisted)
             if cullBlacklisted:
                 self.assertEqual(blacklistedList, ())
@@ -111,31 +118,34 @@ class SdssMapperTestCase(unittest.TestCase):
     def testCamcols(self):
         """Test config.camcols
         """
-        config = SelectSdssImagesTask.ConfigClass()
         for camcols in ((1, 3, 4), (2,)):
+            config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.camcols = camcols
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
             filter = "g"
-            expInfoList = task.run(coordList, filter).exposureInfoList
+            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.dataId["camcol"] not in camcols), ())
 
     def testStrip(self):
         """Test config.strip
         """
-        config = SelectSdssImagesTask.ConfigClass()
         for strip in ("S", "N"):
+            config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.strip = strip
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
             filter = "g"
-            expInfoList = task.run(coordList, filter).exposureInfoList
+            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.strip != strip), ())
 
     def testRejectWholeRuns(self):
         """Test config.rejectWholeRuns
         """
         config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
         config.maxFwhm = 1.25 # make sure to cut out some partial runs
         config.rejectWholeRuns = True
         task = SelectSdssImagesTask(config=config)
@@ -143,7 +153,7 @@ class SdssMapperTestCase(unittest.TestCase):
         maxRa = 334.522
         coordList = getCoordList(minRa,-0.63606,maxRa,-0.41341)
         filter = "g"
-        expInfoList = task.run(coordList, filter).exposureInfoList
+        expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
         runExpInfoDict = dict()
         for expInfo in expInfoList:
             run = expInfo.dataId["run"]
@@ -163,25 +173,27 @@ class SdssMapperTestCase(unittest.TestCase):
     def testMaxExposures(self):
         """Test config.maxExposures
         """
-        config = SelectSdssImagesTask.ConfigClass()
         for maxExposures in (0, 6):
+            config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxExposures = maxExposures
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
             filter = "g"
-            expInfoList = task.run(coordList, filter).exposureInfoList
+            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(len(expInfoList), maxExposures)
         
     def testMaxRuns(self):                
         """Test config.maxRuns
         """
-        config = SelectSdssImagesTask.ConfigClass()
         for maxRuns in (0, 2):
+            config = SelectSdssImagesTask.ConfigClass()
+            config.database = Database
             config.maxRuns = maxRuns
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
             filter = "g"
-            expInfoList = task.run(coordList, filter).exposureInfoList
+            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             runSet = set(expInfo.dataId["run"] for expInfo in expInfoList)
             self.assertEqual(len(runSet), maxRuns)
     
@@ -189,12 +201,13 @@ class SdssMapperTestCase(unittest.TestCase):
         """Test QScore sorting
         """
         config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
         config.quality = 1
         config.rejectWholeRuns = False
         task = SelectSdssImagesTask(config=config)
         coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
         filter = "g"
-        expInfoList = task.run(coordList, filter).exposureInfoList
+        expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
         qscoreList = list(expInfo.qscore for expInfo in expInfoList)
         self.assertEqual(qscoreList, sorted(qscoreList))
         bestExp = expInfoList[0]
@@ -205,15 +218,65 @@ class SdssMapperTestCase(unittest.TestCase):
         self.assertEqual(bestExp.quality, 3)
     
     def testConfigValidate(self):
-        config = SelectSdssImagesTask.ConfigClass()
+        """Test validation of config
+        """
         for maxExposures in (None, 1):
-            config.maxExposures = maxExposures
             for maxRuns in (None, 1):
+                config = SelectSdssImagesTask.ConfigClass()
+                config.database = Database
+                config.maxExposures = maxExposures
                 config.maxRuns = maxRuns
                 if maxExposures and maxRuns:
                     self.assertRaises(Exception, config.validate)
                 else:
                     config.validate() # should not raise an exception
+        
+        config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
+        config.table = "invalid*name"
+        self.assertRaises(Exception, config.validate)
+    
+    def testFilterValidation(self):
+        """Test filter name validation
+        """
+        coordList = getCoordList(333.7,-0.6,333.71,-0.59)
+        config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
+        task = SelectSdssImagesTask(config=config)
+        for charVal in range(ord("a"), ord("z")+1):
+            filter = chr(charVal)
+            if filter in ("u", "g", "r", "i", "z"):
+                task.run(coordList=coordList, filter=filter)
+            else:
+                self.assertRaises(Exception, task.run, coordList, filter)
+            
+    def testTable(self):
+        """Test config.table
+        """
+        config = SelectSdssImagesTask.ConfigClass()
+        config.table = "Bad_table_name_JutmgQEXm76O38VDtcNAICLrtQiSQ64y"
+        task = SelectSdssImagesTask(config=config)
+        for coordList in [None, getCoordList(333.746,-0.63606,334.522,-0.41341)]:
+            filter = "g"
+            self.assertRaises(Exception, task.run, coordList, filter)
+        
+    def testWholeSky(self):
+        """Test whole-sky search (slow so don't do much)
+        """
+        config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
+        config.camcols = (2,)
+        config.quality = 1
+        config.rejectWholeRuns = False
+        task = SelectSdssImagesTask(config=config)
+        coordList = None
+        filter = "g"
+        expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
+        self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.quality < config.quality), ())
+        print "found %s exposures" % (len(expInfoList),)
+        self.assertEqual(tuple(expInfo for expInfo in expInfoList \
+            if expInfo.dataId["camcol"] not in config.camcols), ())
+    
 
 def suite():
     utilsTests.init()

@@ -24,6 +24,7 @@ import math
 import MySQLdb
 import numpy
 import os
+import re
 
 import lsst.pex.config as pexConfig
 from lsst.afw.coord import IcrsCoord
@@ -100,6 +101,8 @@ class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
         if (self.maxRuns is not None) and (self.maxExposures is not None):
             raise RuntimeError("maxRuns=%s or maxExposures=%s must be None" % \
                 (self.maxRuns, self.maxExposures))
+        if not re.match(r"^[a-zA-Z0-9_.]+$", self.table):
+            raise RuntimeError("table=%r is an invalid name" % (self.table,))
 
 
 class ExposureInfo(BaseExposureInfo):
@@ -109,7 +112,7 @@ class ExposureInfo(BaseExposureInfo):
     - dataId: data ID of exposure (a dict)
     - coordList: a list of corner coordinates of the exposure (list of IcrsCoord)
     - fwhm: mean FWHM of exposure
-    - quality: quality field from SeasonFieldQuality_Test table
+    - quality: quality field from self.config.table
     """
     def __init__(self, result):
         """Set exposure information based on a query result from a db connection
@@ -147,7 +150,7 @@ class ExposureInfo(BaseExposureInfo):
         
         @return database column names as list of strings
         """
-        return ", ".join(
+        return (
             "run rerun camcol field filter ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() + \
             "strip psfWidth sky airmass quality isblacklisted".split()
         )
@@ -167,7 +170,12 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
         
         @return a pipeBase Struct containing:
         - exposureInfoList: a list of ExposureInfo objects
+    
+        @raise RuntimeError if filter not one of "u", "g", "r", "i" or "z"
         """
+        if filter not in set(("u", "g", "r", "i", "z")):
+            raise RuntimeError("filter=%r is an invalid name" % (filter,))
+
         read_default_file=os.path.expanduser("~/.my.cnf")
 
         try:
@@ -189,6 +197,12 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
             **kwargs
         )
         cursor = db.cursor()
+        
+        columnNames = tuple(ExposureInfo.getColumnNames())
+        if not columnNames:
+            raise RuntimeError("Bug: no column names")
+        queryStr = "select %s " % (", ".join(columnNames),)
+        dataTuple = () # tuple(columnNames)
 
         if coordList is not None:
             # look for exposures that overlap the specified region
@@ -200,20 +214,19 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
             coordCmd = "call scisql.scisql_s2CPolyRegion(scisql_s2CPolyToBin(%s), 10)" % (coordStr,)
             cursor.execute(coordCmd)
             cursor.nextset() # ignore one-line result of coordCmd
-        
-            # find exposures that meet fundamental criteria: geometry, filter, camcol and strip.
-            # Handle quality-related criteria later to allow rejecting runs that don't fully cover the patch.
-            queryStr = ("""select %s
-from SeasonFieldQuality_Test as ccdExp,
+
+            queryStr += """
+from %s as ccdExp,
     (select distinct fieldid
     from SeasonFieldQuality_To_Htm10 as ccdHtm inner join scisql.Region
     on (ccdHtm.htmId10 between scisql.Region.htmMin and scisql.Region.htmMax)
-    where ccdHtm.filter = \"%s\") as idList
-where ccdExp.fieldid = idList.fieldid and """ % (ExposureInfo.getColumnNames(), filter))
+    where ccdHtm.filter = %%s) as idList
+where ccdExp.fieldid = idList.fieldid and """ % (self.config.table,)
+            dataTuple += (filter,)
         else:
             # no region specified; look over the whole sky
-            queryStr = ("""select %s
-from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
+            queryStr += """
+from %s as ccdExp where """ % (self.config.table,)
         
         # compute where clauses as a list of (clause, data)
         whereDataList = [
@@ -227,9 +240,9 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
             whereDataList.append(("strip = %s", self.config.strip))
         
         queryStr += " and ".join(wd[0] for wd in whereDataList)
-        dataTuple = tuple(wd[1] for wd in whereDataList)
+        dataTuple += tuple(wd[1] for wd in whereDataList)
         
-        self.log.log(self.log.INFO, "queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
+        self.log.info("queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
 
         cursor.execute(queryStr, dataTuple)
         exposureInfoList = [ExposureInfo(result) for result in cursor]
@@ -243,7 +256,7 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
             else:
                 runExpInfoSetDict[run] = set([expInfo])
         
-        self.log.log(self.log.INFO, "Before quality cuts found %d exposures in %d runs" % \
+        self.log.info("Before quality cuts found %d exposures in %d runs" % \
             (len(exposureInfoList), len(runExpInfoSetDict)))
         
         goodRunSet = set()
@@ -276,7 +289,7 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
 
                     goodExposureInfoList += list(expInfoSet)
                     goodRunSet.add(run)
-            self.log.log(self.log.INFO, "Rejected %d whole runs, including %d for incomplete range" % \
+            self.log.info("Rejected %d whole runs, including %d for incomplete range" % \
                 (len(runExpInfoSetDict) - len(goodRunSet), numRangeCuts))
         else:
             # reject individual exposures which do not meet our quality criteria
@@ -284,12 +297,12 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
                 if not self._isBadExposure(expInfo):
                     goodExposureInfoList.append(expInfo)
                     goodRunSet.add(expInfo.dataId["run"])
-            self.log.log(self.log.INFO, "Rejected %d individual exposures" % \
+            self.log.info("Rejected %d individual exposures" % \
                 (len(exposureInfoList) - len(goodExposureInfoList),))
 
         exposureInfoList = goodExposureInfoList
         
-        self.log.log(self.log.INFO, "After quality cuts, found %d exposures in %d runs" % \
+        self.log.info("After quality cuts, found %d exposures in %d runs" % \
             (len(exposureInfoList), len(goodRunSet)))
         
         if exposureInfoList:
@@ -303,7 +316,7 @@ from SeasonFieldQuality_Test where """ % ExposureInfo.getColumnNames())
             if self.config.maxExposures is not None:
                 # select config.maxExposures exposures with the highest qscore
                 exposureInfoList = exposureInfoList[0:self.config.maxExposures]
-                self.log.log(self.log.INFO, "After maxExposures cut, found %d exposures" % \
+                self.log.info("After maxExposures cut, found %d exposures" % \
                     (len(exposureInfoList),))
     
             elif self.config.maxRuns is not None:
