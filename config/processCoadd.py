@@ -5,39 +5,43 @@ root.calibrate.retarget(SdssCalibrateTask)
 # (answer obviously changes if we implement background-matching).
 # Defaults here just do one, final step to tweak it up, assuming that there's no big
 # DC value to begin with.
-# Open question: what binSize?  Current setting is the same used to process fpCs.
 root.calibrate.doBackground = True
 root.calibrate.detection.reEstimateBackground = True
 root.detection.reEstimateBackground = True
+# Official Summer2012 background binSize
 root.calibrate.background.binSize = 512
 root.calibrate.detection.background.binSize = 512
 root.detection.background.binSize = 512
 
-# Setting this to True means we use the matched-to PSF ("initPsf") in all bands.
-# The generic default is None, which defers to the per-filter configs, because
-# that's what we need for fpC processing.
-root.calibrate.useInputPsf = True
+# Our non-PSF-matched coadds have lousy PSFs so don't try to fit a PSF
+# Also: use a double Gaussian as the initialPsf model because a SingleGaussian cannot be persisted.
+root.calibrate.useExposurePsf = False
+root.calibrate.doPsf = False
+root.calibrate.initialPsf.model='DoubleGaussian'
 
 # The settings below only matter for determining stars to pass to the aperture corrections unless
 # useInputPsf is not True.
 for filterName in ("u", "g", "r", "i", "z"):
     subConfig = getattr(root.calibrate, filterName)
-    subConfig.psfDeterminer["pca"].spatialOrder    = 1  # Should be spatially invariant
+    subConfig.psfDeterminer["pca"].spatialOrder    = 2  
     subConfig.psfDeterminer["pca"].kernelSizeMin   = 31 # Larger Psfs
     subConfig.starSelector["secondMoment"].fluxLim = 3000.0
+    subConfig.starSelector.name = "catalog"
 
 root.calibrate.astrometry.forceKnownWcs = True
 root.calibrate.astrometry.solver.calculateSip = False
 
- # Remove flags.pixel.interpolated.any
+# Remove flags.pixel.interpolated.any
 root.calibrate.computeApCorr.badFlags = ("flags.pixel.edge", "flags.pixel.saturated.any")
 root.calibrate.computeApCorr.order = 0
 root.calibrate.photocal.badFlags = ('flags.pixel.edge','flags.pixel.saturated.any')
 
-# JFB: this wasn't being set before #2188, but it probably should have been changed when the other detection
-# threshold was.
+# Official config for Summer 2012
 root.calibrate.detection.thresholdType = "pixel_stdev"
 root.detection.thresholdType = "pixel_stdev"
+
+# For detection
+root.calibrate.initialPsf.fwhm=1.7
 
 try:
     # Enable multiShapelet for model mags.
