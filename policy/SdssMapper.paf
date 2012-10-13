@@ -62,6 +62,7 @@ exposures: {
         tables:        raw
         tables:        raw_skyTile
     }
+
     deepCoadd_tempExp: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)stempExp/%(run)d-f%(filter)s.fits"
         python:      "lsst.afw.image.ExposureF"
@@ -70,6 +71,24 @@ exposures: {
         level:        "None"
         tables:      raw
     }
+    deepCoadd: {
+        template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits"
+        python:      "lsst.afw.image.ExposureF"
+        persistable: "ExposureF"
+        storage:     "FitsStorage"
+        level:        "None"
+        tables:      raw
+    }
+    deepCoadd_calexp: {
+        template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/calexp-%(filter)s-%(tract)d-%(patch)s.fits"
+        python:        "lsst.afw.image.ExposureF"
+        persistable:        "ExposureF"
+        storage:    "FitsStorage"
+        level:        "None"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+
     goodSeeingCoadd_tempExp: {
         template:    "goodSeeingCoadd/%(filter)s/%(tract)d/%(patch)stempExp/%(run)d-f%(filter)s.fits"
         python:      "lsst.afw.image.ExposureF"
@@ -412,13 +431,6 @@ datasets: {
         tables:        raw_skyTile
     }
 
-    deepCoadd: {
-        template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits"
-        python:      "lsst.afw.image.ExposureF"
-        persistable: "ExposureF"
-        storage:     "FitsStorage"
-        tables:      raw
-    }
     deepCoadd_depth: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/depth-%(filter)s-%(tract)d-%(patch)s.fits"
         python:      "lsst.afw.image.ImageF"
@@ -486,10 +498,10 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    deepCoadd_calexp: {
-        template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/calexp-%(filter)s-%(tract)d-%(patch)s.fits"
-        python:        "lsst.afw.image.ExposureF"
-        persistable:        "ExposureF"
+    deepCoadd_calexpBackground: {
+        template:    "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/bkgd-%(filter)s-%(tract)d-%(patch)s.fits"
+        python:        "lsst.afw.image.ImageF"
+        persistable:        "ImageF"
         storage:    "FitsStorage"
         tables:        raw
         tables:        raw_skyTile
@@ -534,6 +546,14 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
+    deepCoadd_calexpBackground: {
+        template:    "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/bkgd-%(filter)s-%(tract)d-%(patch)s.fits"
+        python:        "lsst.afw.image.ImageF"
+        persistable:        "ImageF"
+        storage:    "FitsStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
     deep_makeCoaddTempExp_config: {
         template:      "deep_makeCoaddTempExp_config/%(filter)s/%(tract)d/%(patch)s_config.py"
         python:        "lsst.pipe.tasks.baseCoadd.BaseCoaddConfig"
@@ -567,13 +587,6 @@ datasets: {
         tables:        raw_skyTile
     }
 
-    goodSeeingCoadd: {
-        template:    "goodSeeingCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits"
-        python:      "lsst.afw.image.ExposureF"
-        persistable: "ExposureF"
-        storage:     "FitsStorage"
-        tables:      raw
-    }
     goodSeeingCoadd_depth: {
         template:    "goodSeeingCoadd/%(filter)s/%(tract)d/%(patch)s/depth-%(filter)s-%(tract)d-%(patch)s.fits"
         python:      "lsst.afw.image.ImageF"
@@ -678,6 +691,14 @@ datasets: {
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+    goodSeeingCoadd_calexpBackground: {
+        template:    "goodSeeingCoadd-results/%(filter)s/%(tract)d/%(patch)s/bkgd-%(filter)s-%(tract)d-%(patch)s.fits"
+        python:        "lsst.afw.image.ImageF"
+        persistable:        "ImageF"
+        storage:    "FitsStorage"
         tables:        raw
         tables:        raw_skyTile
     }
