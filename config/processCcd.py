@@ -23,7 +23,7 @@ root.calibrate.astrometry.solver.calculateSip = False
 
 try:
     import lsst.meas.extensions.multiShapelet
-    root.measurement.algorithms.names |= lsst.meas.extensions.multiShapelet.algorithms
+    root.measurement.algorithms.names = set(root.measurement.algorithms.names) | lsst.meas.extensions.multiShapelet.algorithms
     root.measurement.slots.modelFlux = "multishapelet.combo.flux"
 except ImportError:
     # TODO: find a better way to log this

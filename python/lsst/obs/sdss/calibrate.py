@@ -202,6 +202,7 @@ class SdssCalibrateTask(CalibrateTask):
         @param[in]      defects    List of defects on exposure
         @param[in]      idFactory  afw.table.IdFactory to use for source catalog.
         @return a pipeBase.Struct with fields:
+        - backgrounds: Array of background objects that were subtracted from the exposure
         - psf: Point spread function
         - apCorr: Aperture correction
         - sources: Sources used in calibration
@@ -214,6 +215,7 @@ class SdssCalibrateTask(CalibrateTask):
         matches = None
         matchMeta = None
         cellSet = None
+        backgrounds = []
 
         if idFactory is None:
             idFactory = afwTable.IdFactory.makeSimple()
@@ -249,13 +251,15 @@ class SdssCalibrateTask(CalibrateTask):
         if self.config.doBackground:
             with self.timer("background"):
                 bg, exposure = measAlg.estimateBackground(exposure, self.config.background, subtract=True)
-                del bg
+                backgrounds.append(bg)
             self.display('background', exposure=exposure)
 
         table = afwTable.SourceTable.make(self.schema, idFactory)
         table.setMetadata(self.algMetadata)
         detRet = self.detection.makeSourceCatalog(table, exposure)
         sources = detRet.sources
+        if detRet.fpSets.background:
+            backgrounds.append(detRet.fpSets.background)
 
         # If we're using the input PSF, we only need to do one measurement step, and we do that now.
         # If not, we do the initial measurement with the fake PSF in a prefixed part of the schema.
@@ -338,6 +342,7 @@ class SdssCalibrateTask(CalibrateTask):
 
         return pipeBase.Struct(
             exposure = exposure,
+            backgrounds = backgrounds,
             psf = psf,
             apCorr = apCorr,
             sources = sources,
