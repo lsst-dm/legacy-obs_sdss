@@ -35,26 +35,8 @@ exposures: {
         tables:        raw
         tables:        raw_skyTile
     }
-    keithCoadd: {
-        template:    "%(filter)s/fpC-%(run)06d-%(filter)s%(camcol)d-%(field)04d_ts_coaddNorm_NN.fit.gz"
-        python:     "lsst.afw.image.ExposureF"
-        persistable:         "ExposureF"
-        storage:     "FitsStorage"
-        level:       "None"
-        tables:        raw
-        tables:        raw_skyTile
-    }
     calexp: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.image.ExposureF"
-        persistable:        "ExposureF"
-        storage:    "FitsStorage"
-        level:       "None"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    keithCoadd_calexp: {
-        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.image.ExposureF"
         persistable:        "ExposureF"
         storage:    "FitsStorage"
@@ -114,6 +96,25 @@ exposures: {
         tables:        raw
         tables:        raw_skyTile
     }
+
+    chiSquaredCoadd: {
+        template:    "chiSquaredCoadd/%(tract)d/%(patch)s/coadd-%(tract)d-%(patch)s.fits"
+        python:      "lsst.afw.image.ExposureF"
+        persistable: "ExposureF"
+        storage:     "FitsStorage"
+        level:        "None"
+        tables:      raw
+    }
+    chiSquaredCoadd_calexp: {
+        template:      "chiSquaredCoadd-results/%(tract)d/%(patch)s/calexp-%(tract)d-%(patch)s.fits"
+        python:        "lsst.afw.image.ExposureF"
+        persistable:        "ExposureF"
+        storage:    "FitsStorage"
+        level:        "None"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+
 }
 
 datasets: {
@@ -181,24 +182,8 @@ datasets: {
         storage:      "ignored"
         tables:       "raw"
     }
-    keithCoaddId: {
-        template:     "ignored"
-        # Provide something to import, although we actually return a Long
-        python:       "lsst.daf.base.PropertySet"
-        persistable:  "ignored"
-        storage:      "ignored"
-        tables:       "raw"
-    }
-    keithCoaddId_bits: {
-        template:     "ignored"
-        # Provide something to import, although we actually return an int
-        python:       "lsst.daf.base.PropertySet"
-        persistable:  "ignored"
-        storage:      "ignored"
-        tables:       "raw"
-    }
     calexpBackground: {
-        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d_bkgd.fits"
+        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/bkgd-calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         python:        "lsst.afw.image.ImageF"
         persistable:        "ImageF"
         storage:    "FitsStorage"
@@ -269,62 +254,6 @@ datasets: {
         tables:        raw_skyTile
     }
 
-    keithCoadd_icSrc: {
-        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/icSrc/icSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    keithCoadd_icMatch: {
-        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/icMatch/icMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    keithCoadd_psf: {
-        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/psf/psf-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.afw.detection.Psf"
-        persistable:        "Psf"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    keithCoadd_apCorr: {
-        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/apCorr/apCorr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.pickle"
-        python:        "lsst.meas.algorithms.ApertureCorrection"
-        persistable:        "ApertureCorrection"
-        storage:    "PickleStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    keithCoadd_src: {
-        template:      "keithCoadd-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    keith_processCoadd_config: {
-        template:      "keith_processCoadd_config/%(run)d/%(camcol)d/%(filter)s/config-%(run)06d-%(filter)s%(camcol)d-%(field)04d.py"
-        python:        "lsst.pipe.tasks.processKeithCoadd.ProcessKeithCoaddConfig"
-        persistable:      "Config"
-        storage:    "ConfigStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    keith_processCoadd_metadata: {
-        template:      "keith_processCoadd_metadata/%(run)d/%(camcol)d/%(filter)s/metadata-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
 
     forcedsources: {
         template:      "forcedPhot/%(run)d/%(camcol)d/%(filter)s/forcedsources-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
@@ -735,13 +664,6 @@ datasets: {
         tables:        raw_skyTile
     }
 
-    chiSquaredCoadd: {
-        template:    "chiSquaredCoadd/%(tract)d/%(patch)s/coadd-%(tract)d-%(patch)s.fits"
-        python:      "lsst.afw.image.ExposureF"
-        persistable: "ExposureF"
-        storage:     "FitsStorage"
-        tables:      raw
-    }
     chiSquaredCoadd_initPsf: {
         template:    "chiSquaredCoadd/%(tract)d/%(patch)s/initPsf-%(tract)d-%(patch)s.boost"
         python:      "lsst.afw.detection.Psf"
@@ -783,14 +705,6 @@ datasets: {
         python:        "lsst.daf.base.PropertySet"
         persistable:        "PropertySet"
         storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    chiSquaredCoadd_calexp: {
-        template:      "chiSquaredCoadd-results/%(tract)d/%(patch)s/calexp-%(tract)d-%(patch)s.fits"
-        python:        "lsst.afw.image.ExposureF"
-        persistable:        "ExposureF"
-        storage:    "FitsStorage"
         tables:        raw
         tables:        raw_skyTile
     }
