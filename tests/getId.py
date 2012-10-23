@@ -53,11 +53,6 @@ class GetIdTestCase(unittest.TestCase):
                         camcol=3, filter='g', field=748)
                 self.assertEqual(id, 4933130748)
 
-                bits = self.butler.get("keithCoaddId_bits")
-                id = self.butler.get("keithCoaddId", run=4933,
-                        camcol=3, filter='g', field=748)
-                self.assertEqual(bits, 38)
-                self.assertEqual(id, 4933130748)
                 dataId = dict(tract=1, patch='2,3', filter='z')
                 bits = self.butler.get("goodSeeingCoaddId_bits", dataId)
                 id = self.butler.get("goodSeeingCoaddId", dataId)

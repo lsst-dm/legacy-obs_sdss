@@ -36,10 +36,8 @@ class SdssMapperTestCase(unittest.TestCase):
     """A test case for the SdssMapper."""
 
     def testGetDR7(self):
-        butler = dafPersist.ButlerFactory(
-                mapper=SdssMapper(
-                    root=os.path.join(os.environ["OBS_SDSS_DIR"],
-                        "tests", "data", "dr7", "runs"))).create()
+        butler = dafPersist.Butler(
+            root=os.path.join(os.environ["OBS_SDSS_DIR"], "tests", "data", "dr7", "runs"))
         sub = butler.subset("fpC", run=5754, camcol=3, field=280, filter="r")
         self.assertEqual(len(sub), 1)
         for ref in sub:
@@ -79,23 +77,6 @@ class SdssMapperTestCase(unittest.TestCase):
                     53664.2260706 + 0.5 * 53.907456/3600/24, 7)
             self.assertAlmostEqual(calib.getExptime(), 53.907456, 6)
             self.assertAlmostEqual(gain, 4.72, 2)
-
-    def testGetCoadd(self):
-        butler = dafPersist.ButlerFactory(
-                mapper=SdssMapper(
-                    root=os.path.join(os.environ["OBS_SDSS_DIR"],
-                        "tests", "data", "uw-coadds"))).create()
-        coadd = butler.get("keithCoadd",
-                run=6383, camcol=3, field=280, filter="r")
-        w, h = coadd.getWidth(), coadd.getHeight()
-        self.assertEqual(coadd.__class__, lsst.afw.image.ExposureF)
-        self.assertEqual(w, 1489)
-        self.assertEqual(h, 2048)
-
-        coadd_md = butler.get("keithCoadd_md",
-                run=6383, camcol=3, field=280, filter="r")
-        self.assertAlmostEqual(coadd_md.get("CRPIX1"), -0.047789988341666, 9)
-        self.assertAlmostEqual(coadd_md.get("CRPIX2"), 0.083988780414136, 9)
 
 def suite():
     utilsTests.init()
