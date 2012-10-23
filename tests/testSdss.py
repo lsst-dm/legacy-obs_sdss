@@ -21,14 +21,12 @@
 # the GNU General Public License along with this program.  If not, 
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
-import unittest
-import lsst.utils.tests as utilsTests
-
 import os
+import unittest
+
+import lsst.utils.tests as utilsTests
 import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
-from lsst.obs.sdss import SdssMapper
 import lsst.afw.image
 import lsst.afw.detection
 

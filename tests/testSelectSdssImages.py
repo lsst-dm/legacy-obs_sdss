@@ -21,11 +21,9 @@
 # the GNU General Public License along with this program.  If not, 
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
 import unittest
-import lsst.utils.tests as utilsTests
 
-import os
+import lsst.utils.tests as utilsTests
 from lsst.daf.persistence import DbAuth
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
