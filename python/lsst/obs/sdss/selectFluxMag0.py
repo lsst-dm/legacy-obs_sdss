@@ -30,9 +30,9 @@ from lsst.daf.persistence import DbAuth
 import lsst.pipe.base as pipeBase
 from lsst.pipe.tasks.selectImages import SelectImagesConfig, BaseExposureInfo
 
-__all__ = ["SelectSdssfluxMag0Task"]
+__all__ = ["SelectSdssFluxMag0Task"]
 
-class SelectSdssfluxMag0Config(SelectImagesConfig):
+class SelectSdssFluxMag0Config(SelectImagesConfig):
     table = pexConfig.Field(
         doc = "Name of database table",
         dtype = str,
@@ -88,10 +88,10 @@ class FluxMagInfo(BaseExposureInfo):
             "fluxMag0 fluxMag0Sigma".split()
         )
 
-class SelectSdssfluxMag0Task(pipeBase.Task):
+class SelectSdssFluxMag0Task(pipeBase.Task):
     """Select SDSS data suitable for computing fluxMag0
     """
-    ConfigClass = SelectSdssfluxMag0Config
+    ConfigClass = SelectSdssFluxMag0Config
 
     @pipeBase.timeMethod
     def run(self, coordList, filter, run):
