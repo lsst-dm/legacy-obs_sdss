@@ -116,7 +116,7 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
         
         """
         imageScaler = SdssImageScaler()
-        bbox = exposure.getBBox()
+        bbox = exposure.getBBox(afwImage.PARENT)
         buffer = 2*bbox.getWidth()
         biggerBbox = afwGeom.Box2I(afwGeom.Point2I(bbox.getBeginX()-buffer, bbox.getBeginY()),
                                    afwGeom.Extent2I(bbox.getWidth()+buffer, bbox.getHeight()))
