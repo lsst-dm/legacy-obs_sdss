@@ -30,7 +30,7 @@ from lsst.daf.persistence import DbAuth
 import lsst.pipe.base as pipeBase
 from lsst.pipe.tasks.selectImages import SelectImagesConfig, BaseExposureInfo
 from lsst.coadd.utils import ImageScaler, ScaleZeroPointTask
-from .selectFluxMag0 import SelectSdssfluxMag0Task
+from .selectFluxMag0 import SelectSdssFluxMag0Task
 
 __all__ = ["ScaleSdssZeroPointTask"]
 
@@ -81,7 +81,7 @@ class SdssImageScaler(object):
 class ScaleSdssZeroPointConfig(ScaleZeroPointTask.ConfigClass):
     selectFluxMag0 = pexConfig.ConfigurableField(
         doc = "Task to select data to compute spatially varying photometric zeropoint",
-        target = SelectSdssfluxMag0Task,
+        target = SelectSdssFluxMag0Task,
     )
 
 
