@@ -28,11 +28,11 @@ from lsst.afw.coord import IcrsCoord
 import lsst.afw.geom as afwGeom
 from lsst.daf.persistence import DbAuth
 import lsst.pipe.base as pipeBase
-from lsst.pipe.tasks.selectImages import BaseSelectImagesConfig, BaseExposureInfo
+from lsst.pipe.tasks.selectImages import SelectImagesConfig, BaseExposureInfo
 
 __all__ = ["SelectSdssfluxMag0Task"]
 
-class SelectSdssfluxMag0Config(BaseSelectImagesConfig):
+class SelectSdssfluxMag0Config(SelectImagesConfig):
     table = pexConfig.Field(
         doc = "Name of database table",
         dtype = str,
@@ -40,8 +40,10 @@ class SelectSdssfluxMag0Config(BaseSelectImagesConfig):
     )
 
     def setDefaults(self):
-        BaseSelectImagesConfig.setDefaults(self)
+        SelectImagesConfig.setDefaults(self)
         self.database = "krughoff_early_prod_11032012"
+        self.host = "lsst-db.ncsa.illinois.edu"
+        self.port = 3306        
 
 
 class FluxMagInfo(BaseExposureInfo):
@@ -104,6 +106,13 @@ class SelectSdssfluxMag0Task(pipeBase.Task):
         if filter not in set(("u", "g", "r", "i", "z")):
             raise RuntimeError("filter=%r is an invalid name" % (filter,))
 
+        filterDict = {"u": 0,
+                      "g": 1,
+                      "r": 2,
+                      "i": 3,
+                      "z": 4}
+                      
+
         read_default_file=os.path.expanduser("~/.my.cnf")
 
         try:
@@ -136,7 +145,7 @@ class SelectSdssfluxMag0Task(pipeBase.Task):
 
         # compute where clauses as a list of (clause, data)
         whereDataList = [
-            ("filterName = %s", filter),
+            ("filterId = %s", filterDict[filter]),
             ("run = %s", run),
             ("camcol = %s", camcol),
         ]

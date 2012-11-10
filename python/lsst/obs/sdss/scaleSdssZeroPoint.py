@@ -28,8 +28,9 @@ from lsst.afw.coord import IcrsCoord
 import lsst.afw.geom as afwGeom
 from lsst.daf.persistence import DbAuth
 import lsst.pipe.base as pipeBase
-from lsst.pipe.tasks.selectImages import BaseSelectImagesConfig, BaseExposureInfo
-from coaddUtils import ImageScaler, ScaleZeroPointTask
+from lsst.pipe.tasks.selectImages import SelectImagesConfig, BaseExposureInfo
+from lsst.coadd.utils import ImageScaler, ScaleZeroPointTask
+from .selectFluxMag0 import SelectSdssfluxMag0Task
 
 __all__ = ["ScaleSdssZeroPointTask"]
 
@@ -49,7 +50,7 @@ class SdssImageScaler(object):
         
         @param[in,out] image to scale; scale is applied in place
         """
-        scale = self.getInterpImage(maskedImage.getBBox(afwImage.PARENT)
+        scale = self.getInterpImage(maskedImage.getBBox(afwImage.PARENT))
         maskedImage *= scale
 
     def getInterpImage(self, bbox):
@@ -78,9 +79,9 @@ class SdssImageScaler(object):
 
 
 class ScaleSdssZeroPointConfig(ScaleZeroPointTask.ConfigClass):
-    selectFluxMag0 = pexConfig.Configurable(
+    selectFluxMag0 = pexConfig.ConfigurableField(
         doc = "Task to select data to compute spatially varying photometric zeropoint",
-        dtype = ScaleSdssZeroPointTask,
+        target = SelectSdssfluxMag0Task,
     )
 
 
@@ -89,8 +90,7 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
     """
     ConfigClass = ScaleSdssZeroPointConfig
 
-    
-    def getScaleFromDb(self, patchRef, wcs, bbox):
+    def computeImageScale(self, patchRef, wcs, bbox):
         """
         Query a database for fluxMag0s and return a SdssImageScaler
 
