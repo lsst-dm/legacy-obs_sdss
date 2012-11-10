@@ -23,6 +23,9 @@
 import MySQLdb
 import os
 
+import numpy
+import lsst.afw.image as afwImage
+import lsst.afw.math as afwMath
 import lsst.pex.config as pexConfig
 from lsst.afw.coord import IcrsCoord
 import lsst.afw.geom as afwGeom
@@ -58,6 +61,7 @@ class SdssImageScaler(object):
         
          Hard-coded to work with obs_sdss only
         """
+        
         npoints = len(self.xList)
         xvec = afwMath.vectorF(self.xList)
         zvec = afwMath.vectorF(self.scaleList)      
@@ -89,35 +93,50 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
     """Select SDSS images suitable for coaddition
     """
     ConfigClass = ScaleSdssZeroPointConfig
+    _DefaultName = "scaleSdssZeroPoint"
+    
+    def __init__(self, *args, **kwargs):
+        """Construct a ScaleZeroPointTask
+        """
+        pipeBase.Task.__init__(self, *args, **kwargs)
+        self.makeSubtask("selectFluxMag0")
+        
 
-    def computeImageScale(self, patchRef, wcs, bbox):
+        fluxMag0 = 10**(0.4 * self.config.zeroPoint)
+        self._calib = afwImage.Calib()
+        self._calib.setFluxMag0(fluxMag0)
+
+    def computeImageScaler(self, exposure, exposureId, wcs):
         """
         Query a database for fluxMag0s and return a SdssImageScaler
 
-        First, double the width (R.A. direction) of the patch bounding box. Query the database for
+        First, triple the width (R.A. direction) of the patch bounding box. Query the database for
         overlapping fluxMag0s corresponding to the same run and filter.
+
         
         """
-        scaleFactor = SdssImageScaler()
-        buffer = bbox.getWidth()//2
+        imageScaler = SdssImageScaler()
+        bbox = exposure.getBBox()
+        buffer = 2*bbox.getWidth()
         biggerBbox = afwGeom.Box2I(afwGeom.Point2I(bbox.getBeginX()-buffer, bbox.getBeginY()),
                                    afwGeom.Extent2I(bbox.getWidth()+buffer, bbox.getHeight()))
         cornerPosList = afwGeom.Box2D(biggerBbox).getCorners()
         coordList = [wcs.pixelToSky(pos) for pos in cornerPosList]
-        runArgDict = self.selectFluxMag0._runArgDictFromDataId(patchRef.dataId)
-        fluxMagInfoList = self.selectFluxMag0.run(
+        runArgDict = self.selectFluxMag0._runArgDictFromDataId(exposureId)
         
-            coordList, **runArgDict).fluxMagInfoList
+        fluxMagInfoList = self.selectFluxMag0.run(coordList, **runArgDict).fluxMagInfoList
 
         for fluxMagInfo in fluxMagInfoList:
-            print fluxMagInfo.dataId, self.fluxMag0ToScale(fluxMagInfo.fluxMag0)
+            self.log.info("found %s, fluxMag0 %s"%(
+                fluxMagInfo.dataId, self.scaleFromFluxMag0(fluxMagInfo.fluxMag0).scale))
             raCenter = (fluxMagInfo.coordList[0].getRa() +  fluxMagInfo.coordList[1].getRa() +
                         fluxMagInfo.coordList[2].getRa() +  fluxMagInfo.coordList[3].getRa())/ 4.
             decCenter = (fluxMagInfo.coordList[0].getDec() +  fluxMagInfo.coordList[1].getDec() +
                         fluxMagInfo.coordList[2].getDec() +  fluxMagInfo.coordList[3].getDec())/ 4.
             x, y = wcs.skyToPixel(raCenter,decCenter)
-            scaleFactor.xList.append(x)
-            scaleFactor.yList.append(y)          
-            scaleFactor.scaleList.append(self.fluxMag0ToScale(fluxMagInfo.fluxMag0))
-            #self.scaleFactor.scaleErrList.append(self.fluxMag0ToScale(fluxMagInfo.fluxMag0Sigma))
-        return scaleFactor
+            imageScaler.xList.append(x)
+            imageScaler.yList.append(y)          
+            imageScaler.scaleList.append(self.scaleFromFluxMag0(fluxMagInfo.fluxMag0).scale)
+            #self.imageScaler.scaleErrList.append(self.fluxMag0ToScale(fluxMagInfo.fluxMag0Sigma))
+
+        return imageScaler

@@ -94,7 +94,7 @@ class SelectSdssfluxMag0Task(pipeBase.Task):
     ConfigClass = SelectSdssfluxMag0Config
 
     @pipeBase.timeMethod
-    def run(self, filter, run, camcol):
+    def run(self, coordList, filter, run):
         """Select flugMag0's of SDSS images for a particular run
 
         @param[in] filter: filter for images (one of "u", "g", "r", "i" or "z")
@@ -112,7 +112,6 @@ class SelectSdssfluxMag0Task(pipeBase.Task):
                       "i": 3,
                       "z": 4}
                       
-
         read_default_file=os.path.expanduser("~/.my.cnf")
 
         try:
@@ -140,14 +139,22 @@ class SelectSdssfluxMag0Task(pipeBase.Task):
         columnNames = tuple(FluxMagInfo.getColumnNames())
         if not columnNames:
             raise RuntimeError("Bug: no column names")
+       
         queryStr = "select %s from %s where " % (", ".join(columnNames), self.config.table)
         dataTuple = () # tuple(columnNames)
 
+        if coordList is not None:
+            # look for exposures that overlap the specified region
+            # create table scisql.Region containing patch region
+            coordStrList = ["%s, %s" % (c.getLongitude().asDegrees(),
+                                        c.getLatitude().asDegrees()) for c in coordList]
+            coordStr = ", ".join(coordStrList)
+            queryStr += " scisql_s2PtInCPoly(ra, decl, %s) = 1 and "%(coordStr,)
+       
         # compute where clauses as a list of (clause, data)
         whereDataList = [
             ("filterId = %s", filterDict[filter]),
             ("run = %s", run),
-            ("camcol = %s", camcol),
         ]
         
         queryStr += " and ".join(wd[0] for wd in whereDataList)
@@ -165,4 +172,15 @@ class SelectSdssfluxMag0Task(pipeBase.Task):
         
         return pipeBase.Struct(
             fluxMagInfoList = exposureInfoList,
+        )
+
+    def _runArgDictFromDataId(self, dataId):
+        """Extract keyword arguments for run (other than coordList) from a data ID
+        
+        @param[in] dataId: a data ID dict
+        @return keyword arguments for run (other than coordList), as a dict
+        """
+        return dict(
+            filter = dataId["filter"],
+            run = dataId["run"]
         )
