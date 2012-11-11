@@ -43,7 +43,7 @@ class SdssImageScaler(object):
     This version only interpolates in the X direction; it is designed for SDSS Stripe82 images
     which have RA along the X direction.
     """
-    def __init__(self, interpStyle, xList, yList, scaleList, scaleErrList=None):
+    def __init__(self, interpStyle, xList, yList, scaleList):
         """Construct an SdssImageScaler
         
         @warning: scaleErrList is presently not used
@@ -60,15 +60,12 @@ class SdssImageScaler(object):
             raise RuntimeError(
                 "len(xList)=%s len(yList)=%s, len(scaleList)=%s but all lists must have the same length" % \
                 (len(xList), len(yList), len(scaleList)))
-        if scaleErrList is not None and len(scaleList) != len(scaleErrList):
-            raise RuntimeError(
-                "len(scaleList)=%s != len(scaleErrList); these must match if scaleErrList is not None" % \
-                (len(scaleList), len(scaleErrList)))
+        
         self.interpStyle = getattr(afwMath.Interpolate, interpStyle)
         self._xList = xList
         self._yList = yList
         self._scaleList = scaleList
-        self._scaleErrList = scaleErrList
+
 
     def scaleMaskedImage(self, maskedImage):
         """Apply scale correction to the specified masked image
@@ -95,7 +92,7 @@ class SdssImageScaler(object):
 
         interp = afwMath.makeInterpolate(xvec, zvec, self.interpStyle)
         interpValArr = numpy.zeros(width, dtype=numpy.float32)
-        
+
         for i, xInd in enumerate(range(x0, x0 + width)):
             xPos = afwImage.indexToPosition(xInd)
             interpValArr[i] = interp.interpolate(xPos)
@@ -161,7 +158,6 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
         overlapping fluxMag0s corresponding to the same run and filter.
         """
         wcs = exposure.getWcs()
-        imageScaler = SdssImageScaler(self.config.interpStyle)
         bbox = exposure.getBBox(afwImage.PARENT)
         buffer = int(self.config.bufferWidth * self.FIELD_WIDTH)
         biggerBbox = afwGeom.Box2I(afwGeom.Point2I(bbox.getBeginX()-buffer, bbox.getBeginY()),
@@ -175,10 +171,8 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
         xList = []
         yList = []
         scaleList = []
-        #scaleErrList = []
+
         for fluxMagInfo in fluxMagInfoList:
-            self.log.info("found %s, fluxMag0 %s"%(
-                fluxMagInfo.dataId, self.scaleFromFluxMag0(fluxMagInfo.fluxMag0).scale))
             raCenter = (fluxMagInfo.coordList[0].getRa() +  fluxMagInfo.coordList[1].getRa() +
                         fluxMagInfo.coordList[2].getRa() +  fluxMagInfo.coordList[3].getRa())/ 4.
             decCenter = (fluxMagInfo.coordList[0].getDec() +  fluxMagInfo.coordList[1].getDec() +
@@ -187,12 +181,12 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
             xList.append(x)
             yList.append(y)          
             scaleList.append(self.scaleFromFluxMag0(fluxMagInfo.fluxMag0).scale)
-            #scaleErrList.append(self.fluxMag0ToScale(fluxMagInfo.fluxMag0Sigma))
 
+        self.log.info("Found %d flux scales for interpolation: %s"% (len(scaleList),["%0.4f"%(s) for s in scaleList]))
         return SdssImageScaler(
             interpStyle = self.config.interpStyle,
             xList = xList,
             yList = yList,
             scaleList = scaleList,
-            #scaleErrList = scaleErrList,
+
         )
