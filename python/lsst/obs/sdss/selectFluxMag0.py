@@ -160,7 +160,7 @@ class SelectSdssFluxMag0Task(pipeBase.Task):
         queryStr += " and ".join(wd[0] for wd in whereDataList)
         dataTuple += tuple(wd[1] for wd in whereDataList)
         
-        queryStr += " order by field"
+        queryStr += " order by field desc"
 
         self.log.info("queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
         

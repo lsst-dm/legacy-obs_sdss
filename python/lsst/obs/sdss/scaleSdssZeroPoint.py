@@ -38,11 +38,12 @@ from .selectFluxMag0 import SelectSdssFluxMag0Task
 __all__ = ["ScaleSdssZeroPointTask"]
 
 class SdssImageScaler(object):
-    def __init__(self):
+    def __init__(self, interpStyle):
         """Construct a multiplicative scale factor.
         
         It consists of  a list of points in tract coordinates. Each point has an X, Y, and a scalefactor.
         """
+        self.interpStyle = getattr(afwMath.Interpolate, interpStyle)
         self.xList = []
         self.yList = []
         self.scaleList = []
@@ -63,20 +64,27 @@ class SdssImageScaler(object):
         """
         
         npoints = len(self.xList)
-        xvec = afwMath.vectorF(self.xList)
-        zvec = afwMath.vectorF(self.scaleList)      
+        #sort by X coordinate
+        x, z = zip(*sorted(zip(self.xList, self.scaleList)))
+
+        xvec = afwMath.vectorD(x)
+        zvec = afwMath.vectorD(z)      
         height = bbox.getHeight()
         width = bbox.getWidth()
         x0, y0 = bbox.getBegin()
 
-        # I can't get makeInterpolate to work "Message: gsl_interp_init failed: invalid argument supplied by user [4]"
-        # interp = afwMath.makeInterpolate(xvec, zvec, afwMath.Interpolate.LINEAR)
-        # interp = afwMath.makeInterpolate(xvec, zvec) won't initialize spline. 
-        # eval = interp.interpolate(range(y0, height))
+        # numpy way
+        # evalResult = numpy.interp(range(x0, x0 + width), xvec, zvec)
+        # evalGrid = numpy.meshgrid(evalResult.astype(numpy.float32),range(0, height))[0]
+
+        # afw way
+        interp = afwMath.makeInterpolate(xvec, zvec, self.interpStyle)
+        evalResult = numpy.empty(width)
         
-        eval = numpy.interp(range(x0, x0 + width), xvec, zvec)
-        
-        evalGrid = numpy.meshgrid(eval.astype(numpy.float32),range(0, height))[0]
+        for i, xval in enumerate(range(x0, x0 + width)):
+            evalResult[i] = interp.interpolate(xval)
+     
+        evalGrid = numpy.meshgrid(evalResult.astype(numpy.float32),range(0, height))[0]
         image = afwImage.makeImageFromArray(evalGrid)
         image.setXY0(x0, y0)
         return image
@@ -86,6 +94,19 @@ class ScaleSdssZeroPointConfig(ScaleZeroPointTask.ConfigClass):
     selectFluxMag0 = pexConfig.ConfigurableField(
         doc = "Task to select data to compute spatially varying photometric zeropoint",
         target = SelectSdssFluxMag0Task,
+    )
+    interpStyle = pexConfig.ChoiceField(
+        dtype = str,
+        doc = "Algorithm to interpolate the flux scalings;" \
+              "Maps to an enum; see afw.math.Interpolate",
+        default = "AKIMA_SPLINE",
+        allowed={
+             "CONSTANT" : "Use a single constant value",
+             "LINEAR" : "Use linear interpolation",
+             "CUBIC_SPLINE": "cubic spline",
+             "NATURAL_SPLINE" : "cubic spline with zero second derivative at endpoints",
+             "AKIMA_SPLINE": "higher-level nonlinear spline that is more robust to outliers",
+             }
     )
 
 
@@ -115,11 +136,11 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
 
         
         """
-        imageScaler = SdssImageScaler()
+        imageScaler = SdssImageScaler(self.config.interpStyle)
         bbox = exposure.getBBox(afwImage.PARENT)
-        buffer = 2*bbox.getWidth()
+        buffer = 2 * bbox.getWidth()
         biggerBbox = afwGeom.Box2I(afwGeom.Point2I(bbox.getBeginX()-buffer, bbox.getBeginY()),
-                                   afwGeom.Extent2I(bbox.getWidth()+buffer, bbox.getHeight()))
+                                   afwGeom.Extent2I(bbox.getWidth()+ buffer + buffer, bbox.getHeight()))
         cornerPosList = afwGeom.Box2D(biggerBbox).getCorners()
         coordList = [wcs.pixelToSky(pos) for pos in cornerPosList]
         runArgDict = self.selectFluxMag0._runArgDictFromDataId(exposureId)
