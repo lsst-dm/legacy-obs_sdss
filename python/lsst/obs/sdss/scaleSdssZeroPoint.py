@@ -38,16 +38,37 @@ from .selectFluxMag0 import SelectSdssFluxMag0Task
 __all__ = ["ScaleSdssZeroPointTask"]
 
 class SdssImageScaler(object):
-    def __init__(self, interpStyle):
-        """Construct a multiplicative scale factor.
+    """Multiplicative image scaler using interpolation over a grid of points.
+    
+    This version only interpolates in the X direction; it is designed for SDSS Stripe82 images
+    which have RA along the X direction.
+    """
+    def __init__(self, interpStyle, xList, yList, scaleList, scaleErrList=None):
+        """Construct an SdssImageScaler
         
-        It consists of  a list of points in tract coordinates. Each point has an X, Y, and a scalefactor.
+        @warning: scaleErrList is presently not used
+        
+        @param[in] interpStyle: interpolation style (see lsst.afw.math.Interpolate for options)
+        @param[in] xList: list of X pixel positions
+        @param[in] yList: list of Y pixel positions
+        @param[in] scaleList: list of multiplicative scales at (x,y)
+        @param[in] scaleErrList: list of scale errors; None if unknown
+
+        @raise RuntimeError if the lists have different lengths
         """
+        if len(xList) != len(yList) or len(xList) != len(scaleList):
+            raise RuntimeError(
+                "len(xList)=%s len(yList)=%s, len(scaleList)=%s but all lists must have the same length" % \
+                (len(xList), len(yList), len(scaleList)))
+        if scaleErrList is not None and len(scaleList) != len(scaleErrList):
+            raise RuntimeError(
+                "len(scaleList)=%s != len(scaleErrList); these must match if scaleErrList is not None" % \
+                (len(scaleList), len(scaleErrList)))
         self.interpStyle = getattr(afwMath.Interpolate, interpStyle)
-        self.xList = []
-        self.yList = []
-        self.scaleList = []
-        #self.scaleErrList = []
+        self._xList = xList
+        self._yList = yList
+        self._scaleList = scaleList
+        self._scaleErrList = scaleErrList
 
     def scaleMaskedImage(self, maskedImage):
         """Apply scale correction to the specified masked image
@@ -60,37 +81,34 @@ class SdssImageScaler(object):
     def getInterpImage(self, bbox):
         """Return an image interpolated in R.A direction covering supplied bounding box
         
-         Hard-coded to work with obs_sdss only
+        @param[in] bbox: integer bounding box for image (afwGeom.Box2I)
         """
-        
-        npoints = len(self.xList)
+        npoints = len(self._xList)
         #sort by X coordinate
-        x, z = zip(*sorted(zip(self.xList, self.scaleList)))
+        x, z = zip(*sorted(zip(self._xList, self._scaleList)))
 
         xvec = afwMath.vectorD(x)
         zvec = afwMath.vectorD(z)      
         height = bbox.getHeight()
         width = bbox.getWidth()
-        x0, y0 = bbox.getBegin()
+        x0, y0 = bbox.getMin()
 
-        # numpy way
-        # evalResult = numpy.interp(range(x0, x0 + width), xvec, zvec)
-        # evalGrid = numpy.meshgrid(evalResult.astype(numpy.float32),range(0, height))[0]
-
-        # afw way
         interp = afwMath.makeInterpolate(xvec, zvec, self.interpStyle)
-        evalResult = numpy.empty(width)
+        interpValArr = numpy.zeros(width, dtype=numpy.float32)
         
-        for i, xval in enumerate(range(x0, x0 + width)):
-            evalResult[i] = interp.interpolate(xval)
+        for i, xInd in enumerate(range(x0, x0 + width)):
+            xPos = afwImage.indexToPosition(xInd)
+            interpValArr[i] = interp.interpolate(xPos)
      
-        evalGrid = numpy.meshgrid(evalResult.astype(numpy.float32),range(0, height))[0]
-        image = afwImage.makeImageFromArray(evalGrid)
+        interpGrid = numpy.meshgrid(interpValArr, range(0, height))[0]
+        image = afwImage.makeImageFromArray(interpGrid)
         image.setXY0(x0, y0)
         return image
 
 
 class ScaleSdssZeroPointConfig(ScaleZeroPointTask.ConfigClass):
+    """Config for ScaleSdssZeroPointTask
+    """
     selectFluxMag0 = pexConfig.ConfigurableField(
         doc = "Task to select data to compute spatially varying photometric zeropoint",
         target = SelectSdssFluxMag0Task,
@@ -127,15 +145,16 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
         self._calib = afwImage.Calib()
         self._calib.setFluxMag0(fluxMag0)
 
-    def computeImageScaler(self, exposure, exposureId, wcs):
-        """
-        Query a database for fluxMag0s and return a SdssImageScaler
+    def computeImageScaler(self, exposure, exposureId):
+        """Query a database for fluxMag0s and return a SdssImageScaler
+        
+        @param[in] exposure: exposure for which we want an image scaler
+        @param[in] exposureId: data ID of exposure
 
         First, triple the width (R.A. direction) of the patch bounding box. Query the database for
         overlapping fluxMag0s corresponding to the same run and filter.
-
-        
         """
+        wcs = exposure.getWcs()
         imageScaler = SdssImageScaler(self.config.interpStyle)
         bbox = exposure.getBBox(afwImage.PARENT)
         buffer = 2 * bbox.getWidth()
@@ -147,6 +166,10 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
         
         fluxMagInfoList = self.selectFluxMag0.run(coordList, **runArgDict).fluxMagInfoList
 
+        xList = []
+        yList = []
+        scaleList = []
+        #scaleErrList = []
         for fluxMagInfo in fluxMagInfoList:
             self.log.info("found %s, fluxMag0 %s"%(
                 fluxMagInfo.dataId, self.scaleFromFluxMag0(fluxMagInfo.fluxMag0).scale))
@@ -155,9 +178,15 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
             decCenter = (fluxMagInfo.coordList[0].getDec() +  fluxMagInfo.coordList[1].getDec() +
                         fluxMagInfo.coordList[2].getDec() +  fluxMagInfo.coordList[3].getDec())/ 4.
             x, y = wcs.skyToPixel(raCenter,decCenter)
-            imageScaler.xList.append(x)
-            imageScaler.yList.append(y)          
-            imageScaler.scaleList.append(self.scaleFromFluxMag0(fluxMagInfo.fluxMag0).scale)
-            #self.imageScaler.scaleErrList.append(self.fluxMag0ToScale(fluxMagInfo.fluxMag0Sigma))
+            xList.append(x)
+            yList.append(y)          
+            scaleList.append(self.scaleFromFluxMag0(fluxMagInfo.fluxMag0).scale)
+            #scaleErrList.append(self.fluxMag0ToScale(fluxMagInfo.fluxMag0Sigma))
 
-        return imageScaler
+        return SdssImageScaler(
+            interpStyle = self.config.interpStyle,
+            xList = xList,
+            yList = yList,
+            scaleList = scaleList,
+            #scaleErrList = scaleErrList,
+        )
