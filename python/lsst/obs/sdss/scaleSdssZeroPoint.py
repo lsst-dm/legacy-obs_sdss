@@ -96,7 +96,7 @@ class SdssImageScaler(object):
         for i, xInd in enumerate(range(x0, x0 + width)):
             xPos = afwImage.indexToPosition(xInd)
             interpValArr[i] = interp.interpolate(xPos)
-     
+
         interpGrid = numpy.meshgrid(interpValArr, range(0, height))[0]
         image = afwImage.makeImageFromArray(interpGrid)
         image.setXY0(x0, y0)
@@ -173,11 +173,14 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
         scaleList = []
 
         for fluxMagInfo in fluxMagInfoList:
-            raCenter = (fluxMagInfo.coordList[0].getRa() +  fluxMagInfo.coordList[1].getRa() +
-                        fluxMagInfo.coordList[2].getRa() +  fluxMagInfo.coordList[3].getRa())/ 4.
-            decCenter = (fluxMagInfo.coordList[0].getDec() +  fluxMagInfo.coordList[1].getDec() +
-                        fluxMagInfo.coordList[2].getDec() +  fluxMagInfo.coordList[3].getDec())/ 4.
-            x, y = wcs.skyToPixel(raCenter,decCenter)
+            #find center of field in tract coordinates
+            x0, y0 = wcs.skyToPixel(fluxMagInfo.coordList[0].getRa(), fluxMagInfo.coordList[0].getDec())
+            x1, y1 = wcs.skyToPixel(fluxMagInfo.coordList[1].getRa(), fluxMagInfo.coordList[1].getDec())
+            x2, y2 = wcs.skyToPixel(fluxMagInfo.coordList[2].getRa(), fluxMagInfo.coordList[2].getDec())
+            x3, y3 = wcs.skyToPixel(fluxMagInfo.coordList[3].getRa(), fluxMagInfo.coordList[3].getDec())
+            x = (x0 + x1 + x2 + x3)/4. 
+            y = (y0 + y1 + y2 + y3)/4. 
+
             xList.append(x)
             yList.append(y)          
             scaleList.append(self.scaleFromFluxMag0(fluxMagInfo.fluxMag0).scale)
