@@ -82,6 +82,8 @@ class SdssImageScaler(object):
         """
         npoints = len(self._xList)
         #sort by X coordinate
+        if npoints < 1:
+            raise RuntimeError("Cannot create scaling image. No points to interpolate.")
         x, z = zip(*sorted(zip(self._xList, self._scaleList)))
 
         xvec = afwMath.vectorD(x)
