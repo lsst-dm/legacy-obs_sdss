@@ -124,9 +124,10 @@ class SelectSdssFluxMag0Task(pipeBase.Task):
                 user = DbAuth.username(self.config.host, str(self.config.port)),
                 passwd = DbAuth.password(self.config.host, str(self.config.port)),
                 )
-
-        self.log.info(self.config.table)    
-        self.log.info(self.config.database)
+            
+        if self._display:    
+            self.log.info(self.config.table)    
+            self.log.info(self.config.database)
         
         db = MySQLdb.connect(
             host = self.config.host,
@@ -161,14 +162,14 @@ class SelectSdssFluxMag0Task(pipeBase.Task):
         dataTuple += tuple(wd[1] for wd in whereDataList)
         
         queryStr += " order by field desc"
-
-        self.log.info("queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
+        if self._display: 
+            self.log.info("queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
         
         cursor.execute(queryStr, dataTuple)
         exposureInfoList = [FluxMagInfo(result) for result in cursor]        
-       
-        self.log.info("Found %d exposures" % \
-            (len(exposureInfoList)))
+        if self._display: 
+            self.log.info("Found %d exposures" % \
+                      (len(exposureInfoList)))
         
         return pipeBase.Struct(
             fluxMagInfoList = exposureInfoList,
