@@ -99,7 +99,7 @@ class ScaleSdssZeroPointConfig(ScaleZeroPointTask.ConfigClass):
         dtype = str,
         doc = "Algorithm to interpolate the flux scalings;" \
               "Maps to an enum; see afw.math.Interpolate",
-        default = "AKIMA_SPLINE",
+        default = "NATURAL_SPLINE",
         allowed={
              "CONSTANT" : "Use a single constant value",
              "LINEAR" : "Use linear interpolation",
@@ -108,7 +108,13 @@ class ScaleSdssZeroPointConfig(ScaleZeroPointTask.ConfigClass):
              "AKIMA_SPLINE": "higher-level nonlinear spline that is more robust to outliers",
              }
     )
-
+    bufferWidth = pexConfig.Field(
+        dtype = float,
+        doc = "Buffer in the R.A. direction added to the region to be searched by selectFluxMag0" \
+        "Units are multiples of SDSS field widths (1489pix). (e.g. if the exposure is 1000x1000pixels, " \
+        "a bufferWidth of 2 results in a search region of 6956 x 1000, centered on the original position.",
+        default = 3,
+    )
 
 class ScaleSdssZeroPointTask(ScaleZeroPointTask):
     """Select SDSS images suitable for coaddition
@@ -122,10 +128,10 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
         pipeBase.Task.__init__(self, *args, **kwargs)
         self.makeSubtask("selectFluxMag0")
         
-
         fluxMag0 = 10**(0.4 * self.config.zeroPoint)
         self._calib = afwImage.Calib()
         self._calib.setFluxMag0(fluxMag0)
+        self.FIELD_WIDTH = 1489.
 
     def computeImageScaler(self, exposure, exposureId, wcs):
         """
@@ -138,7 +144,7 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
         """
         imageScaler = SdssImageScaler(self.config.interpStyle)
         bbox = exposure.getBBox(afwImage.PARENT)
-        buffer = 2 * bbox.getWidth()
+        buffer = int(self.config.bufferWidth * self.FIELD_WIDTH)
         biggerBbox = afwGeom.Box2I(afwGeom.Point2I(bbox.getBeginX()-buffer, bbox.getBeginY()),
                                    afwGeom.Extent2I(bbox.getWidth()+ buffer + buffer, bbox.getHeight()))
         cornerPosList = afwGeom.Box2D(biggerBbox).getCorners()
