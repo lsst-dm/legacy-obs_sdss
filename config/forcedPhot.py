@@ -7,5 +7,4 @@ root.references.dbUrl = "mysql://lsst10.ncsa.uiuc.edu:3306/"
 # Copy database columns over
 for col in ("refFlux", "refFlux.err"):
     root.copyColumns[col] = col
-print dir(root.measurement.algorithms.names)
 root.measurement.algorithms.names.add("centroid.record")
