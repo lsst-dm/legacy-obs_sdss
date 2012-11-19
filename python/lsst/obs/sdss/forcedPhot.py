@@ -6,6 +6,7 @@ import MySQLdb
 import lsst.afw.table as afwTable
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
+import lsst.afw.image as afwImage
 from lsst.daf.persistence import DbAuth, DbStorage, LogicalLocation
 from lsst.pipe.base import Struct
 from lsst.pipe.tasks.forcedPhot import ReferencesTask, ReferencesConfig
@@ -16,18 +17,20 @@ __all__ = ["SdssReferencesConfig", "SdssReferencesTask", "PolySdssReferencesTask
 
 RefSource = collections.namedtuple("RefSource", ["ident", "coord", "flux", "fluxErr"])
 
+_FilterIdDict = dict(u = 0, g = 1, r = 2, i = 3, z = 4)
+
 class SdssReferencesConfig(ReferencesConfig):
-    host = pexConfig.Field(
+    host = Field(
         doc = "Database server host name",
         dtype = str,
         default = "lsst10.ncsa.uiuc.edu",
     )
-    port = pexConfig.Field(
+    port = Field(
         doc = "Database server port",
         dtype = int,
-        default = "3390",
+        default = 3306,
     )
-    dbName = pexConfig.Field(
+    dbName = Field(
         doc = "Name of database",
         dtype = str,
     )
@@ -61,9 +64,9 @@ class SdssReferencesTask(ReferencesTask):
 
         return references
 
-    def getTables(self):
-        """Return a list of which tables to include in the query"""
-        return ["Object"]
+    def getTableName(self):
+        """Return the table to include in the query"""
+        return "Object"
 
     def getColumns(self, dataRef, exposure):
         """Return which columns to get in the query
@@ -124,25 +127,26 @@ class SdssReferencesTask(ReferencesTask):
                                     c.getLatitude().asDegrees()) for c in coordList]
         coordStr = ", ".join(coordStrList)
         coordCmd = "call scisql.scisql_s2CPolyRegion(scisql_s2CPolyToBin(%s), 20)" % (coordStr,)
+        self.log.info("queryStr=%r" % (coordCmd,))
         cursor.execute(coordCmd)
         cursor.nextset() # ignore one-line result of coordCmd
 
         columnNames = self.getColumns(dataRef, exposure)
+        colNameStr = ", ".join("s.%s" % (cn,) for cn in columnNames)
 
-        queryStr += """
+        tableName = self.getTableName()
+
+        queryStr = """
 SELECT
-    s.deepSourceId,
-    s.ra,
-    s.decl,
-    s.psfFlux,
-    s.psfFluxSigma
+    %s
 FROM
-    DeepSource AS s INNER JOIN
+    %s AS s INNER JOIN
     scisql.Region AS r ON (s.htmId20 BETWEEN r.htmMin AND r.htmMax)
 WHERE
-    filter = %s
-"""
-        dataTuple = (filter,)
+    filterId = %%s
+""" % (colNameStr, tableName)
+        filterId = _FilterIdDict[exposure.getFilter().getName()]
+        dataTuple = (filterId,)
 
         self.log.info("queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
 
@@ -150,7 +154,9 @@ WHERE
 
         sourceList = []
         for result in cursor:
-            source = self.parseRow(result)
+            sourceList.append(self.parseRow(result))
+        
+        self.log.info("Found %s sources" % (len(sourceList),))
 
         return sourceList
 
@@ -165,10 +171,10 @@ class SdssCoaddReferencesTask(SdssReferencesTask):
 
     ConfigClass = SdssCoaddReferencesConfig
     
-    def getTables(self):
+    def getTableName(self):
         table = self.config.coaddName + "Source"
         table = table[0].upper() + table[1:]
-        return [table]
+        return table
 
     def getColumns(self, dataRef, exposure):
         ident = self.config.coaddName + "SourceId"
@@ -203,129 +209,3 @@ class SdssCoaddFileReferencesTask(SdssReferencesTask):
                                                 src.getPsfFlux(), src.getPsfFluxErr()))
 
         return sourceList                                 
-
-
-class PolySdssReferencesTask(SdssReferencesTask):
-    """Use exposure polygons to get reference objects out of the database.
-    
-    This may be slightly more efficient since the polygons will describe the
-    exposure on the sky much better than a simple cone search, saving us from
-    doing more refinement.  However, I (PAP) haven't been able to get it to
-    work yet.  The query was originally provided by KTL, but the schema has
-    changed since then.
-    """
-    def getRaDecFromDatabase(self, dataRef, exposure):
-        """Get a list of RA, Dec from the database
-
-        @param dataRef     Data reference, which includes the identifiers
-        @return List of RefSources
-        """
-        dbFullUrl = self.config.dbUrl + self.config.dbName
-
-        db = DbStorage()
-        db.setPersistLocation(LogicalLocation(dbFullUrl))
-        db.startTransaction()
-        db.executeSql("""
-           SELECT poly FROM Science_Ccd_Exposure
-               WHERE scienceCcdExposureId = %d
-               INTO @poly;""" % dataRef.get("ccdExposureId"))
-        db.executeSql("CALL scisql.scisql_s2CPolyRegion(@poly, 20)")
-        db.setTableListForQuery(["RefObject", "Region"])
-        db.outColumn("objectId")
-        db.outColumn("ra")
-        db.outColumn("decl")
-        # XXX Get magnitude, error
-        db.setQueryWhere("""
-           Object.htmId20 BETWEEN Region.htmMin AND Region.htmMax
-           AND scisql_s2PtInCPoly(Object.ra_PS, Object.decl_PS, @poly) = 1""")
-        db.query()
-
-        sourceList = []
-        while db.next():
-            ident = db.getColumnByPosInt64(0)
-            ra = db.getColumnByPosDouble(1) * afwGeom.degrees
-            dec = db.getColumnByPosDouble(2) * afwGeom.degrees
-            mag = 0.0
-            magErr = 0.0
-            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec), mag, magErr))
-
-        db.finishQuery()
-        db.endTransaction()
-        return sourceList
-
-
-
-class TestSdssReferencesTask(SdssReferencesTask):
-    """Get SDSS reference objects out of Mario Juric's custom database table.
-
-    This was originally provided for testing the forced photometry functionality,
-    and serves as a useful example.  This one-off database schema is slightly
-    different from the LSST database, so hence this override.
-
-    Mario writes:
-
-    {{{
-    I just imported the DR7 Stripe 82 co-add catalog object table to table
-    'Stripe82RefObject' in database 'juric_DR7_stripe82'. This is to support
-    the work on forced photometry, until our coadd/detection code matures.
-
-    It has the following columns:
-
-        sdssObjectId,run,rerun,camcol,field,obj,mode,type,ra,decl,
-        uMag,uErr,gMag,gErr,rMag,rErr,iMag,iErr,zMag,zErr
-        htmId20,isStar
-
-    where the magnitudes are SDSS model magnitude. The data has been
-    downloaded from SDSS DR7 CAS website, Stripe82 database using:
-
-        SELECT objID, run, rerun, camcol, field, obj, mode, type, ra, dec, u,
-            g, r, i, z, err_u, err_g, err_r, err_i, err_z from PhotoObjAll where run
-            in (106, 206)
-    }}}
-
-    The Science_Ccd_Exposure table isn't populated, so we can't use the
-    above query; we'll just do a simple cone search.
-    """
-    
-    def getRaDecFromDatabase(self, dataRef, exposure):
-        """Get a list of RA, Dec from the database
-
-        @param dataRef     Data reference, which includes the identifiers
-        @return List of RefSources
-        """
-        padding = 1.1 # Padding factor; could live in a Config except this is just a temporary test...
-
-        filtName = exposure.getFilter().getName()
-
-        wcs = exposure.getWcs()
-        width, height = exposure.getWidth(), exposure.getHeight()
-        center = wcs.pixelToSky(afwGeom.Point2D(width/2.0, height/2.0))
-        radius = center.angularSeparation(wcs.pixelToSky(afwGeom.Point2D(0.0, 0.0)))
-
-        dbFullUrl = self.config.dbUrl + self.config.dbName
-        db = DbStorage()
-        db.setPersistLocation(LogicalLocation(dbFullUrl))
-        db.startTransaction()
-        db.setTableListForQuery(["Stripe82RefObject"])
-        db.outColumn("sdssObjectId")
-        db.outColumn("ra")
-        db.outColumn("decl")
-        db.outColumn(filtName + "Mag")
-        db.outColumn(filtName + "Err")
-        db.setQueryWhere("scisql_s2PtInCircle(ra, decl, %f, %f, %f) = 1" %
-                         (center.getLongitude().asDegrees(), center.getLatitude().asDegrees(),
-                          radius.asDegrees() * padding))
-        db.query()
-
-        sourceList = []
-        while db.next():
-            ident = db.getColumnByPosInt64(0)
-            ra = db.getColumnByPosDouble(1) * afwGeom.degrees
-            dec = db.getColumnByPosDouble(2) * afwGeom.degrees
-            mag = db.getColumnByPosFloat(3)
-            magErr = db.getColumnByPosFloat(4)
-            sourceList.append(RefSource(ident, afwCoord.IcrsCoord(ra, dec), mag, magErr))
-
-        db.finishQuery()
-        db.endTransaction()
-        return sourceList
