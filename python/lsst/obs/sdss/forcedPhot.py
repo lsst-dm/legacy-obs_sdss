@@ -98,9 +98,8 @@ class SdssReferencesTask(ReferencesTask):
         @param exposure    Exposure that has been read
         @return List of RefSources
         """
-        # this ~/.my.cnf stuff is a Princetonism; LSST uses DbAuth
+        # allow authentication via .my.cnf or .lsst/db-auth.paf
         read_default_file=os.path.expanduser("~/.my.cnf")
-
         try:
             open(read_default_file)
             kwargs = dict(
