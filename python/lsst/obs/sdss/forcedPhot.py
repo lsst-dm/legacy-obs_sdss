@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+import os
+
 import MySQLdb
 
 import lsst.afw.table as afwTable
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
-import lsst.daf.persistence as dafPersist
+from lsst.daf.persistence import DbAuth, DbStorage, LogicalLocation
 from lsst.pipe.base import Struct
 from lsst.pipe.tasks.forcedPhot import ReferencesTask, ReferencesConfig
 from lsst.pex.config import Field
@@ -15,11 +17,20 @@ __all__ = ["SdssReferencesConfig", "SdssReferencesTask", "PolySdssReferencesTask
 RefSource = collections.namedtuple("RefSource", ["ident", "coord", "flux", "fluxErr"])
 
 class SdssReferencesConfig(ReferencesConfig):
-    dbName = Field(dtype=str, doc="Name of database") # Note: no default, so must be set by an override
-    dbUrl = Field(dtype=str, doc="URL for database (without the trailing database name)",
-                  default="mysql://lsst10.ncsa.uiuc.edu:3390/")
-    padding = Field(dtype=float, doc="Padding factor for cone search", default=1.1,
-                    check=lambda x: x >= 1.0)
+    host = pexConfig.Field(
+        doc = "Database server host name",
+        dtype = str,
+        default = "lsst10.ncsa.uiuc.edu",
+    )
+    port = pexConfig.Field(
+        doc = "Database server port",
+        dtype = int,
+        default = "3390",
+    )
+    dbName = pexConfig.Field(
+        doc = "Name of database",
+        dtype = str,
+    )
 
 class SdssReferencesTask(ReferencesTask):
     ConfigClass = SdssReferencesConfig
@@ -101,7 +112,7 @@ class SdssReferencesTask(ReferencesTask):
         db = MySQLdb.connect(
             host = self.config.host,
             port = self.config.port,
-            db = self.config.database,
+            db = self.config.dbName,
             **kwargs
         )
         cursor = db.cursor()
@@ -211,8 +222,8 @@ class PolySdssReferencesTask(SdssReferencesTask):
         """
         dbFullUrl = self.config.dbUrl + self.config.dbName
 
-        db = dafPersist.DbStorage()
-        db.setPersistLocation(dafPersist.LogicalLocation(dbFullUrl))
+        db = DbStorage()
+        db.setPersistLocation(LogicalLocation(dbFullUrl))
         db.startTransaction()
         db.executeSql("""
            SELECT poly FROM Science_Ccd_Exposure
@@ -292,8 +303,8 @@ class TestSdssReferencesTask(SdssReferencesTask):
         radius = center.angularSeparation(wcs.pixelToSky(afwGeom.Point2D(0.0, 0.0)))
 
         dbFullUrl = self.config.dbUrl + self.config.dbName
-        db = dafPersist.DbStorage()
-        db.setPersistLocation(dafPersist.LogicalLocation(dbFullUrl))
+        db = DbStorage()
+        db.setPersistLocation(LogicalLocation(dbFullUrl))
         db.startTransaction()
         db.setTableListForQuery(["Stripe82RefObject"])
         db.outColumn("sdssObjectId")
