@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import MySQLdb
 
 import lsst.afw.table as afwTable
 import lsst.afw.coord as afwCoord
@@ -63,27 +64,18 @@ class SdssReferencesTask(ReferencesTask):
         filterName = exposure.getFilter().getName()
         return ["objectId", "ra", "decl", filterName + "PsfFlux", filterName + "PsfFluxSigma"]
 
-    def parseRow(self, db):
-        """Parse a row returned from the query
+    def parseRow(self, result):
+        """Parse a result returned from the query
 
-        @param db Database handle
+        @param result   result returned from MySQLDb query
         @return RefSource
         """
-        ident = db.getColumnByPosInt64(0)
-        ra = db.getColumnByPosDouble(1) * afwGeom.degrees
-        dec = db.getColumnByPosDouble(2) * afwGeom.degrees
-        flux = db.getColumnByPosFloat(3)
-        fluxErr = db.getColumnByPosFloat(4)
+        ident = result[0]
+        ra = afwGeom.Angle(result[1], afwGeom.degrees)
+        dec = afwGeom.Angle(result[2], afwGeom.degrees)
+        flux = result[3]
+        fluxErr = result[4]
         return RefSource(ident, afwCoord.IcrsCoord(ra, dec), flux, fluxErr)
-
-    def whereClause(self, base):
-        """Update a basic spatial search where clause with other conditions.
-        
-        @param base (str)  SQL WHERE clause for spatial search
-        @return (str)      Modified SQL WHERE clause"""
-
-        # By default, do nothing
-        return base
 
     def getRaDecFromDatabase(self, dataRef, exposure):
         """Get a list of RA, Dec from the database
@@ -92,41 +84,70 @@ class SdssReferencesTask(ReferencesTask):
         @param exposure    Exposure that has been read
         @return List of RefSources
         """
-        dbFullUrl = self.config.dbUrl + self.config.dbName
+        # this ~/.my.cnf stuff is a Princetonism; LSST uses DbAuth
+        read_default_file=os.path.expanduser("~/.my.cnf")
+
+        try:
+            open(read_default_file)
+            kwargs = dict(
+                read_default_file=read_default_file,
+                )
+        except IOError:
+            kwargs = dict(
+                user = DbAuth.username(self.config.host, str(self.config.port)),
+                passwd = DbAuth.password(self.config.host, str(self.config.port)),
+                )
+
+        db = MySQLdb.connect(
+            host = self.config.host,
+            port = self.config.port,
+            db = self.config.database,
+            **kwargs
+        )
+        cursor = db.cursor()
 
         wcs = exposure.getWcs()
-        width, height = exposure.getWidth(), exposure.getHeight()
-        center = wcs.pixelToSky(afwGeom.Point2D(width/2.0, height/2.0))
-        llc = wcs.pixelToSky(afwGeom.Point2D(0.0, 0.0))
-        radius = center.angularSeparation(llc)
+        posBBox = afwGeom.Box2D(exposure.getBBox(afwImage.PARENT))
+        coordList = [wcs.pixelToSky(pos) for pos in posBBox.getCorners()]
+        coordStrList = ["%s, %s" % (c.getLongitude().asDegrees(),
+                                    c.getLatitude().asDegrees()) for c in coordList]
+        coordStr = ", ".join(coordStrList)
+        coordCmd = "call scisql.scisql_s2CPolyRegion(scisql_s2CPolyToBin(%s), 20)" % (coordStr,)
+        cursor.execute(coordCmd)
+        cursor.nextset() # ignore one-line result of coordCmd
 
-        db = dafPersist.DbStorage()
-        db.setPersistLocation(dafPersist.LogicalLocation(dbFullUrl))
-        db.startTransaction()
-        db.setTableListForQuery(self.getTables())
-        columns = self.getColumns(dataRef, exposure)
-        for col in columns:
-            db.outColumn(col)
-        coneSearch = "scisql_s2PtInCircle(ra, decl, %f, %f, %f) = 1" % \
-                (center.getLongitude().asDegrees(),
-                        center.getLatitude().asDegrees(),
-                        radius.asDegrees() * self.config.padding)
-        db.setQueryWhere(self.whereClause(coneSearch))
-        db.query()
+        columnNames = self.getColumns(dataRef, exposure)
+
+        queryStr += """
+SELECT
+    s.deepSourceId,
+    s.ra,
+    s.decl,
+    s.psfFlux,
+    s.psfFluxSigma
+FROM
+    DeepSource AS s INNER JOIN
+    scisql.Region AS r ON (s.htmId20 BETWEEN r.htmMin AND r.htmMax)
+WHERE
+    filter = %s
+"""
+        dataTuple = (filter,)
+
+        self.log.info("queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
+
+        cursor.execute(queryStr, dataTuple)
 
         sourceList = []
-        while db.next():
-            source = self.parseRow(db)
-            sourceList.append(source)
+        for result in cursor:
+            source = self.parseRow(result)
 
-        db.finishQuery()
-        db.endTransaction()
         return sourceList
 
 
 class SdssCoaddReferencesConfig(SdssReferencesConfig):
     """Configuration for references from a coadd table"""
     coaddName = Field(dtype=str, default="goodSeeing", doc="Name of coadd reference")
+
 
 class SdssCoaddReferencesTask(SdssReferencesTask):
     """Use a coadd table instead of the Object table."""
@@ -143,9 +164,6 @@ class SdssCoaddReferencesTask(SdssReferencesTask):
         ident = ident[0].lower() + ident[1:]
         return [ident, "ra", "decl", "psfFlux", "psfFluxSigma"]
 
-    def whereClause(self, base):
-        # Use r filter sources only; cheat and don't join to Filter table.
-        return base + " AND filterId = 2"
 
 class SdssCoaddFileReferencesTask(SdssReferencesTask):
     """Forsake the database altogether, and use files available on disk.
