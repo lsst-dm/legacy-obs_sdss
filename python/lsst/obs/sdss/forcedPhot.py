@@ -34,6 +34,11 @@ class SdssReferencesConfig(ReferencesConfig):
         doc = "Name of database",
         dtype = str,
     )
+    filterName = Field(
+        dtype=str, 
+        default=None, 
+        doc="Name of the band to use for the references, if None use the band in the exposure",
+    )
 
 class SdssReferencesTask(ReferencesTask):
     ConfigClass = SdssReferencesConfig
@@ -145,7 +150,10 @@ FROM
 WHERE
     filterId = %%s
 """ % (colNameStr, tableName)
-        filterId = _FilterIdDict[exposure.getFilter().getName()]
+        if not self.config.filterName:
+            filterId = _FilterIdDict[exposure.getFilter().getName()]
+        else:
+            filterId = _FilterIdDict[self.config.filterName]
         dataTuple = (filterId,)
 
         self.log.info("queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
