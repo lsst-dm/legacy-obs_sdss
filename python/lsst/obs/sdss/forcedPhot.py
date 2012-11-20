@@ -37,6 +37,7 @@ class SdssReferencesConfig(ReferencesConfig):
     filterName = Field(
         dtype=str, 
         default=None, 
+        optional=True,
         doc="Name of the band to use for the references, if None use the band in the exposure",
     )
 
