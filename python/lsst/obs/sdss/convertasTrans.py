@@ -119,7 +119,7 @@ def createWcs(x, y, mapper, order = 4, cOffset = 1.0):
     srcSchema   = afwTable.SourceTable.makeMinimalSchema()
     centroidKey = srcSchema.addField("centroid", type="PointD")
     flagKey     = srcSchema.addField("centroid.flags", type="Flag")
-    covKey      = srcSchema.addField("centroid.err", type="CovPointD")
+    covKey      = srcSchema.addField("centroid.err", type="CovPointF")
     srcTable    = afwTable.SourceTable.make(srcSchema)
     srcTable.defineCentroid("centroid")
 
