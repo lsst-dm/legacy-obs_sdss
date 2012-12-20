@@ -13,7 +13,7 @@ from lsst.pipe.tasks.forcedPhot import ReferencesTask, ReferencesConfig
 from lsst.pex.config import Field
 import collections
 
-__all__ = ["SdssReferencesConfig", "SdssReferencesTask", "PolySdssReferencesTask", "TestSdssReferencesTask"]
+__all__ = ["SdssReferencesTask", "SdssCoaddReferencesTask", "SdssCoaddFileReferencesTask"]
 
 RefSource = collections.namedtuple("RefSource", ["ident", "coord", "flux", "fluxErr"])
 
