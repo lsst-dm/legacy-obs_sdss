@@ -164,7 +164,7 @@ def createWcs(x, y, mapper, order = 4, cOffset = 1.0):
     cd1_2, cd2_2 = cdN_2[0].asDegrees(), cdN_2[1].asDegrees()
 
     linearWcs = afwImage.makeWcs(crval, crpix, cd1_1, cd2_1, cd1_2, cd2_2)
-    wcs       = sip.CreateWcsWithSip(matches, linearWcs, order).getNewWcs()
+    wcs       = sip.makeCreateWcsWithSip(matches, linearWcs, order).getNewWcs()
 
     return wcs
 
