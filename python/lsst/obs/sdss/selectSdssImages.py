@@ -30,11 +30,11 @@ from lsst.afw.coord import IcrsCoord
 import lsst.afw.geom as afwGeom
 from lsst.daf.persistence import DbAuth
 import lsst.pipe.base as pipeBase
-from lsst.pipe.tasks.selectImages import BaseSelectImagesTask, BaseExposureInfo
+from lsst.pipe.tasks.selectImages import DatabaseSelectImagesConfig, BaseSelectImagesTask, BaseExposureInfo
 
 __all__ = ["SelectSdssImagesTask"]
 
-class SelectSdssImagesConfig(BaseSelectImagesTask.ConfigClass):
+class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
     """Config for SelectSdssImagesTask
     """
     table = pexConfig.Field(
