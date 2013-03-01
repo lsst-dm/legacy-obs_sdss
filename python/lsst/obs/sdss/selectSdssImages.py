@@ -116,22 +116,25 @@ class ExposureInfo(BaseExposureInfo):
     def __init__(self, result):
         """Set exposure information based on a query result from a db connection
         """
-        BaseExposureInfo.__init__(self)
-        self.dataId = dict(
+        self._ind = -1
+
+        dataId = dict(
            run = result[self._nextInd],
            rerun = result[self._nextInd],
            camcol = result[self._nextInd],
            field = result[self._nextInd],
            filter = result[self._nextInd],
         )
-        self.coordList = []
+        coordList = []
         for i in range(4):
-            self.coordList.append(
+            coordList.append(
                 IcrsCoord(
                     afwGeom.Angle(result[self._nextInd], afwGeom.degrees),
                     afwGeom.Angle(result[self._nextInd], afwGeom.degrees),
                 )
             )
+        BaseExposureInfo.__init__(self, dataId, coordList)
+
         self.strip = result[self._nextInd]
         self.fwhm = result[self._nextInd]
         self.sky = result[self._nextInd]
@@ -142,6 +145,20 @@ class ExposureInfo(BaseExposureInfo):
         # compute RHL quality factors
         self.q = self.sky * (self.fwhm**2)
         self.qscore = None # not known yet
+
+    @property
+    def _nextInd(self):
+        """Return the next index
+
+        This allows one to progress through returned database columns,
+        repeatedly using _nextInd, e.g.:
+           {raft = result[self._nextInd],
+            visit = result[self._nextInd],
+            sensor = result[self._nextInd],
+            filter = result[self._nextInd]}
+        """
+        self._ind += 1
+        return self._ind
 
     @staticmethod
     def getColumnNames():
