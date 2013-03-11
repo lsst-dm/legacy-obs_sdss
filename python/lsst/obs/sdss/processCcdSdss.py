@@ -55,7 +55,9 @@ class ProcessCcdSdssTask(ProcessImageTask):
 
     @classmethod
     def _makeArgumentParser(cls):
-        return pipeBase.ArgumentParser(name=cls._DefaultName, datasetType="fpC")        
+        parser = pipeBase.ArgumentParser(name=cls._DefaultName)
+        parser.add_id_argument("--id", datasetType="fpC", help="data ID, e.g. --id run=1 camcol=2 field=345")
+        return parser
 
     def makeIdFactory(self, sensorRef):
         expBits = sensorRef.get("ccdExposureId_bits")
