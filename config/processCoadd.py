@@ -32,8 +32,6 @@ root.calibrate.astrometry.forceKnownWcs = True
 root.calibrate.astrometry.solver.calculateSip = False
 
 # Remove flags.pixel.interpolated.any
-root.calibrate.computeApCorr.badFlags = ("flags.pixel.edge", "flags.pixel.saturated.any")
-root.calibrate.computeApCorr.order = 0
 root.calibrate.photocal.badFlags = ('flags.pixel.edge','flags.pixel.saturated.any')
 
 # Official config for Summer 2012

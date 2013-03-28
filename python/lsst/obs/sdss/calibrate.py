@@ -78,11 +78,6 @@ class SdssCalibrateConfig(pexConfig.Config):
                " not post-detection re-estimation and subtraction)"),
         default = True,
     )
-    doComputeApCorr = pexConfig.Field(
-        dtype = bool,
-        doc = "Compute aperture correction?",
-        default = True,
-    )    
     doPhotoCal = pexConfig.Field(
         dtype = bool,
         doc = "Compute photometric zeropoint?",
@@ -105,8 +100,6 @@ class SdssCalibrateConfig(pexConfig.Config):
         target = measAlg.SourceMeasurementTask,
         doc = "Post-PSF-determination measurements used to feed other calibrations",
     )
-    computeApCorr = pexConfig.ConfigField(dtype = measAlg.ApertureCorrectionConfig,
-                                          doc = measAlg.ApertureCorrectionConfig.__doc__)
     astrometry    = pexConfig.ConfigurableField(target = AstrometryTask, doc = "")
     photocal      = pexConfig.ConfigurableField(target = PhotoCalTask, doc="")
 
@@ -140,24 +133,15 @@ class SdssCalibrateConfig(pexConfig.Config):
         if self.initialMeasurement.prefix == self.measurement.prefix:
             raise ValueError("SdssCalibrateConfig.initialMeasurement and SdssCalibrateConfig.measurement "
                              "have the same prefix; field names may clash.")
-        if self.initialMeasurement.doApplyApCorr:
-            raise ValueError("Cannot apply aperture corrections to pre-PSF initial measurements.")
-        if self.measurement.doApplyApCorr and not self.doComputeApCorr:
-            raise ValueError("Cannot apply aperture correction without computing it")
-
     def setDefaults(self):
         self.detection.includeThresholdMultiplier = 10.0
         self.initialMeasurement.prefix = "initial."
-        self.initialMeasurement.doApplyApCorr = False
         self.initialMeasurement.algorithms.names = ["flags.pixel", "shape.sdss", "flux.psf", "flux.sinc"]
         self.initialMeasurement.slots.apFlux = "flux.sinc"
         self.initialMeasurement.slots.modelFlux = None
         self.initialMeasurement.slots.instFlux = None
         self.repair.doInterpolate = False
-        self.repair.doCosmicRay = False
-        self.computeApCorr.alg1.name = "flux.psf"
-        self.computeApCorr.alg2.name = "flux.sinc"
-        
+        self.repair.doCosmicRay = False        
 
 class SdssCalibrateTask(CalibrateTask):
     """SDSS-specific version of lsst.pipe.tasks.calibrate.CalibrateTask
@@ -204,14 +188,12 @@ class SdssCalibrateTask(CalibrateTask):
         @return a pipeBase.Struct with fields:
         - backgrounds: Array of background objects that were subtracted from the exposure
         - psf: Point spread function
-        - apCorr: Aperture correction
         - sources: Sources used in calibration
         - matches: Astrometric matches
         - matchMeta: Metadata for astrometric matches
         """
 
         psf = None
-        apCorr = None
         matches = None
         matchMeta = None
         cellSet = None
@@ -319,20 +301,11 @@ class SdssCalibrateTask(CalibrateTask):
         if self.config.doPsf:
             self.repair.run(exposure, defects=defects, keepCRs=None)
             self.display('repair', exposure=exposure)
-            self.measurement.measure(exposure, sources)   # don't use run, because we don't have apCorr yet
+            self.measurement.run(exposure, sources)
             self.log.log(self.log.INFO, "Re-running astrometry after measurement with improved PSF.")
             astromRet = self.astrometry.run(exposure, sources)
             matches = astromRet.matches
             matchMeta = astromRet.matchMeta
-
-        if self.config.doComputeApCorr:
-            if not cellSet:
-                cellSet = self.makeCellSet(exposure, psfCandidateList)
-            apCorr = self.computeApCorr(exposure, cellSet)
-
-        if self.measurement.config.doApplyApCorr:
-            assert(apCorr is not None)
-            self.measurement.applyApCorr(sources, apCorr)
 
         if self.config.doPhotoCal:
             photocalRet = self.photocal.run(exposure, matches)
@@ -344,7 +317,6 @@ class SdssCalibrateTask(CalibrateTask):
             exposure = exposure,
             backgrounds = backgrounds,
             psf = psf,
-            apCorr = apCorr,
             sources = sources,
             matches = matches,
             matchMeta = matchMeta,
