@@ -25,6 +25,7 @@ import numpy as num
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.detection as afwDetect
+import lsst.meas.algorithms as measAlg
 DEBUG = False
 
 filtToHdu = {'u':1,'g':2,'r':3,'i':4,'z':5}
@@ -126,7 +127,7 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
     spaFun = afwMath.PolynomialFunction2D(LSST_ORDER)
     spatialKernel = afwMath.LinearCombinationKernel(kernelList, spaFun)
     spatialKernel.setSpatialParameters(spaParList)
-    spatialPsf = afwDetect.createPsf("PCA", spatialKernel)
+    spatialPsf = measAlg.PcaPsf(spatialKernel)
     return spatialPsf
 
 def directCompare(infile, filt, x, y, soft_bias = 1000, amp = 30000, outfile = "/tmp/sdss_psf.fits"):
