@@ -59,8 +59,7 @@ class SdssMapperTestCase(unittest.TestCase):
             psf = ref.get("psField")
             k = psf.getKernel()
             w, h = k.getWidth(), k.getHeight()
-            self.assertEqual(psf.__class__,
-                    lsst.afw.detection.detectionLib.Psf)
+            self.assertEqual(psf.__class__, lsst.meas.algorithms.PcaPsf)
             self.assertEqual(w, 31)
             self.assertEqual(h, 31)
 
