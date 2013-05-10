@@ -281,8 +281,10 @@ from %s as ccdExp where """ % (self.config.table,)
             # reject runs for which any exposure does not meet our quality criteria
             # or the run begins or ends in the region
             regionRaRange = None
+            regionCtrRa = None
             if coordList is not None:
                 regionRaRange = _computeRaRange(coordList)
+                regionCtrRa = (regionRaRange[0] + regionRaRange[1]) * 0.5
 
             numRangeCuts = 0
             for run, expInfoSet in runExpInfoSetDict.iteritems():
@@ -292,12 +294,14 @@ from %s as ccdExp where """ % (self.config.table,)
                         break
                     
                     if regionRaRange is not None:
-                        expRaRange = _computeRaRange(expInfo.coordList)
+                        expRaRange = _computeRaRange(expInfo.coordList, ctrRa = regionCtrRa)
                         if runRaRange is None:
                             runRaRange = expRaRange
                         else:
                             runRaRange = (min(runRaRange[0], expRaRange[0]), max(runRaRange[1], expRaRange[1]))
                 else:
+                    # all exposures in this run are valid;
+                    # if approriate, check that the run starts and ends outside the region
                     if regionRaRange is not None:
                         if (runRaRange[0] > regionRaRange[0]) or (runRaRange[1] < regionRaRange[1]):
                             numRangeCuts += 1
@@ -409,11 +413,29 @@ def _whereDataFromList(name, valueList):
     else:
         return ("%s in %%s" % (name,), tuple(valueList))
 
-def _computeRaRange(coordList):
+def _computeRaRange(coordList, ctrRa=None):
     """Compute RA range from a list of coords
     
+    The angles are wrapped to be near ctrRa (or coordList[0] if refCoord is None).
+    If refCoord is in the middle of your RA range then the coordinates in coordList can span
+    essentially the entire range of RA with predictable results. But if refCoord is omitted
+    or is not the center of your range, then it is safer to restrict your coordinates
+    to span a range of ctrRa - pi < coord < ctrRa + pi
+    
     @param[in] coordList: list of afwCoord.Coord
-    @return RA range, in degrees, as ICRS (minRa, maxRa)
+    @param[in] ctrRa: RA of center of range as an afwGeom.Angle; if None then
+        coordList[0].toIcrs().getLongitude() is used after being wrapped into the range [-pi, pi)
+    @return RA range as (minRA, maxRA), each an ICRS RA as an afwGeom.Angle
     """
-    raList = numpy.array([c.toIcrs().getLongitude().asDegrees() for c in coordList])
-    return numpy.min(raList), numpy.max(raList)
+    if not coordList:
+        raise RuntimeError("coordList contains no elements")
+    raList = [coord.toIcrs().getLongitude() for coord in coordList]
+    if ctrRa is None:
+        ctrRa = raList[0]
+        ctrRa.wrapCtr()
+    for ra in raList:
+        ra.wrapNear(ctrRa)
+    raRadList = numpy.array([ra.asRadians() for ra in raList])
+    minAngRad = numpy.min(raRadList)
+    maxAngRad = numpy.max(raRadList)
+    return (minAngRad * afwGeom.radians, maxAngRad * afwGeom.radians)
