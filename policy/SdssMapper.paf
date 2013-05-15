@@ -377,7 +377,7 @@ datasets: {
     }
     processCcd_config: {
         template:      "config/processCcd.py"
-        python:        "lsst.pipe.tasks.processCcdSdss.ProcessCcdSdssConfig"
+        python:        "lsst.obs.sdss.processCcdSdss.ProcessCcdSdssConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -461,7 +461,7 @@ datasets: {
     }
     deep_assembleCoadd_config: {
         template:      "config/deep_assembleCoadd.py"
-        python:        "lsst.pipe.tasks.baseCoadd.BaseCoaddConfig"
+        python:        "lsst.pipe.tasks.assembleCoadd.AssembleCoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -477,7 +477,7 @@ datasets: {
     }
     deep_coadd_config: {
         template:      "config/deep_coadd.py"
-        python:        "lsst.pipe.tasks.baseCoadd.BaseCoaddConfig"
+        python:        "lsst.pipe.tasks.coadd.CoaddConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
@@ -565,7 +565,7 @@ datasets: {
     }
     deep_makeCoaddTempExp_config: {
         template:      "config/deep_makeCoaddTempExp.py"
-        python:        "lsst.pipe.tasks.baseCoadd.BaseCoaddConfig"
+        python:        "lsst.pipe.tasks.makeCoaddTempExp.MakeCoaddTempExpConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
