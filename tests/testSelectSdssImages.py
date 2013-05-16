@@ -41,7 +41,7 @@ def getCoordList(minRa, minDec, maxRa, maxDec):
     )
     return tuple(afwCoord.IcrsCoord(afwGeom.Point2D(d[0], d[1]), afwGeom.degrees) for d in degList)
 
-class SdssMapperTestCase(unittest.TestCase):
+class SelectSdssImagesTestCase(unittest.TestCase):
     """A test case for SelectSdssImagesTask."""
     def testMaxFwhm(self):
         """Test config.maxFwhm
@@ -144,7 +144,7 @@ class SdssMapperTestCase(unittest.TestCase):
         """
         config = SelectSdssImagesTask.ConfigClass()
         config.database = Database
-        config.maxFwhm = 1.25 # make sure to cut out some partial runs
+        config.maxFwhm = 1.25 # make sure to cut out some partial runs due to bad exposures
         config.rejectWholeRuns = True
         task = SelectSdssImagesTask(config=config)
         minRa = 333.746
@@ -159,14 +159,8 @@ class SdssMapperTestCase(unittest.TestCase):
                 runExpInfoDict[run].append(expInfo)
             else:
                 runExpInfoDict[run] = [expInfo]
-            
-        for run, expInfoList in runExpInfoDict.iteritems():
-            raList = []
-            for expInfo in expInfoList:
-                raList += [coord.getLongitude().asDegrees() for coord in expInfo.coordList]
-            raList.sort()
-            self.assertGreaterEqual(minRa, raList[0])
-            self.assertGreaterEqual(raList[-1], maxRa)
+        
+        self.checkExpList(minRa, maxRa, runExpInfoDict)
     
     def testMaxExposures(self):
         """Test config.maxExposures
@@ -247,6 +241,53 @@ class SdssMapperTestCase(unittest.TestCase):
                 task.run(coordList=coordList, filter=filter)
             else:
                 self.assertRaises(Exception, task.run, coordList, filter)
+    
+    def testAcrossWrap(self):
+        """Test rejectWholeRuns across the RA 0/360 boundary
+        """
+        config = SelectSdssImagesTask.ConfigClass()
+        config.database = Database
+        config.rejectWholeRuns = True
+        task = SelectSdssImagesTask(config=config)
+        minRa = 359
+        maxRa = 1
+        coordList = getCoordList(minRa,-0.63606,maxRa,-0.41341)
+        filter = "g"
+        expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
+        runExpInfoDict = dict()
+        for expInfo in expInfoList:
+            run = expInfo.dataId["run"]
+            if run in runExpInfoDict:
+                runExpInfoDict[run].append(expInfo)
+            else:
+                runExpInfoDict[run] = [expInfo]
+        
+        self.assertEqual(len(runExpInfoDict), 6)
+        self.checkExpList(minRa, maxRa, runExpInfoDict)
+    
+    def checkExpList(self, minRa, maxRa, runExpInfoDict):
+        """Check that all exposures runExpInfoDict are within the specified range
+        
+        @param[in] minRa: minimum RA (degrees)
+        @param[in] maxRa: maxinum RA (degrees)
+        @param[in] runExpInfoDict: a dict of run: list of ExposureInfo objects
+        """
+        minRaAngle = minRa * afwGeom.degrees
+        maxRaAngle = maxRa * afwGeom.degrees
+        minRaAngle.wrapNear(maxRaAngle)
+        ctrRaAngle = (minRaAngle + maxRaAngle) * 0.5
+        ctrRaDeg = ctrRaAngle.asDegrees()
+        raDegList = []
+        for expInfoList in runExpInfoDict.itervalues():
+            for expInfo in expInfoList:
+                raAngleList = [coord.getLongitude() for coord in expInfo.coordList]
+                for raAngle in raAngleList:
+                    raAngle.wrapNear(ctrRaAngle)
+                raDegList += [raAngle.asDegrees() for raAngle in raAngleList]
+            raDegList.sort()
+        self.assertGreaterEqual(minRa, raDegList[0])
+        self.assertGreaterEqual(raDegList[-1], maxRa)
+        
             
     def testTable(self):
         """Test config.table
@@ -279,7 +320,7 @@ class SdssMapperTestCase(unittest.TestCase):
 def suite():
     utilsTests.init()
     suites = []
-    suites += unittest.makeSuite(SdssMapperTestCase)
+    suites += unittest.makeSuite(SelectSdssImagesTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
