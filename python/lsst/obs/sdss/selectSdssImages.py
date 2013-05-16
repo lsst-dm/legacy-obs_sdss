@@ -38,55 +38,55 @@ class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
     """Config for SelectSdssImagesTask
     """
     table = pexConfig.Field(
-        doc = "Name of database table",
-        dtype = str,
-        default = "SeasonFieldQuality_Test",
+        doc="Name of database table",
+        dtype=str,
+        default="SeasonFieldQuality_Test",
     )
     maxFwhm = pexConfig.Field(
-        doc = "maximum FWHM (arcsec)",
-        dtype = float,
-        optional = True,
+        doc="maximum FWHM (arcsec)",
+        dtype=float,
+        optional=True,
     )
     maxSky = pexConfig.Field(
-        doc = "maximum sky level (maggies/arcsec^2)",
-        dtype = float,
-        optional = True,
+        doc="maximum sky level (maggies/arcsec^2)",
+        dtype=float,
+        optional=True,
     )
     maxAirmass = pexConfig.Field(
-        doc = "Maximum airmass",
-        dtype = float,
-        optional = True,
+        doc="Maximum airmass",
+        dtype=float,
+        optional=True,
     )
     quality = pexConfig.ChoiceField(
-        doc = "SDSS quality flag",
-        dtype = int,
-        default = 3,
+        doc="SDSS quality flag",
+        dtype=int,
+        default=3,
         allowed={1:"All data", 2:"Flagged ACCEPTABLE or GOOD", 3:"Flagged GOOD"},
     )
     cullBlacklisted = pexConfig.Field(
-        doc = "Omit blacklisted images? (Some run/field combinations have been blacklisted even though the quality metrics may have missed them.)",
-        dtype = bool,
-        default = True,
+        doc="Omit blacklisted images? (Some run/field combinations have been blacklisted even though the quality metrics may have missed them.)",
+        dtype=bool,
+        default=True,
     )
     camcols = pexConfig.ListField(
-        doc = "Which camcols to include? If None then include all",
-        dtype = int,
-        optional = True,
+        doc="Which camcols to include? If None then include all",
+        dtype=int,
+        optional=True,
     )
     strip = pexConfig.Field(
-        doc = "Strip: N, S or None for both",
-        dtype = str,
-        optional = True,
+        doc="Strip: N, S or None for both",
+        dtype=str,
+        optional=True,
     )
     rejectWholeRuns = pexConfig.Field(
-        doc = "If any exposure in the region is bad or the run does not cover the whole region, then reject the whole run?",
-        dtype = bool,
-        default = True,
+        doc="If any exposure in the region is bad or the run does not cover the whole region, then reject the whole run?",
+        dtype=bool,
+        default=True,
     )
     maxRuns = pexConfig.Field(
-        doc = "maximum runs to select; ignored if None; cannot be specified with maxExposures",
-        dtype = int,
-        optional = True,
+        doc="maximum runs to select; ignored if None; cannot be specified with maxExposures",
+        dtype=int,
+        optional=True,
     )
 
     def setDefaults(self):
@@ -152,10 +152,12 @@ class ExposureInfo(BaseExposureInfo):
 
         This allows one to progress through returned database columns,
         repeatedly using _nextInd, e.g.:
-           {raft = result[self._nextInd],
-            visit = result[self._nextInd],
-            sensor = result[self._nextInd],
-            filter = result[self._nextInd]}
+            dataId = dict(
+                raft = result[self._nextInd],
+                visit = result[self._nextInd],
+                sensor = result[self._nextInd],
+                filter = result[self._nextInd],
+            )
         """
         self._ind += 1
         return self._ind
@@ -203,13 +205,13 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
             kwargs = dict(
                 user = DbAuth.username(self.config.host, str(self.config.port)),
                 passwd = DbAuth.password(self.config.host, str(self.config.port)),
-                )
+            )
 
 
         db = MySQLdb.connect(
-            host = self.config.host,
-            port = self.config.port,
-            db = self.config.database,
+            host=self.config.host,
+            port=self.config.port,
+            db=self.config.database,
             **kwargs
         )
         cursor = db.cursor()
@@ -294,7 +296,7 @@ from %s as ccdExp where """ % (self.config.table,)
                         break
                     
                     if regionRaRange is not None:
-                        expRaRange = _computeRaRange(expInfo.coordList, ctrRa = regionCtrRa)
+                        expRaRange = _computeRaRange(expInfo.coordList, ctrRa=regionCtrRa)
                         if runRaRange is None:
                             runRaRange = expRaRange
                         else:
