@@ -180,7 +180,7 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
     ConfigClass = SelectSdssImagesConfig
     
     @pipeBase.timeMethod
-    def run(self, coordList, filter):
+    def run(self, coordList, filter, strip):
         """Select SDSS images suitable for coaddition in a particular region
         
         @param[in] filter: filter for images (one of "u", "g", "r", "i" or "z")
@@ -254,8 +254,7 @@ from %s as ccdExp where """ % (self.config.table,)
         if self.config.camcols is not None:
             whereDataList.append(_whereDataFromList("camcol", self.config.camcols))
         
-        if self.config.strip is not None:
-            whereDataList.append(("strip = %s", self.config.strip))
+        whereDataList.append(("strip = %s", strip))
         
         queryStr += " and ".join(wd[0] for wd in whereDataList)
         dataTuple += tuple(wd[1] for wd in whereDataList)
@@ -386,8 +385,15 @@ from %s as ccdExp where """ % (self.config.table,)
         @param[in] dataId: a data ID dict
         @return keyword arguments for run (other than coordList), as a dict
         """
+        patch = dataId["patch"]
+        if self.config.strip is not None:
+            stripVal = self.config.strip
+        else:
+            stripVal = 'S' if int(patch.split(",")[1]) % 2 == 0 else 'N'
+
         return dict(
-            filter = dataId["filter"]
+            filter = dataId["filter"],
+            strip  = stripVal
         )
 
 def _formatList(valueList):
