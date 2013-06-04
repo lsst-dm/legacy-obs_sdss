@@ -12,6 +12,7 @@ from lsst.pipe.base import Struct
 from lsst.pipe.tasks.forcedPhot import ReferencesTask, ReferencesConfig
 from lsst.pex.config import Field
 import collections
+import numpy
 
 __all__ = ["SdssReferencesTask", "SdssCoaddReferencesTask", "SdssCoaddFileReferencesTask"]
 
@@ -64,8 +65,14 @@ class SdssReferencesTask(ReferencesTask):
             ref = table.makeRecord()
             ref.setId(source.ident)
             ref.setCoord(source.coord)
-            ref.set(fluxKey, source.flux)
-            ref.set(fluxErrKey, source.fluxErr)
+            if source.flux is None:
+                ref.set(fluxKey, numpy.nan)
+            else:
+                ref.set(fluxKey, source.flux)
+            if source.fluxErr is None:
+                ref.set(fluxErrKey,numpy.nan)
+            else:
+                ref.set(fluxErrKey, source.fluxErr)
             references.append(ref)
 
         return references
