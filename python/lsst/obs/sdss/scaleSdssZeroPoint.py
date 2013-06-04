@@ -21,33 +21,28 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 import MySQLdb
-import os
 
 import numpy
+import lsst.pex.config as pexConfig
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
-import lsst.pex.config as pexConfig
-from lsst.afw.coord import IcrsCoord
 import lsst.afw.geom as afwGeom
-from lsst.daf.persistence import DbAuth
-import lsst.pipe.base as pipeBase
-from lsst.pipe.tasks.selectImages import SelectImagesConfig, BaseExposureInfo
-from lsst.coadd.utils import ImageScaler, ScaleZeroPointTask
+from lsst.pipe.tasks.scaleZeroPoint import ImageScaler, ScaleZeroPointTask
 from .selectFluxMag0 import SelectSdssFluxMag0Task
 
 __all__ = ["ScaleSdssZeroPointTask"]
 
 class SdssImageScaler(object):
     """Multiplicative image scaler using interpolation over a grid of points.
-    
+
     This version only interpolates in the X direction; it is designed for SDSS Stripe82 images
-    which have RA along the X direction.
+    which scan along the X direction.
     """
     def __init__(self, interpStyle, xList, yList, scaleList):
         """Construct an SdssImageScaler
-        
+
         @warning: scaleErrList is presently not used
-        
+
         @param[in] interpStyle: interpolation style (see lsst.afw.math.Interpolate for options)
         @param[in] xList: list of X pixel positions
         @param[in] yList: list of Y pixel positions
@@ -60,7 +55,7 @@ class SdssImageScaler(object):
             raise RuntimeError(
                 "len(xList)=%s len(yList)=%s, len(scaleList)=%s but all lists must have the same length" % \
                 (len(xList), len(yList), len(scaleList)))
-        
+
         self.interpStyle = getattr(afwMath.Interpolate, interpStyle)
         self._xList = xList
         self._yList = yList
@@ -69,7 +64,7 @@ class SdssImageScaler(object):
 
     def scaleMaskedImage(self, maskedImage):
         """Apply scale correction to the specified masked image
-        
+
         @param[in,out] image to scale; scale is applied in place
         """
         scale = self.getInterpImage(maskedImage.getBBox(afwImage.PARENT))
@@ -77,9 +72,10 @@ class SdssImageScaler(object):
 
     def getInterpImage(self, bbox):
         """Return an image interpolated in R.A direction covering supplied bounding box
-        
+
         @param[in] bbox: integer bounding box for image (afwGeom.Box2I)
         """
+
         npoints = len(self._xList)
         #sort by X coordinate
         if npoints < 1:
@@ -88,7 +84,7 @@ class SdssImageScaler(object):
         x, z = zip(*sorted(zip(self._xList, self._scaleList)))
 
         xvec = afwMath.vectorD(x)
-        zvec = afwMath.vectorD(z)      
+        zvec = afwMath.vectorD(z)
         height = bbox.getHeight()
         width = bbox.getWidth()
         x0, y0 = bbox.getMin()
@@ -135,27 +131,23 @@ class ScaleSdssZeroPointConfig(ScaleZeroPointTask.ConfigClass):
     )
 
 class ScaleSdssZeroPointTask(ScaleZeroPointTask):
-    """Select SDSS images suitable for coaddition
+    """Compute spatially varying scale factor to scale exposures to a desired photometric zero point
     """
     ConfigClass = ScaleSdssZeroPointConfig
     _DefaultName = "scaleSdssZeroPoint"
-    
+
     def __init__(self, *args, **kwargs):
-        """Construct a ScaleZeroPointTask
+        """Construct a ScaleSdssZeroPointTask
         """
-        pipeBase.Task.__init__(self, *args, **kwargs)
+        ScaleZeroPointTask.__init__(self, *args, **kwargs)
         self.makeSubtask("selectFluxMag0")
-        
-        fluxMag0 = 10**(0.4 * self.config.zeroPoint)
-        self._calib = afwImage.Calib()
-        self._calib.setFluxMag0(fluxMag0)
         self.FIELD_WIDTH = 1489.
 
-    def computeImageScaler(self, exposure, exposureId):
+    def computeImageScaler(self, exposure, dataRef):
         """Query a database for fluxMag0s and return a SdssImageScaler
-        
+
         @param[in] exposure: exposure for which we want an image scaler
-        @param[in] exposureId: data ID of exposure
+        @param[in] dataRef: dataRef of exposure
 
         First, triple the width (R.A. direction) of the patch bounding box. Query the database for
         overlapping fluxMag0s corresponding to the same run and filter.
@@ -167,9 +159,7 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
                                    afwGeom.Extent2I(bbox.getWidth()+ buffer + buffer, bbox.getHeight()))
         cornerPosList = afwGeom.Box2D(biggerBbox).getCorners()
         coordList = [wcs.pixelToSky(pos) for pos in cornerPosList]
-        runArgDict = self.selectFluxMag0._runArgDictFromDataId(exposureId)
-        
-        fluxMagInfoList = self.selectFluxMag0.run(coordList, **runArgDict).fluxMagInfoList
+        fluxMagInfoList = self.selectFluxMag0.run(dataRef.dataId, coordList).fluxMagInfoList
 
         xList = []
         yList = []
@@ -177,18 +167,20 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
 
         for fluxMagInfo in fluxMagInfoList:
             #find center of field in tract coordinates
-            x0, y0 = wcs.skyToPixel(fluxMagInfo.coordList[0].getRa(), fluxMagInfo.coordList[0].getDec())
-            x1, y1 = wcs.skyToPixel(fluxMagInfo.coordList[1].getRa(), fluxMagInfo.coordList[1].getDec())
-            x2, y2 = wcs.skyToPixel(fluxMagInfo.coordList[2].getRa(), fluxMagInfo.coordList[2].getDec())
-            x3, y3 = wcs.skyToPixel(fluxMagInfo.coordList[3].getRa(), fluxMagInfo.coordList[3].getDec())
-            x = (x0 + x1 + x2 + x3)/4. 
-            y = (y0 + y1 + y2 + y3)/4. 
-
-            xList.append(x)
-            yList.append(y)          
+            if not fluxMagInfo.coordList:
+                raise RuntimeError("no x,y data for fluxMagInfo")
+            ctr = afwGeom.Extent2D()
+            for coord in fluxMagInfo.coordList:
+                #accumulate x, y
+                ctr += afwGeom.Extent2D(wcs.skyToPixel(coord))
+            #and find average x, y as the center of the chip
+            ctr = afwGeom.Point2D(ctr / len(fluxMagInfo.coordList))
+            xList.append(ctr.getX())
+            yList.append(ctr.getY())
             scaleList.append(self.scaleFromFluxMag0(fluxMagInfo.fluxMag0).scale)
 
-        self.log.info("Found %d flux scales for interpolation: %s"% (len(scaleList),["%0.4f"%(s) for s in scaleList]))
+        self.log.info("Found %d flux scales for interpolation: %s" % (len(scaleList),
+                                                                      ["%0.4f"%(s) for s in scaleList]))
         return SdssImageScaler(
             interpStyle = self.config.interpStyle,
             xList = xList,
