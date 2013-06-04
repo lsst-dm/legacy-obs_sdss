@@ -1,45 +1,33 @@
-from lsst.obs.sdss.calibrate import SdssCalibrateTask
-root.calibrate.retarget(SdssCalibrateTask)
-
-# Inputs to coadd have already been background-subtracted; do we need to do it again?
-# (answer obviously changes if we implement background-matching).
-# Defaults here just do one, final step to tweak it up, assuming that there's no big
-# DC value to begin with.
 root.calibrate.doBackground = True
 root.calibrate.detection.reEstimateBackground = True
 root.detection.reEstimateBackground = True
-# Official Summer2012 background binSize
+
+# Official Summer2012
 root.calibrate.background.binSize = 512
 root.calibrate.detection.background.binSize = 512
 root.detection.background.binSize = 512
+root.calibrate.detection.thresholdType = "pixel_stdev"
+root.detection.thresholdType = "pixel_stdev"
 
-# Our non-PSF-matched coadds have lousy PSFs so don't try to fit a PSF
-# Also: use a double Gaussian as the initialPsf model because a SingleGaussian cannot be persisted.
-root.calibrate.useExposurePsf = False
-root.calibrate.doPsf = False
-root.calibrate.initialPsf.model='DoubleGaussian'
-
-# The settings below only matter for determining stars to pass to the aperture corrections unless
-# useInputPsf is not True.
-for filterName in ("u", "g", "r", "i", "z"):
-    subConfig = getattr(root.calibrate, filterName)
-    subConfig.psfDeterminer["pca"].spatialOrder    = 2  
-    subConfig.psfDeterminer["pca"].kernelSizeMin   = 31 # Larger Psfs
-    subConfig.starSelector["secondMoment"].fluxLim = 3000.0
-    subConfig.starSelector.name = "catalog"
-
+#set in #2800 default already
 root.calibrate.astrometry.forceKnownWcs = True
 root.calibrate.astrometry.solver.calculateSip = False
 
 # Remove flags.pixel.interpolated.any
 root.calibrate.photocal.badFlags = ('flags.pixel.edge','flags.pixel.saturated.any')
 
-# Official config for Summer 2012
-root.calibrate.detection.thresholdType = "pixel_stdev"
-root.detection.thresholdType = "pixel_stdev"
+"""Ap correction defaults to true happens in the measurement algorithm: 'correctFluxes'
+SDSS the standard aperture correction is quoted as out to a radius of 7.43.
+According to http://www.sdss.org/dr7/algorithms/photometry.html#photo_profile this corresponds to 18.58.
+Note that 7.43/0.3961270 = 18.7566 <> 18.58.Why?"""
 
-# For detection
-root.calibrate.initialPsf.fwhm=1.7
+#psf flux = ap flux at this radius. Will also be applied to galaxies Same everywhere'
+root.measurement.algorithms['correctfluxes'].apCorrRadius = 18.58 #pixels
+
+root.detection.thresholdValue = 3.0
+root.doDeblend=True
+root.deblend.maxNumberOfPeaks=40
+
 
 try:
     # Enable multiShapelet for model mags.
