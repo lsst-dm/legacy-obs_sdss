@@ -15,7 +15,7 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
 # GNU General Public License for more details.
-#%
+#
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
@@ -35,7 +35,7 @@ class SelectSdssFluxMag0Config(DatabaseSelectImagesConfig):
     """Config for SelectSdssFluxMag0Task
     """
     def setDefaults(self):
-        super(SelectSdssFluxMag0Config,self).setDefaults()
+        DatabaseSelectImagesConfig.setDefaults(self)
         self.database = "krughoff_early_prod_11032012"
         self.host = "lsst-db.ncsa.illinois.edu"
         self.port = 3306
@@ -52,7 +52,7 @@ class FluxMagInfo(BaseExposureInfo):
     def __init__(self, result):
         """Set exposure information based on a query result from a db connection
         """
-        result = [r for r in result]
+        result = list(result)
         dataId = dict(
            run = result.pop(0),
            camcol = result.pop(0),

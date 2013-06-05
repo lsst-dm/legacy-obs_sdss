@@ -2,7 +2,7 @@
 
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2008, 2009, 2010, 2011, 2012, 2013 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -51,7 +51,8 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
     """
     def makeTestExposure(self, xNumPix=2060, yNumPix=1967):
         """
-        Create and return an exposure that is completely covered by the database: test_select_lsst_images
+        Create and return an exposure with wcs. Wcs is chosen such that the exposure is
+        completely covered by the Science_Ccd_Exposure table in the database: test_select_sdss_images
         """
         metadata = lsst.daf.base.PropertySet()
         metadata.set("NAXIS", 2)

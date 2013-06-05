@@ -47,7 +47,6 @@ class SdssImageScaler(object):
         @param[in] xList: list of X pixel positions
         @param[in] yList: list of Y pixel positions
         @param[in] scaleList: list of multiplicative scales at (x,y)
-        @param[in] scaleErrList: list of scale errors; None if unknown
 
         @raise RuntimeError if the lists have different lengths
         """
@@ -137,8 +136,6 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
     _DefaultName = "scaleSdssZeroPoint"
 
     def __init__(self, *args, **kwargs):
-        """Construct a ScaleSdssZeroPointTask
-        """
         ScaleZeroPointTask.__init__(self, *args, **kwargs)
         self.makeSubtask("selectFluxMag0")
         self.FIELD_WIDTH = 1489.
