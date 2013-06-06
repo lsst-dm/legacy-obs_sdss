@@ -34,7 +34,6 @@ try:
     import lsst.meas.extensions.multiShapelet
     root.measurement.algorithms.names |= lsst.meas.extensions.multiShapelet.algorithms
     root.measurement.slots.modelFlux = "multishapelet.combo.flux"
-    # PSF should be exactly double-Gaussian (zeroth-order shapelet)
     root.measurement.algorithms["multishapelet.psf"].innerOrder = 0
     root.measurement.algorithms["multishapelet.psf"].outerOrder = 0
     # too many INTERP pixels on coadds, so we relax the masking in modeling

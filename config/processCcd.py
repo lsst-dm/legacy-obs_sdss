@@ -21,8 +21,6 @@ root.loadSdssWcs = True
 root.calibrate.astrometry.forceKnownWcs = True
 root.calibrate.astrometry.solver.calculateSip = False
 
-root.calibrate.doPhotoCal=True
-root.doMeasurement=True
 #Important for producing coaddTempExps without nans
 root.removeOverlap=False
 
