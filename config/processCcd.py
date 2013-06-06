@@ -31,3 +31,11 @@ Note that 7.43/0.3961270 = 18.7566 <> 18.58.Why?"""
 
 #psf flux = ap flux at this radius. Will also be applied to galaxies Same everywhere'
 root.measurement.algorithms['correctfluxes'].apCorrRadius = 18.58 #pixels
+
+try:
+    import lsst.meas.extensions.multiShapelet
+    root.measurement.algorithms.names = set(root.measurement.algorithms.names) | lsst.meas.extensions.multiShapelet.algorithms
+    root.measurement.slots.modelFlux = "multishapelet.combo.flux"
+except ImportError:
+    # TODO: find a better way to log this
+    print "WARNING: Could not import lsst.meas.extensions.multiShapelet; model fluxes not enabled!"
