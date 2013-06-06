@@ -74,9 +74,10 @@ class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
         optional=True,
     )
     strip = pexConfig.Field(
-        doc="Strip: N, S or None for both",
+        doc="Strip: N, S, Both for both, or Auto to pick the strip based on the dataId",
         dtype=str,
-        optional=True,
+        default="Auto",
+        optional=False,
     )
     rejectWholeRuns = pexConfig.Field(
         doc="If any exposure in the region is bad or the run does not cover the whole region, then reject the whole run?",
@@ -180,7 +181,7 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
     ConfigClass = SelectSdssImagesConfig
     
     @pipeBase.timeMethod
-    def run(self, coordList, filter):
+    def run(self, coordList, filter, strip=None):
         """Select SDSS images suitable for coaddition in a particular region
         
         @param[in] filter: filter for images (one of "u", "g", "r", "i" or "z")
@@ -253,9 +254,9 @@ from %s as ccdExp where """ % (self.config.table,)
 
         if self.config.camcols is not None:
             whereDataList.append(_whereDataFromList("camcol", self.config.camcols))
-        
-        if self.config.strip is not None:
-            whereDataList.append(("strip = %s", self.config.strip))
+
+        if strip is not None: # None corresponds to query for both strips: no constraint added
+            whereDataList.append(("strip = %s", strip))
         
         queryStr += " and ".join(wd[0] for wd in whereDataList)
         dataTuple += tuple(wd[1] for wd in whereDataList)
@@ -382,12 +383,25 @@ from %s as ccdExp where """ % (self.config.table,)
     
     def _runArgDictFromDataId(self, dataId):
         """Extract keyword arguments for run (other than coordList) from a data ID
-        
+
         @param[in] dataId: a data ID dict
         @return keyword arguments for run (other than coordList), as a dict
         """
+        patch = dataId["patch"]
+        if self.config.strip.lower() == 'both':
+            stripVal = None
+        elif self.config.strip.lower() == 'auto':
+            stripVal = 'S' if int(patch.split(",")[1]) % 2 == 0 else 'N'
+        elif self.config.strip.lower() == 'n':
+            stripVal = 'N'
+        elif self.config.strip.lower() == 's':
+            stripVal = 'S'
+        else:
+            raise RuntimeError("Invalid config.strip %s. Must be one of N, S, Auto or Both" %
+                               (self.config.strip))
         return dict(
-            filter = dataId["filter"]
+            filter = dataId["filter"],
+            strip  = stripVal
         )
 
 def _formatList(valueList):

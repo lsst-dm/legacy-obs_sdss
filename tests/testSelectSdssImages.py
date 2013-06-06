@@ -129,15 +129,20 @@ class SelectSdssImagesTestCase(unittest.TestCase):
     def testStrip(self):
         """Test config.strip
         """
-        for strip in ("S", "N"):
+        for strip in ("S", "N", "Auto", "Both"):
             config = SelectSdssImagesTask.ConfigClass()
             config.database = Database
             config.strip = strip
             task = SelectSdssImagesTask(config=config)
             coordList = getCoordList(333.746,-0.63606,334.522,-0.41341)
-            filter = "g"
-            expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
-            self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.strip != strip), ())
+            dataId = {"filter": "g", "patch": "20,5"}
+            runArgDict = task._runArgDictFromDataId(dataId)
+            expInfoList = task.run(coordList=coordList, **runArgDict).exposureInfoList
+            if strip in ("S","N"):
+                self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.strip != strip), ())
+            elif strip =="Auto":
+                self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.strip != 'N'), ())
+            #no assert for "Both"
 
     def testRejectWholeRuns(self):
         """Test config.rejectWholeRuns
