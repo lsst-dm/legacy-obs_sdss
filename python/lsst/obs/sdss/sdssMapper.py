@@ -145,28 +145,6 @@ class SdssMapper(CameraMapper):
 
 ###############################################################################
 
-    def _addSources(self, dataId):
-        """Generic 'add' function to add ampExposureId and filterId"""
-        # Note that sources are identified by what is called an ampExposureId,
-        # but in this case all we have is a CCD.
-        ampExposureId = self._computeCcdExposureId(dataId)
-        filterId = self.filterIdMap[dataId['filter']]
-        ad = dict(ampExposureId=ampExposureId, filterId=filterId)
-        if self.doFootprints:
-            ad["doFootprints"] = True
-        return ad
-
-    def _addSkytile(self, dataId):
-        """Generic 'add' function to add skyTileId"""
-        return {"skyTileId": dataId['skyTile']}
-
-for dsType in ("icSrc", "src"):
-    setattr(SdssMapper, "add_" + dsType, SdssMapper._addSources)
-for dsType in ("source", "badSource", "invalidSource", "object"):
-    setattr(SdssMapper, "add_" + dsType, SdssMapper._addSkytile)
-
-###############################################################################
-
 
 for dsType in ("fpC", "fpM", "calexp"):
     setattr(SdssMapper, "std_" + dsType + "_md",
