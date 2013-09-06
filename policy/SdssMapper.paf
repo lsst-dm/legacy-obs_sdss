@@ -245,14 +245,6 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    psf: {
-        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/psf/psf-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.afw.detection.Psf"
-        persistable:        "Psf"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
     apCorr: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/apCorr/apCorr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.pickle"
         python:        "lsst.meas.algorithms.ApertureCorrection"
@@ -431,13 +423,6 @@ datasets: {
         storage:     "FitsStorage"
         tables:      raw
     }
-    deepCoadd_initPsf: {
-        template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/initPsf-%(filter)s-%(tract)d-%(patch)s.boost"
-        python:      "lsst.afw.detection.Psf"
-        persistable: "Psf"
-        storage:     "BoostStorage"
-        tables:      raw
-    }
     deepCoadd_skyMap: {
         template:    "deepCoadd/skyMap.pickle"
         python:      "lsst.skymap.BaseSkyMap"
@@ -531,14 +516,6 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    deepCoadd_psf: {
-        template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/psf-%(filter)s-%(tract)d-%(patch)s.boost"
-        python:        "lsst.afw.detection.Psf"
-        persistable:        "Psf"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
     deepCoadd_apCorr: {
         template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/apCorr-%(filter)s-%(tract)d-%(patch)s.pickle"
         python:        "lsst.meas.algorithms.ApertureCorrection"
@@ -601,13 +578,6 @@ datasets: {
         python:      "lsst.afw.image.ImageF"
         persistable: "ImageF"
         storage:     "FitsStorage"
-        tables:      raw
-    }
-    goodSeeingCoadd_initPsf: {
-        template:    "goodSeeingCoadd/%(filter)s/%(tract)d/%(patch)s/initPsf-%(filter)s-%(tract)d-%(patch)s.boost"
-        python:      "lsst.afw.detection.Psf"
-        persistable: "Psf"
-        storage:     "BoostStorage"
         tables:      raw
     }
     goodSeeingCoadd_skyMap: {
@@ -687,14 +657,6 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    goodSeeingCoadd_psf: {
-        template:      "goodSeeingCoadd-results/%(filter)s/%(tract)d/%(patch)s/psf-%(filter)s-%(tract)d-%(patch)s.boost"
-        python:        "lsst.afw.detection.Psf"
-        persistable:        "Psf"
-        storage:    "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
     goodSeeingCoadd_apCorr: {
         template:      "goodSeeingCoadd-results/%(filter)s/%(tract)d/%(patch)s/apCorr-%(filter)s-%(tract)d-%(patch)s.pickle"
         python:        "lsst.meas.algorithms.ApertureCorrection"
@@ -760,13 +722,6 @@ datasets: {
         tables:        raw_skyTile
     }
 
-    chiSquaredCoadd_initPsf: {
-        template:    "chiSquaredCoadd/%(tract)d/%(patch)s/initPsf-%(tract)d-%(patch)s.boost"
-        python:      "lsst.afw.detection.Psf"
-        persistable: "Psf"
-        storage:     "BoostStorage"
-        tables:      raw
-    }
     chiSquaredCoadd_skyMap: {
         template:    "chiSquaredCoadd/skyMap.pickle"
         python:      "lsst.skymap.BaseSkyMap"
@@ -825,14 +780,6 @@ datasets: {
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
         storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    chiSquaredCoadd_psf: {
-        template:      "chiSquaredCoadd-results/%(tract)d/%(patch)s/psf-%(tract)d-%(patch)s.boost"
-        python:        "lsst.afw.detection.Psf"
-        persistable:        "Psf"
-        storage:    "BoostStorage"
         tables:        raw
         tables:        raw_skyTile
     }
