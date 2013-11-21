@@ -20,14 +20,12 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-import MySQLdb
-
 import numpy
 import lsst.pex.config as pexConfig
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.geom as afwGeom
-from lsst.pipe.tasks.scaleZeroPoint import ImageScaler, ScaleZeroPointTask
+from lsst.pipe.tasks.scaleZeroPoint import ScaleZeroPointTask
 from .selectFluxMag0 import SelectSdssFluxMag0Task
 
 __all__ = ["ScaleSdssZeroPointTask"]
@@ -59,7 +57,6 @@ class SdssImageScaler(object):
         self._xList = xList
         self._yList = yList
         self._scaleList = scaleList
-
 
     def scaleMaskedImage(self, maskedImage):
         """Apply scale correction to the specified masked image
@@ -95,11 +92,11 @@ class SdssImageScaler(object):
             xPos = afwImage.indexToPosition(xInd)
             interpValArr[i] = interp.interpolate(xPos)
 
-        interpGrid = numpy.meshgrid(interpValArr, range(0, height))[0]
+        # assume the maskedImage being scaled is MaskedImageF (which is usually true); see ticket #3070
+        interpGrid = numpy.meshgrid(interpValArr, range(0, height))[0].astype(numpy.float32)
         image = afwImage.makeImageFromArray(interpGrid)
         image.setXY0(x0, y0)
         return image
-
 
 class ScaleSdssZeroPointConfig(ScaleZeroPointTask.ConfigClass):
     """Config for ScaleSdssZeroPointTask
