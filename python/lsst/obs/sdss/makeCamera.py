@@ -22,14 +22,16 @@
 import os
 
 import lsst.afw.geom as afwGeom
-import lsst.afw.cameraGeom as cameraGeom
+import lsst.afw.cameraGeom.utils as cameraGeomUtils
+from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig, SCIENCE, PIXELS, PUPIL, FOCAL_PLANE
+import lsst.afw.table as afwTable
 from lsst.obs.sdss.convertOpECalib import SdssCameraState
 
 #
 # Make an Amp
 #
-def makeAmp(i, eparams):
-    """ Make an amplifier
+def addAmp(ampCatalog, i, eparams):
+    """ Add an amplifier to an AmpInfoCatalog
 
     @param i which amplifier? (i == 0 ? left : right)
     @param eparams Electronic parameters for this amplifier
@@ -49,71 +51,133 @@ def makeAmp(i, eparams):
     # Note that all the offsets are relative to the origin of this amp, not to its eventual
     # position in the CCD
     #
-    allPixels = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(width + nExtended + nOverclock, height))
+    record = ampCatalog.addNew()
+    xtot = width + nExtended + nOverclock
+    allPixels = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(xtot, height))
     biasSec = afwGeom.BoxI(afwGeom.PointI(nExtended if i == 0 else width, 0),
                            afwGeom.ExtentI(nOverclock, height)) 
     dataSec = afwGeom.BoxI(afwGeom.PointI(nExtended + nOverclock if i == 0 else 0, 0),
                            afwGeom.ExtentI(width, height))
-    
-    return cameraGeom.Amp(cameraGeom.Id(i), allPixels, biasSec, dataSec, eparams)
+    emptyBox = afwGeom.BoxI()
+    bbox = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(width, height))
+    bbox.shift(afwGeom.Extent2I(width*i, 0))
+
+    shiftp = afwGeom.Extent2I(xtot*i, 0)
+    allPixels.shift(shiftp)
+    biasSec.shift(shiftp)
+    dataSec.shift(shiftp)
+
+    record.setBBox(bbox)
+    record.setRawXYOffset(afwGeom.ExtentI(0,0))
+    record.setName('left' if i==0 else 'right')
+    record.setReadoutCorner(afwTable.LL if i==0 else afwTable.LR)    
+    record.setGain(eparams['gain'])
+    record.setReadNoise(eparams['readNoise'])
+    record.setSaturation(int(eparams['fullWell']))
+    record.setLinearityType('Proportional')
+    record.setLinearityCoeffs([1.,])
+    record.setHasRawInfo(True)
+    record.setRawFlipX(False)
+    record.setRawFlipY(False)
+    record.setRawBBox(allPixels)
+    record.setRawDataBBox(dataSec)
+    record.setRawHorizontalOverscanBBox(biasSec)
+    record.setRawVerticalOverscanBBox(emptyBox)
+    record.setRawPrescanBBox(emptyBox)
 
 #
 # Make a Ccd out of 2 Amps
 #
-def makeCcd(ccdName):
+def makeCcd(ccdName, ccdId, offsetPoint):
     opDir = os.path.join(os.environ['OBS_SDSS_DIR'], "etc")
     sc = SdssCameraState(opDir, "opConfig-50000.par", "opECalib-50000.par")
     eparams = sc.getEParams(ccdName)
+    width = 1024*2
+    height = 1361
 
     pixelSize = 24e-3                   # pixel size in mm
-    ccd = cameraGeom.Ccd(cameraGeom.Id(ccdName), pixelSize)
-
+    schema = afwTable.AmpInfoTable.makeMinimalSchema()
+    ampCatalog = afwTable.AmpInfoCatalog(schema)
     for i in range(2):
-        ccd.addAmp(i, 0, makeAmp(i, eparams[i][1]))
-
-    return ccd 
+        addAmp(ampCatalog, i, eparams[i][1])
+    detConfig = DetectorConfig()
+    detConfig.name = ccdName
+    detConfig.id = ccdId
+    detConfig.bbox_x0 = 0
+    detConfig.bbox_y0 = 0
+    detConfig.bbox_x1 = width - 1
+    detConfig.bbox_y1 = height - 1
+    detConfig.serial = ccdName
+    detConfig.detectorType = SCIENCE
+    detConfig.offset_x = offsetPoint.getX()
+    detConfig.offset_y = offsetPoint.getY()
+    detConfig.refpos_x = (width-1)/2.
+    detConfig.refpos_y = (height-1)/2.
+    detConfig.yawDeg = 0.
+    detConfig.pitchDeg = 0.
+    detConfig.rollDeg = 0.
+    detConfig.pixelSize_x = pixelSize
+    detConfig.pixelSize_y = pixelSize
+    detConfig.transposeDetector = False
+    detConfig.transformDict.nativeSys = PIXELS.getSysName()
+    return {'ccdConfig':detConfig, 'ampInfo':ampCatalog}
 
 #
-# Make a Raft (== SDSS dewar) out of 5 Ccds
+# Make a Camera out of 6 dewars and 5 chips per dewar
 #
-def makeRaft(raftName):
-    dewar = cameraGeom.Raft(cameraGeom.Id(str(raftName)), 1, 5)
+def makeCamera(name="SDSS", outputDir=None):
+    camConfig = CameraConfig()
+    camConfig.name = name
+    camConfig.detectorList = {}
+    camConfig.plateScale = 16.5 # arcsec/mm
+    pScaleRad = afwGeom.arcsecToRad(camConfig.plateScale)
+    radialDistortCoeffs = [0.0, 1.0/pScaleRad]
+    tConfig = afwGeom.TransformConfig()
+    tConfig.transform.name = 'inverted'
+    radialClass = afwGeom.xyTransformRegistry['radial']
+    tConfig.transform.active.transform.retarget(radialClass)
+    tConfig.transform.active.transform.coeffs = radialDistortCoeffs
+    tmc = afwGeom.TransformMapConfig()
+    tmc.nativeSys = FOCAL_PLANE.getSysName()
+    tmc.transforms = {PUPIL.getSysName():tConfig}
+    camConfig.transformDict = tmc
 
-    filters = "riuzg"
-    for i, c in enumerate(reversed(filters)):
-        ccdName = "%s%d" % (c, raftName)
-        dewar.addDetector(afwGeom.PointI(0, i), cameraGeom.FpPoint(0.0, 25.4*2.1*(2.0 - i)),
-                          cameraGeom.Orientation(0), makeCcd(ccdName))
 
-    return dewar 
-
-#
-# Make a Camera out of 6 Rafts (==dewars)
-#
-def makeCamera(name="SDSS"):
-    camera = cameraGeom.Camera(cameraGeom.Id(name), 6, 1)
-
+    ccdId = 0
+    ampInfoCatDict = {}
     for i in range(6):
-        dewarName = (i + 1)
-        camera.addDetector(afwGeom.PointI(i, 0), cameraGeom.FpPoint(25.4*2.5*(2.5 - i), 0.0),
-                           cameraGeom.Orientation(0), makeRaft(dewarName))
-
-    return camera 
+        dewarName = str(i+1)
+        filters = "riuzg"
+        for j, c in enumerate(reversed(filters)):
+            ccdName = "%s%s" % (c, dewarName)
+            offsetPoint = afwGeom.Point2D(25.4*2.5*(2.5-i), 25.4*2.1*(2.0 - j))
+            ccdInfo = makeCcd(ccdName, ccdId, offsetPoint)
+            ampInfoCatDict[ccdName] = ccdInfo['ampInfo']
+            camConfig.detectorList[ccdId] = ccdInfo['ccdConfig']
+            ccdId += 1
+    if outputDir is not None:
+        camConfig.save(os.path.join(outputDir, 'camera.py'))
+        for k in ampInfoCatDict:
+            ampInfoCatDict[k].writeFits(os.path.join(outputDir, "%s.fits"%(k)))
+    return makeCameraFromCatalogs(camConfig, ampInfoCatDict)
 
 #************************************************************************************************************
 #
 # Print a Ccd
 #
-def printCcd(title, ccd, indent=""):
-    print indent, title, "CCD: ", ccd.getId().getName()
-    allPixels = ccd.getAllPixels() 
+def printCcd(title, ccd, trimmed=True, indent=""):
+    print indent, title, "CCD: ", ccd.getName()
+    if trimmed:
+        allPixels = ccd.getBBox()
+    else:
+        allPixels = cameraGeomUtils.calcRawCcdBBox(ccd)
     print indent, "Total size: %dx%d" % (allPixels.getWidth(), allPixels.getHeight())
     for i, amp in enumerate(ccd):
-        biasSec = amp.getBiasSec() 
-        dataSec = amp.getDataSec() 
+        biasSec = amp.getRawHorizontalOverscanBBox() 
+        dataSec = amp.getRawDataBBox() 
 
-        print indent, "   Amp: %s gain: %g" % (amp.getId().getSerial(),
-                                               amp.getElectronicParams().getGain())
+        print indent, "   Amp: %s gain: %g" % (amp.getName(),
+                                               amp.getGain())
 
         print indent,"   bias sec: %dx%d+%d+%d" % (biasSec.getWidth(), biasSec.getHeight(),
                                                     biasSec.getMinX(), biasSec.getMinY())
@@ -124,51 +188,31 @@ def printCcd(title, ccd, indent=""):
             print
 
 #
-# Print a Dewar
-#
-def printDewar(title, dewar, indent=""):
-    print indent, title, "Dewar: ", dewar.getId().getName()
-
-    for det in dewar:
-        print indent, "%s %dx%d centre (mm): %s" % \
-            (det.getId().getName(),
-             det.getAllPixels(True).getWidth(), det.getAllPixels(True).getHeight(),
-             det.getCenter().getMm())
-
-#
 # Print a Camera
 #
 def printCamera(title, camera):
-    print title, "Camera:", camera.getId().getName()
+    print title, "Camera:", camera.getName()
 
-    for raft in camera:
-        printDewar("\n", cameraGeom.cast_Raft(raft), "    ") 
+    for det in camera:
+        print "%s %dx%d centre (mm): %s" % \
+            (det.getName(),
+             det.getBBox().getWidth(), det.getBBox().getHeight(),
+             det.getCenter(FOCAL_PLANE).getPoint())
 
 #************************************************************************************************************
 
 def main():
-    ccd = makeCcd("r1") 
-
-    printCcd("Raw ", ccd) 
-
-    ccd.setTrimmed(True) 
-
-    print
-    printCcd("Trimmed ", ccd) 
-    #
-    # The SDSS camera has 6 independent dewars, each with 5 CCDs mounted on a piece of invar
-    #
-    dewar = makeRaft(2)                 # dewar 2
-
-    print
-    printDewar("Single ", dewar) 
-    #
-    # On to the camera
-    #
     camera = makeCamera("SDSS") 
 
     print
     printCamera("", camera) 
+
+    ccd = camera["r1"]
+
+    printCcd("Raw ", ccd, trimmed=False) 
+
+    print
+    printCcd("Trimmed ", ccd, trimmed=True) 
 
 if __name__ == "__main__":
     main()

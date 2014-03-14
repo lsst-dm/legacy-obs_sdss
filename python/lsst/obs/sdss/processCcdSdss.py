@@ -24,8 +24,9 @@ import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
-import lsst.afw.cameraGeom as afwCameraGeom
 import lsst.afw.geom as afwGeom
+import lsst.afw.cameraGeom as cameraGeom
+from .makeCamera import makeCamera
 from lsst.pipe.tasks.processImage import ProcessImageTask
 
 class ProcessCcdSdssConfig(ProcessImageTask.ConfigClass):
@@ -52,6 +53,7 @@ class ProcessCcdSdssTask(ProcessImageTask):
 
     def __init__(self, **kwargs):
         ProcessImageTask.__init__(self, **kwargs)
+        self.camera = makeCamera()
 
     @classmethod
     def _makeArgumentParser(cls):
@@ -87,9 +89,8 @@ class ProcessCcdSdssTask(ProcessImageTask):
 
         exp   = afwImage.ExposureF(mi, wcs)
         exp.setCalib(calib)
-        det = afwCameraGeom.Detector(
-            afwCameraGeom.Id("%s%d" % (sensorRef.dataId["filter"], sensorRef.dataId["camcol"]))
-        )
+        
+        det = sensorRef.get('camera')["%s%d"%(sensorRef.dataId["filter"], sensorRef.dataId["camcol"])]
         exp.setDetector(det)
         exp.setFilter(afwImage.Filter(sensorRef.dataId['filter']))
 

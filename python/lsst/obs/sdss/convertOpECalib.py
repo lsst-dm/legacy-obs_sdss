@@ -1,7 +1,6 @@
 import numpy as np
 import os
 from lsst.obs.sdss.yanny import yanny as Yanny
-import lsst.afw.cameraGeom as cameraGeom
 
 class SdssCameraState(Yanny):
     _filters = dict(u = 1, g = 2, r = 3, i = 4, z = 5)
@@ -30,7 +29,7 @@ class SdssCameraState(Yanny):
         return me[0]
 
     def getEParams(self, ccdName):
-        """Return a pair cameraGeom.ElectronicParams for both amps of a named CCD (e.g. z4)"""
+        """Return a pair of ampId dict of electronic params for both amps of a named CCD (e.g. z4)"""
         ECALIB = self._ECalib
         me = self.getCcdIndex(ECALIB, ccdName)
 
@@ -41,7 +40,7 @@ class SdssCameraState(Yanny):
                 readNoise = ECALIB["readNoiseDN%d" % i][me]
                 fullWell = ECALIB["fullWellDN%d" % i][me]
 
-                eparams.append((i, cameraGeom.ElectronicParams(gain, readNoise, fullWell)))
+                eparams.append((i, {'gain':gain, 'readNoise':readNoise, 'fullWell':fullWell}))
 
         if len(eparams) == 1:
             eparams.append((1, eparams[0][1]))

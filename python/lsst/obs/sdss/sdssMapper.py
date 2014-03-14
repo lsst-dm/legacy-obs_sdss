@@ -27,7 +27,9 @@ from lsst.obs.sdss.convertfpM import convertfpM
 from lsst.obs.sdss.convertpsField import convertpsField
 from lsst.obs.sdss.convertasTrans import convertasTrans
 from lsst.obs.sdss.converttsField import converttsField
+import lsst.daf.persistence as dafPersist
 import lsst.afw.image.utils as afwImageUtils
+from .makeCamera import makeCamera
 
 # Solely to get boost serialization registrations for Measurement subclasses
 import lsst.meas.algorithms as measAlgo
@@ -37,6 +39,7 @@ class SdssMapper(CameraMapper):
         policyFile = pexPolicy.DefaultPolicyFile("obs_sdss", "SdssMapper.paf", "policy")
         policy = pexPolicy.Policy(policyFile)
 
+        #self.mapCamera = makeCamera()
         self.doFootprints = False
         if inputPolicy is not None:
             for kw in inputPolicy.paramNames(True):
@@ -105,7 +108,6 @@ class SdssMapper(CameraMapper):
         return item
 
 ###############################################################################
-
     def bypass_fpM(self, datasetType, pythonType, location, dataId):
         return convertfpM(location.getLocations()[0])
 

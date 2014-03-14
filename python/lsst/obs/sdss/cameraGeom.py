@@ -2,7 +2,7 @@
 Utilities to use SDSS data with the cameraGeom utilities.  For example:
 
 import lsst.daf.persistence as dafPersist
-import lsst.afw.cameraGeom.usils as cgUtils
+import lsst.afw.cameraGeom.utils as cgUtils
 import lsst.obs.sdss.makeCamera as makeCamera
 from lsst.obs.sdss import SdssMapper;
 
@@ -14,7 +14,6 @@ field=101), field=1)
 
 """
 import lsst.afw.geom as afwGeom
-import lsst.afw.cameraGeom.utils as cgUtils
 
 class SdssCcdImage(cgUtils.GetCcdImage):
     """A class to return an Image of a given SDSS Ccd by using the butler"""
@@ -29,7 +28,7 @@ class SdssCcdImage(cgUtils.GetCcdImage):
     def getImage(self, ccd, amp=None, imageFactory=None):
         """Return the image of the chip with cameraGeom.Id == id; if provided only read the given amp"""
 
-        filter, camCol = list(ccd.getId().getName()) # list splits the name
+        filter, camCol = list(ccd.getName()) # list splits the name
         camCol = 3                                 # XXX
         fpC = self.butler.get("fpC", dict(run=self.run, camcol=camCol,
             filter=filter, field=self.field))
