@@ -1,6 +1,7 @@
 #<?cfg paf policy ?>
 
 camera:        "../description/camera"
+
 needCalibRegistry: false
 
 levels: {
