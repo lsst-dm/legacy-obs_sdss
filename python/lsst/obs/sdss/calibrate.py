@@ -153,9 +153,9 @@ class SdssCalibrateTask(CalibrateTask):
         self.schema = afwTable.SourceTable.makeMinimalSchema()
         self.algMetadata = dafBase.PropertyList()
         self.makeSubtask("repair")
-        self.makeSubtask("detection", schema=self.schema, tableVersion=tableVersion)
+        self.makeSubtask("detection", schema=self.schema)
         self.makeSubtask("initialMeasurement", schema=self.schema, algMetadata=self.algMetadata)
-        self.makeSubtask("astrometry", schema=self.schema, tableVersion=tableVersion)
+        self.makeSubtask("astrometry", schema=self.schema)
         self.starSelectors = {}
         self.psfDeterminers = {}
         self.psfCandidateKey = self.schema.addField(
@@ -173,7 +173,7 @@ class SdssCalibrateTask(CalibrateTask):
             self.starSelectors[filterName] = subConfig.starSelector.apply()
             self.psfDeterminers[filterName] = subConfig.psfDeterminer.apply()
         self.makeSubtask("measurement", schema=self.schema, algMetadata=self.algMetadata)
-        self.makeSubtask("photocal", schema=self.schema, tableVersion=tableVersion)
+        self.makeSubtask("photocal", schema=self.schema)
 
     def getCalibKeys(self):
         return (self.psfCandidateKey, self.psfUsedKey)
