@@ -133,6 +133,9 @@ class SdssCalibrateConfig(pexConfig.Config):
         if self.initialMeasurement.prefix == self.measurement.prefix:
             raise ValueError("SdssCalibrateConfig.initialMeasurement and SdssCalibrateConfig.measurement "
                              "have the same prefix; field names may clash.")
+        if self.initialMeasurement.target.tableVersion != self.measurement.target.tableVersion:
+            raise ValueError("tableVersions of measurement subtasks do not match")
+
     def setDefaults(self):
         self.detection.includeThresholdMultiplier = 10.0
         self.initialMeasurement.prefix = "initial."
@@ -148,9 +151,10 @@ class SdssCalibrateTask(CalibrateTask):
     """
     ConfigClass = SdssCalibrateConfig
 
-    def __init__(self, tableVersion=0, **kwargs):
+    def __init__(self, **kwargs):
         pipeBase.Task.__init__(self, **kwargs)
         self.schema = afwTable.SourceTable.makeMinimalSchema()
+        self.schema.setVersion(self.measurement.target.tableVersion)
         self.algMetadata = dafBase.PropertyList()
         self.makeSubtask("repair")
         self.makeSubtask("detection", schema=self.schema)
