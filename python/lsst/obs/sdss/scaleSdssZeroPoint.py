@@ -63,7 +63,7 @@ class SdssImageScaler(object):
 
         @param[in,out] image to scale; scale is applied in place
         """
-        scale = self.getInterpImage(maskedImage.getBBox(afwImage.PARENT))
+        scale = self.getInterpImage(maskedImage.getBBox())
         maskedImage *= scale
 
     def getInterpImage(self, bbox):
@@ -147,7 +147,7 @@ class ScaleSdssZeroPointTask(ScaleZeroPointTask):
         overlapping fluxMag0s corresponding to the same run and filter.
         """
         wcs = exposure.getWcs()
-        bbox = exposure.getBBox(afwImage.PARENT)
+        bbox = exposure.getBBox()
         buffer = int(self.config.bufferWidth * self.FIELD_WIDTH)
         biggerBbox = afwGeom.Box2I(afwGeom.Point2I(bbox.getBeginX()-buffer, bbox.getBeginY()),
                                    afwGeom.Extent2I(bbox.getWidth()+ buffer + buffer, bbox.getHeight()))

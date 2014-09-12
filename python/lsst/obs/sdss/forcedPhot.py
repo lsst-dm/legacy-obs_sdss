@@ -6,9 +6,7 @@ import MySQLdb
 import lsst.afw.table as afwTable
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
-import lsst.afw.image as afwImage
-from lsst.daf.persistence import DbAuth, DbStorage, LogicalLocation
-from lsst.pipe.base import Struct
+from lsst.daf.persistence import DbAuth
 from lsst.pipe.tasks.forcedPhot import ReferencesTask, ReferencesConfig
 from lsst.pex.config import Field
 import collections
@@ -133,7 +131,7 @@ class SdssReferencesTask(ReferencesTask):
         cursor = db.cursor()
 
         wcs = exposure.getWcs()
-        posBBox = afwGeom.Box2D(exposure.getBBox(afwImage.PARENT))
+        posBBox = afwGeom.Box2D(exposure.getBBox())
         coordList = [wcs.pixelToSky(pos) for pos in posBBox.getCorners()]
         coordStrList = ["%s, %s" % (c.getLongitude().asDegrees(),
                                     c.getLatitude().asDegrees()) for c in coordList]

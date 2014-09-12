@@ -24,18 +24,14 @@ import lsst.daf.base as dafBase
 import lsst.pipe.base as pipeBase
 import lsst.pex.config as pexConfig
 import lsst.meas.algorithms as measAlg
-import lsst.meas.astrom as measAstrom
 from lsst.meas.astrom.catalogStarSelector import CatalogStarSelector
 import lsst.afw.table as afwTable
-import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
-from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateConfig, CalibrateTask
+from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateTask
 
 from lsst.meas.photocal import PhotoCalTask
 from lsst.pipe.tasks.astrometry import AstrometryTask
 from lsst.pipe.tasks.repair import RepairTask
-
-import math
 
 class SdssCalibratePerFilterConfig(pexConfig.Config):
     starSelector = measAlg.starSelectorRegistry.makeField(
@@ -332,7 +328,7 @@ class SdssCalibrateTask(CalibrateTask):
         an alternate method on PsfDeterminers that always succeeds or at least succeeds
         more often.
         """
-        bbox = exposure.getBBox(afwImage.PARENT)
+        bbox = exposure.getBBox()
         filterName = exposure.getFilter().getName()
         filterConfig = getattr(self.config, filterName)
         # This is slightly dangerous: we assume PsfDeterminerConfig has sizeCellX/sizeCellY,

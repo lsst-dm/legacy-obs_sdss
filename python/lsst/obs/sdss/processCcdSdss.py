@@ -25,7 +25,6 @@ import lsst.pipe.base as pipeBase
 import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
-import lsst.afw.cameraGeom as cameraGeom
 from .makeCamera import makeCamera
 from lsst.pipe.tasks.processImage import ProcessImageTask
 
@@ -80,7 +79,7 @@ class ProcessCcdSdssTask(ProcessImageTask):
         mi    = afwImage.MaskedImageF(image, mask, var)
 
         if self.config.removeOverlap:
-            bbox    = mi.getBBox()
+            bbox    = mi.getBBox(afwImage.LOCAL)
             begin   = bbox.getBegin()
             extent  = bbox.getDimensions()
             extent -= afwGeom.Extent2I(0, self.config.overlapSize)

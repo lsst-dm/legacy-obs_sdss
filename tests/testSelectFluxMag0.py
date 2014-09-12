@@ -24,7 +24,6 @@
 
 """Test lsst.obs.sdss.selectFluxMag0Task and integration with lsst.obs.sdss.scaleSdssZeroPointTask
 """
-import numpy
 import unittest
 
 import lsst.daf.base
@@ -120,7 +119,7 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         #test methods: computeImageScale(), scaleMaskedImage(), getInterpImage()
         dataRef = WrapDataId(exposureId)
         imageScaler = zpScaler.computeImageScaler(exposure,dataRef)
-        scaleFactorIm = imageScaler.getInterpImage(exposure.getBBox(afwImage.PARENT))
+        scaleFactorIm = imageScaler.getInterpImage(exposure.getBBox())
 
         predScale = 0.402867736 #image mean for "NATURAL_SPLINE"
         self.assertAlmostEqual(afwMath.makeStatistics(scaleFactorIm, afwMath.MEAN, self.sctrl).getValue(),
@@ -160,7 +159,7 @@ def run(shouldExit=False):
     """Run the tests"""
     config = ScaleSdssZeroPointTask.ConfigClass()
     try:
-        user = DbAuth.username(config.selectFluxMag0.host, str(config.selectFluxMag0.port)),
+        DbAuth.username(config.selectFluxMag0.host, str(config.selectFluxMag0.port)),
     except Exception, e:
         print "Warning: did not find host=%s, port=%s in your db-auth file; or %s " \
               "skipping unit tests" % \
