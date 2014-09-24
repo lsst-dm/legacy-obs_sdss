@@ -150,7 +150,7 @@ class SdssCalibrateTask(CalibrateTask):
     def __init__(self, **kwargs):
         pipeBase.Task.__init__(self, **kwargs)
         self.schema = afwTable.SourceTable.makeMinimalSchema()
-        self.schema.setVersion(self.measurement.target.tableVersion)
+        self.schema.setVersion(self.config.measurement.target.tableVersion)
         self.algMetadata = dafBase.PropertyList()
         self.makeSubtask("repair")
         self.makeSubtask("detection", schema=self.schema)
