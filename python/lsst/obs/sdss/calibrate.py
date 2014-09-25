@@ -27,6 +27,7 @@ import lsst.meas.algorithms as measAlg
 from lsst.meas.astrom.catalogStarSelector import CatalogStarSelector
 import lsst.afw.table as afwTable
 import lsst.afw.math as afwMath
+from meas.base.sfm import SingleFrameMeasurementTask
 from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateTask
 
 from lsst.meas.photocal import PhotoCalTask
@@ -89,11 +90,11 @@ class SdssCalibrateConfig(pexConfig.Config):
         doc = "Initial (high-threshold) detection phase for calibration",
     )
     initialMeasurement = pexConfig.ConfigurableField(
-        target = measAlg.SourceMeasurementTask,
+        target = SingleFrameMeasurementTask,
         doc = "Initial measurements used to feed PSF determination and astrometry",
     )
     measurement = pexConfig.ConfigurableField(
-        target = measAlg.SourceMeasurementTask,
+        target = SingleFrameMeasurementTask,
         doc = "Post-PSF-determination measurements used to feed other calibrations",
     )
     astrometry    = pexConfig.ConfigurableField(target = AstrometryTask, doc = "")
