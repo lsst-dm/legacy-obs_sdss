@@ -127,15 +127,11 @@ class SdssCalibrateConfig(pexConfig.Config):
     
     def validate(self):
         pexConfig.Config.validate(self)
-        if self.initialMeasurement.prefix == self.measurement.prefix:
-            raise ValueError("SdssCalibrateConfig.initialMeasurement and SdssCalibrateConfig.measurement "
-                             "have the same prefix; field names may clash.")
         if self.initialMeasurement.target.tableVersion != self.measurement.target.tableVersion:
             raise ValueError("tableVersions of measurement subtasks do not match")
 
     def setDefaults(self):
         self.detection.includeThresholdMultiplier = 10.0
-        self.initialMeasurement.prefix = "initial."
         self.initialMeasurement.algorithms.names = ["flags.pixel", "shape.sdss", "flux.psf", "flux.sinc"]
         self.initialMeasurement.slots.apFlux = "flux.sinc"
         self.initialMeasurement.slots.modelFlux = None
@@ -150,20 +146,25 @@ class SdssCalibrateTask(CalibrateTask):
 
     def __init__(self, **kwargs):
         pipeBase.Task.__init__(self, **kwargs)
-        self.schema = afwTable.SourceTable.makeMinimalSchema()
-        self.schema.setVersion(self.config.measurement.target.tableVersion)
+        self.schema1 = afwTable.SourceTable.makeMinimalSchema()
+        minimalCount = self.schema1.getFieldCount()
+        self.schema1.setVersion(self.config.measurement.target.tableVersion)
         self.algMetadata = dafBase.PropertyList()
         self.makeSubtask("repair")
-        self.makeSubtask("detection", schema=self.schema)
-        self.makeSubtask("initialMeasurement", schema=self.schema, algMetadata=self.algMetadata)
-        self.makeSubtask("astrometry", schema=self.schema)
+        self.makeSubtask("detection", schema=self.schema1)
+
+        beginInitial = self.schema1.getFieldCount()
+        self.makeSubtask("initialMeasurement", schema=self.schema1, algMetadata=self.algMetadata)
+        endInitial = self.schema1.getFieldCount()
+
+        self.makeSubtask("astrometry", schema=self.schema1)
         self.starSelectors = {}
         self.psfDeterminers = {}
-        self.psfCandidateKey = self.schema.addField(
+        self.psfCandidateKey = self.schema1.addField(
             "calib.psf.candidate", type="Flag", 
             doc="Set if the source was selected by the star selector algorithm"
         )
-        self.psfUsedKey = self.schema.addField(
+        self.psfUsedKey = self.schema1.addField(
             "calib.psf.used", type="Flag",
             doc="Set if the source was used in PSF determination"
         )                                          
@@ -173,8 +174,29 @@ class SdssCalibrateTask(CalibrateTask):
             subConfig = getattr(self.config, filterName)
             self.starSelectors[filterName] = subConfig.starSelector.apply()
             self.psfDeterminers[filterName] = subConfig.psfDeterminer.apply()
-        self.makeSubtask("measurement", schema=self.schema, algMetadata=self.algMetadata)
-        self.makeSubtask("photocal", schema=self.schema)
+
+        self.makeSubtask("photocal", schema=self.schema1)
+        # create a schemaMapper to map schema1 into schema2
+        self.schemaMapper = afwTable.SchemaMapper(self.schema1)
+        if self.tableVersion == 0:
+            separator = "."
+        else:
+            separator =  "_"
+        count = 0
+        for item in self.schema1:
+            count = count + 1
+            field = item.getField()
+            name = field.getName()
+            if count > beginInitial and count <= endInitial:
+                name = "initial" + separator + name
+            self.schemaMapper.addMapping(item.key, name)
+
+        # measurements fo the second measurement step done with a second schema
+        schema = self.schemaMapper.editOutputSchema()
+        self.makeSubtask("measurement", schema=schema, algMetadata=self.algMetadata)
+
+        # the final schema is the same as the schemaMapper output
+        self.schema = self.schemaMapper.getOutputSchema()
 
     def getCalibKeys(self):
         return (self.psfCandidateKey, self.psfUsedKey)
@@ -237,20 +259,30 @@ class SdssCalibrateTask(CalibrateTask):
                 backgrounds.append(bg)
             self.display('background', exposure=exposure)
 
-        table = afwTable.SourceTable.make(self.schema, idFactory)
-        table.setMetadata(self.algMetadata)
-        detRet = self.detection.makeSourceCatalog(table, exposure)
-        sources = detRet.sources
+        table1 = afwTable.SourceTable.make(self.schema1, idFactory)
+        table1.setMetadata(self.algMetadata)
+        detRet = self.detection.makeSourceCatalog(table1, exposure)
+        sources1 = detRet.sources
         if detRet.fpSets.background:
             backgrounds.append(detRet.fpSets.background)
 
         # If we're using the input PSF, we only need to do one measurement step, and we do that now.
-        # If not, we do the initial measurement with the fake PSF in a prefixed part of the schema.
+        # If not, we do the initial measurement with the fake PSF in the intial schema1
 
         if self.config.doPsf:
-            self.initialMeasurement.measure(exposure, sources)
-        else:
-            self.measurement.measure(exposure, sources)
+            self.initialMeasurement.measure(exposure, sources1)
+     
+         # make a second table with which to do the second measurement
+         # the schemaMapper will copy the footprints and ids, which is all we need.
+         # Note that the old measurements fields are copied to "initial_" names
+         table2 = afwTable.SourceTable.make(self.schema, idFactory)
+         table2.setMetadata(self.algMetadata)
+         sources = afwTable.SourceCatalog(table2)
+         # transfer to a second table
+         sources.extend(sources1, self.schemaMapper)
+ 
+         if not self.config.doPsf:
+            #  self.measurement.measure(exposure, sources)
 
         # We always run astrometry; if you want to effectively turn it off, set
         # "forceKnownWcs=True" and "calibrateSip=False" in config.astrometry.
@@ -307,6 +339,7 @@ class SdssCalibrateTask(CalibrateTask):
             astromRet = self.astrometry.run(exposure, sources)
             matches = astromRet.matches
             matchMeta = astromRet.matchMeta
+
 
         if self.config.doPhotoCal:
             photocalRet = self.photocal.run(exposure, matches)
