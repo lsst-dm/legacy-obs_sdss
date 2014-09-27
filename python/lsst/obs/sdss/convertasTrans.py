@@ -121,6 +121,7 @@ def createWcs(x, y, mapper, order = 4, cOffset = 1.0):
     flagKey     = srcSchema.addField("centroid.flags", type="Flag")
     covKey      = srcSchema.addField("centroid.err", type="CovPointF")
     srcTable    = afwTable.SourceTable.make(srcSchema)
+    srcTable.setVersion(0)
     srcTable.defineCentroid("centroid")
 
     matches = []

@@ -132,8 +132,11 @@ class SdssCalibrateConfig(pexConfig.Config):
 
     def setDefaults(self):
         self.detection.includeThresholdMultiplier = 10.0
-        self.initialMeasurement.algorithms.names = ["flags.pixel", "shape.sdss", "flux.psf", "flux.sinc"]
-        self.initialMeasurement.slots.apFlux = "flux.sinc"
+        #self.initialMeasurement.algorithms.names = ["flags.pixel", "shape.sdss", "flux.psf", "flux.sinc"]
+        #self.initialMeasurement.slots.apFlux = "flux.sinc"
+        self.initialMeasurement.algorithms.names = ["base_SdssCentroid", "base_PixelFlags", "base_SdssShape", "base_PsfFlux", "base_SincFlux"]
+        self.initialMeasurement.slots.centroid = "base_SdssCentroid"
+        self.initialMeasurement.slots.apFlux = "base_SincFlux"
         self.initialMeasurement.slots.modelFlux = None
         self.initialMeasurement.slots.instFlux = None
         self.repair.doInterpolate = False
@@ -148,7 +151,8 @@ class SdssCalibrateTask(CalibrateTask):
         pipeBase.Task.__init__(self, **kwargs)
         self.schema1 = afwTable.SourceTable.makeMinimalSchema()
         minimalCount = self.schema1.getFieldCount()
-        self.schema1.setVersion(self.config.measurement.target.tableVersion)
+        self.tableVersion = self.config.measurement.target.tableVersion
+        self.schema1.setVersion(self.tableVersion)
         self.algMetadata = dafBase.PropertyList()
         self.makeSubtask("repair")
         self.makeSubtask("detection", schema=self.schema1)
@@ -160,14 +164,25 @@ class SdssCalibrateTask(CalibrateTask):
         self.makeSubtask("astrometry", schema=self.schema1)
         self.starSelectors = {}
         self.psfDeterminers = {}
-        self.psfCandidateKey = self.schema1.addField(
-            "calib.psf.candidate", type="Flag", 
-            doc="Set if the source was selected by the star selector algorithm"
-        )
-        self.psfUsedKey = self.schema1.addField(
-            "calib.psf.used", type="Flag",
-            doc="Set if the source was used in PSF determination"
-        )                                          
+        if self.tableVersion == 0:
+            self.psfCandidateKey = self.schema1.addField(
+                "calib.psf.candidate", type="Flag", 
+                doc="Set if the source was selected by the star selector algorithm"
+            )
+            self.psfUsedKey = self.schema1.addField(
+                "calib.psf.used", type="Flag",
+                doc="Set if the source was used in PSF determination"
+            ) 
+        else:                                         
+            self.psfCandidateKey = self.schema1.addField(
+                "calib_psf_candidate", type="Flag", 
+                doc="Set if the source was selected by the star selector algorithm"
+            )
+            self.psfUsedKey = self.schema1.addField(
+                "calib_psf_used", type="Flag",
+                doc="Set if the source was used in PSF determination"
+            ) 
+
         for filterName in ("u", "g", "r", "i", "z"):
             # We don't pass a schema to the star selectors and PSF determiners (it's optional) because we
             # don't currently have a way to make them all share the same flag field.
@@ -194,7 +209,6 @@ class SdssCalibrateTask(CalibrateTask):
         # measurements fo the second measurement step done with a second schema
         schema = self.schemaMapper.editOutputSchema()
         self.makeSubtask("measurement", schema=schema, algMetadata=self.algMetadata)
-
         # the final schema is the same as the schemaMapper output
         self.schema = self.schemaMapper.getOutputSchema()
 
@@ -272,17 +286,17 @@ class SdssCalibrateTask(CalibrateTask):
         if self.config.doPsf:
             self.initialMeasurement.measure(exposure, sources1)
      
-         # make a second table with which to do the second measurement
-         # the schemaMapper will copy the footprints and ids, which is all we need.
-         # Note that the old measurements fields are copied to "initial_" names
-         table2 = afwTable.SourceTable.make(self.schema, idFactory)
-         table2.setMetadata(self.algMetadata)
-         sources = afwTable.SourceCatalog(table2)
-         # transfer to a second table
-         sources.extend(sources1, self.schemaMapper)
+        # make a second table with which to do the second measurement
+        # the schemaMapper will copy the footprints and ids, which is all we need.
+        # Note that the old measurements fields are copied to "initial_" names
+        table2 = afwTable.SourceTable.make(self.schema, idFactory)
+        table2.setMetadata(self.algMetadata)
+        sources = afwTable.SourceCatalog(table2)
+        # transfer to a second table
+        sources.extend(sources1, self.schemaMapper)
  
-         if not self.config.doPsf:
-            #  self.measurement.measure(exposure, sources)
+        if not self.config.doPsf:
+            self.measurement.measure(exposure, sources)
 
         # We always run astrometry; if you want to effectively turn it off, set
         # "forceKnownWcs=True" and "calibrateSip=False" in config.astrometry.

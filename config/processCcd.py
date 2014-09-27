@@ -30,4 +30,4 @@ According to http://www.sdss.org/dr7/algorithms/photometry.html#photo_profile th
 Note that 7.43/0.3961270 = 18.7566 <> 18.58.Why?"""
 
 #psf flux = ap flux at this radius. Will also be applied to galaxies Same everywhere'
-root.measurement.algorithms['correctfluxes'].apCorrRadius = 18.58 #pixels
+#root.measurement.algorithms['correctfluxes'].apCorrRadius = 18.58 #pixels

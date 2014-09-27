@@ -57,6 +57,7 @@ class SdssReferencesTask(ReferencesTask):
         fluxErrKey = schema.addField("refFlux.err", float, "Flux error from database", "counts")
         
         references = afwTable.SourceCatalog(schema)
+        references.setVersion(0)
         table = references.table
         references.preallocate(len(sourceList))
         for source in sourceList:
