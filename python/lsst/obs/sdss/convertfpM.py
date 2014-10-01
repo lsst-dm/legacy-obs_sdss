@@ -132,8 +132,10 @@ def convertfpM(infile, allPlanes = False):
         for plane in ['S_MASK_NOTCHECKED', 'S_MASK_OBJECT', 'S_MASK_BRIGHTOBJECT', 
                       'S_MASK_BINOBJECT', 'S_MASK_CATOBJECT', 'S_MASK_SUBTRACTED', 'S_MASK_GHOST']:
             idx     = planes.index(plane) + 1
-            bitMask = mask.addMaskPlane(re.sub("S_MASK", "", plane))
-            listToSet.append( (idx, bitMask) )
+            planeName = re.sub("S_MASK_", "", plane)
+            planeId = mask.addMaskPlane(planeName)
+            planeBitMask = afwImage.MaskU_getPlaneBitMask(planeName)
+            listToSet.append( (idx, planeBitMask) )
 
     for plane, bitmask in listToSet:
         if len(hdr) < plane:
