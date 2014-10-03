@@ -294,7 +294,23 @@ class SdssCalibrateTask(CalibrateTask):
         sources = afwTable.SourceCatalog(table2)
         # transfer to a second table
         sources.extend(sources1, self.schemaMapper)
- 
+        if self.measurement.tableVersion == 0:
+            separator = "."
+        else:
+            separator = "_"
+        if sources1.hasCentroidSlot():
+            sources.defineCentroid("initial" + separator + sources1.getCentroidDefinition())
+        if sources1.hasShapeSlot():
+            sources.defineShape("initial" + separator + sources1.getShapeDefinition())
+        if sources1.hasPsfFluxSlot():
+            sources.definePsfFlux("initial" + separator + sources1.getPsfFluxDefinition())
+        if sources1.hasInstFluxSlot():
+            sources.defineInstFlux("initial" + separator + sources1.getInstFluxDefinition())
+        if sources1.hasModelFluxSlot():
+            sources.defineModelFlux("initial" + separator + sources1.getModelFluxDefinition())
+        if sources1.hasApFluxSlot():
+            sources.defineApFlux("initial" + separator + sources1.getApFluxDefinition())
+     
         if not self.config.doPsf:
             self.measurement.measure(exposure, sources)
 
