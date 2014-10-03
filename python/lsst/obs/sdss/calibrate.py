@@ -27,7 +27,7 @@ import lsst.meas.algorithms as measAlg
 from lsst.meas.astrom.catalogStarSelector import CatalogStarSelector
 import lsst.afw.table as afwTable
 import lsst.afw.math as afwMath
-from lsst.meas.base.sfm import SingleFrameMeasurementTask
+from lsst.meas.base import SingleFrameMeasurementTask
 from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateTask
 
 from lsst.meas.photocal import PhotoCalTask
