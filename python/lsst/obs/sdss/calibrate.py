@@ -27,7 +27,7 @@ import lsst.meas.algorithms as measAlg
 from lsst.meas.astrom.catalogStarSelector import CatalogStarSelector
 import lsst.afw.table as afwTable
 import lsst.afw.math as afwMath
-from lsst.meas.base import SingleFrameMeasurementTask
+from lsst.meas.base.sfm import SingleFrameMeasurementTask
 from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateTask
 
 from lsst.meas.photocal import PhotoCalTask
@@ -280,11 +280,8 @@ class SdssCalibrateTask(CalibrateTask):
         if detRet.fpSets.background:
             backgrounds.append(detRet.fpSets.background)
 
-        # If we're using the input PSF, we only need to do one measurement step, and we do that now.
-        # If not, we do the initial measurement with the fake PSF in the intial schema1
-
-        if self.config.doPsf:
-            self.initialMeasurement.measure(exposure, sources1)
+        # run this unconditionally, even if not using it for PSF estimation.
+        self.initialMeasurement.measure(exposure, sources1)
      
         # make a second table with which to do the second measurement
         # the schemaMapper will copy the footprints and ids, which is all we need.
@@ -310,7 +307,10 @@ class SdssCalibrateTask(CalibrateTask):
             sources.defineModelFlux("initial" + separator + sources1.getModelFluxDefinition())
         if sources1.hasApFluxSlot():
             sources.defineApFlux("initial" + separator + sources1.getApFluxDefinition())
-     
+
+        # Measurement gets run now if doPsf.  Otherwise it gets run conditionally later.
+        # astrometry is always run, though it is run twice if doPsf, the last time on 
+        # the results of measurement.
         if not self.config.doPsf:
             self.measurement.measure(exposure, sources)
 
