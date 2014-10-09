@@ -5,7 +5,6 @@ setupRequired(meas_algorithms)
 setupRequired(meas_astrom)
 setupRequired(mysqlpython)
 setupRequired(pipe_tasks)
-setupOptional(meas_extensions_multiShapelet)
 
 envAppend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
