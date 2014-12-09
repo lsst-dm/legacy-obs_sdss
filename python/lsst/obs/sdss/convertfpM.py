@@ -141,7 +141,7 @@ def convertfpM(infile, allPlanes = False):
         if len(hdr) < plane:
             continue
 
-        if hdr[plane].data == None:
+        if hdr[plane].data is None:
             continue
 
         nmask = len(hdr[plane].data)
