@@ -315,7 +315,7 @@ class SdssCalibrateTask(CalibrateTask):
             self.measurement.measure(exposure, sources)
 
         # We always run astrometry; if you want to effectively turn it off, set
-        # "forceKnownWcs=True" and "calibrateSip=False" in config.astrometry.
+        # "forceKnownWcs=True" in config.astrometry.
         # In that case, we'll still match to the reference catalog, but we won't update the Wcs.
         astromRet = self.astrometry.run(exposure, sources)
         matches = astromRet.matches
