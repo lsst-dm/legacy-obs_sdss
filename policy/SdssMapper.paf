@@ -272,23 +272,6 @@ datasets: {
         tables:        raw_skyTile
     }
 
-
-    forcedsources: {
-        template:      "forcedPhot/%(run)d/%(camcol)d/%(filter)s/forcedsources-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:   "ignored"
-        storage:       "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    forcedsources_schema: {
-        template:      "schema/forcedsources.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:   "ignored"
-        storage:       "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
     sourceHist: {
         template:      "results/st%(skyTile)d/sourceHist.fits"
         python:        "lsst.afw.image.DecoratedImageU"
@@ -398,22 +381,6 @@ datasets: {
         python:        "lsst.daf.base.PropertySet"
         persistable:   "PropertySet"
         storage:       "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    forcedPhot_config: {
-        template:      "config/forcedPhot.py"
-        python:        "lsst.pipe.tasks.forcedPhot.ForcedPhotConfig"
-        persistable:      "Config"
-        storage:    "ConfigStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    forcedPhot_metadata: {
-        template:      "forcedPhot_metadata/%(run)d/%(camcol)d/%(filter)s/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
         tables:        raw
         tables:        raw_skyTile
     }
