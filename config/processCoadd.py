@@ -11,7 +11,6 @@ root.detection.thresholdType = "pixel_stdev"
 
 #set in #2800 default already
 root.calibrate.astrometry.forceKnownWcs = True
-root.calibrate.astrometry.solver.calculateSip = False
 
 # Remove flags.pixel.interpolated.any
 root.calibrate.photocal.badFlags = ('flags.pixel.edge','flags.pixel.saturated.any')

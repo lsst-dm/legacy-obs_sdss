@@ -30,8 +30,8 @@ import lsst.afw.math as afwMath
 from lsst.meas.base.sfm import SingleFrameMeasurementTask
 from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateTask
 
+from lsst.meas.astrom import AstrometryTask
 from lsst.meas.photocal import PhotoCalTask
-from lsst.pipe.tasks.astrometry import AstrometryTask
 from lsst.pipe.tasks.repair import RepairTask
 
 class SdssCalibratePerFilterConfig(pexConfig.Config):
@@ -151,7 +151,7 @@ class SdssCalibrateTask(CalibrateTask):
     def __init__(self, **kwargs):
         pipeBase.Task.__init__(self, **kwargs)
         self.schema1 = afwTable.SourceTable.makeMinimalSchema()
-        minimalCount = self.schema1.getFieldCount()
+#        minimalCount = self.schema1.getFieldCount()
         self.tableVersion = self.config.measurement.target.tableVersion
         self.schema1.setVersion(self.tableVersion)
         self.algMetadata = dafBase.PropertyList()
@@ -162,7 +162,7 @@ class SdssCalibrateTask(CalibrateTask):
         self.makeSubtask("initialMeasurement", schema=self.schema1, algMetadata=self.algMetadata)
         endInitial = self.schema1.getFieldCount()
 
-        self.makeSubtask("astrometry", schema=self.schema1)
+        self.makeSubtask("astrometry")
         self.starSelectors = {}
         self.psfDeterminers = {}
         if self.tableVersion == 0:
@@ -316,7 +316,7 @@ class SdssCalibrateTask(CalibrateTask):
             self.measurement.measure(exposure, sources)
 
         # We always run astrometry; if you want to effectively turn it off, set
-        # "forceKnownWcs=True" and "calibrateSip=False" in config.astrometry.
+        # "forceKnownWcs=True" in config.astrometry.
         # In that case, we'll still match to the reference catalog, but we won't update the Wcs.
         astromRet = self.astrometry.run(exposure, sources)
         matches = astromRet.matches

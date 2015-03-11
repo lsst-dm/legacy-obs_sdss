@@ -19,7 +19,6 @@ root.detection.background.binSize = 512
 
 root.loadSdssWcs = True
 root.calibrate.astrometry.forceKnownWcs = True
-root.calibrate.astrometry.solver.calculateSip = False
 
 #Important for producing coaddTempExps without nans
 root.removeOverlap=False
