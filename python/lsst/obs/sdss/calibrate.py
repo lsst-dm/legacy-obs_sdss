@@ -127,8 +127,6 @@ class SdssCalibrateConfig(pexConfig.Config):
     
     def validate(self):
         pexConfig.Config.validate(self)
-        if self.initialMeasurement.target.tableVersion != self.measurement.target.tableVersion:
-            raise ValueError("tableVersions of measurement subtasks do not match")
 
     def setDefaults(self):
         self.detection.includeThresholdMultiplier = 10.0
@@ -151,9 +149,6 @@ class SdssCalibrateTask(CalibrateTask):
     def __init__(self, **kwargs):
         pipeBase.Task.__init__(self, **kwargs)
         self.schema1 = afwTable.SourceTable.makeMinimalSchema()
-#        minimalCount = self.schema1.getFieldCount()
-        self.tableVersion = self.config.measurement.target.tableVersion
-        self.schema1.setVersion(self.tableVersion)
         self.algMetadata = dafBase.PropertyList()
         self.makeSubtask("repair")
         self.makeSubtask("detection", schema=self.schema1)
@@ -165,24 +160,14 @@ class SdssCalibrateTask(CalibrateTask):
         self.makeSubtask("astrometry")
         self.starSelectors = {}
         self.psfDeterminers = {}
-        if self.tableVersion == 0:
-            self.psfCandidateKey = self.schema1.addField(
-                "calib.psf.candidate", type="Flag", 
-                doc="Set if the source was selected by the star selector algorithm"
-            )
-            self.psfUsedKey = self.schema1.addField(
-                "calib.psf.used", type="Flag",
-                doc="Set if the source was used in PSF determination"
-            ) 
-        else:                                         
-            self.psfCandidateKey = self.schema1.addField(
-                "calib_psf_candidate", type="Flag", 
-                doc="Set if the source was selected by the star selector algorithm"
-            )
-            self.psfUsedKey = self.schema1.addField(
-                "calib_psf_used", type="Flag",
-                doc="Set if the source was used in PSF determination"
-            ) 
+        self.psfCandidateKey = self.schema1.addField(
+            "calib_psf_candidate", type="Flag", 
+            doc="Set if the source was selected by the star selector algorithm"
+        )
+        self.psfUsedKey = self.schema1.addField(
+            "calib_psf_used", type="Flag",
+            doc="Set if the source was used in PSF determination"
+        ) 
 
         for filterName in ("u", "g", "r", "i", "z"):
             # We don't pass a schema to the star selectors and PSF determiners (it's optional) because we
@@ -194,10 +179,7 @@ class SdssCalibrateTask(CalibrateTask):
         self.makeSubtask("photocal", schema=self.schema1)
         # create a schemaMapper to map schema1 into schema2
         self.schemaMapper = afwTable.SchemaMapper(self.schema1)
-        if self.tableVersion == 0:
-            separator = "."
-        else:
-            separator =  "_"
+        separator =  "_"
         count = 0
         for item in self.schema1:
             count = count + 1
@@ -292,10 +274,7 @@ class SdssCalibrateTask(CalibrateTask):
         sources = afwTable.SourceCatalog(table2)
         # transfer to a second table
         sources.extend(sources1, self.schemaMapper)
-        if self.measurement.tableVersion == 0:
-            separator = "."
-        else:
-            separator = "_"
+        separator = "_"
         if sources1.hasCentroidSlot():
             sources.defineCentroid("initial" + separator + sources1.getCentroidDefinition())
         if sources1.hasShapeSlot():
