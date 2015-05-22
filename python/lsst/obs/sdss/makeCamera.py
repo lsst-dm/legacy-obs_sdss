@@ -21,6 +21,7 @@
 #
 import os
 
+import lsst.utils
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom.utils as cameraGeomUtils
 from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig,\
@@ -98,7 +99,8 @@ def makeCcd(ccdName, ccdId, offsetPoint):
     @param offsetPoint: Point2D position of the center of the ccd in mm
     @return a dict of a DetectorConfig and an AmpInfoCatalog
     """
-    opDir = os.path.join(os.environ['OBS_SDSS_DIR'], "etc")
+    obsSdssDir = lsst.utils.getPackageDir('obs_sdss')
+    opDir = os.path.join(obsSdssDir, "etc")
     sc = SdssCameraState(opDir, "opConfig-50000.par", "opECalib-50000.par")
     eparams = sc.getEParams(ccdName)
     width = 1024*2

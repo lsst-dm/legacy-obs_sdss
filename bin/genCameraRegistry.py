@@ -1,8 +1,8 @@
 from lsst.obs.sdss import makeCamera
-import eups
+import lsst.utils
 import os
 
-path = eups.productDir('obs_sdss')
+path = lsst.utils.getPackageDir('obs_sdss')
 repoPath = os.path.join(path, 'description', 'camera')
 if os.path.exists(repoPath):
     raise RuntimeError("Path, $s, exists.  Will not overwrite"%(repoPath))
