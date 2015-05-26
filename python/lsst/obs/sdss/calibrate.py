@@ -28,10 +28,9 @@ from lsst.meas.astrom.catalogStarSelector import CatalogStarSelector
 import lsst.afw.table as afwTable
 import lsst.afw.math as afwMath
 from lsst.meas.base.sfm import SingleFrameMeasurementTask
-from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateTask
-
 from lsst.meas.astrom import AstrometryTask
-from lsst.meas.photocal import PhotoCalTask
+from lsst.pipe.tasks.photoCal import PhotoCalTask
+from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateTask
 from lsst.pipe.tasks.repair import RepairTask
 
 class SdssCalibratePerFilterConfig(pexConfig.Config):
