@@ -33,8 +33,10 @@ import lsst.afw.image.utils as afwImageUtils
 import lsst.meas.algorithms as measAlgo
 
 class SdssMapper(CameraMapper):
+    packageName = 'obs_sdss'
+
     def __init__(self, inputPolicy=None, **kwargs):
-        policyFile = pexPolicy.DefaultPolicyFile("obs_sdss", "SdssMapper.paf", "policy")
+        policyFile = pexPolicy.DefaultPolicyFile(self.packageName, "SdssMapper.paf", "policy")
         policy = pexPolicy.Policy(policyFile)
 
         self.doFootprints = False
