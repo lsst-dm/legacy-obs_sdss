@@ -5,6 +5,7 @@ setupRequired(meas_algorithms)
 setupRequired(meas_astrom)
 setupRequired(mysqlpython)
 setupRequired(pipe_tasks)
+setupRequired(utils)
 
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envPrepend(PATH, ${PRODUCT_DIR}/bin)

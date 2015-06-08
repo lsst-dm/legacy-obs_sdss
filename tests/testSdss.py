@@ -24,6 +24,7 @@
 import os
 import unittest
 
+import lsst.utils
 import lsst.utils.tests as utilsTests
 import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
@@ -34,8 +35,9 @@ class SdssMapperTestCase(unittest.TestCase):
     """A test case for the SdssMapper."""
 
     def testGetDR7(self):
+        obsSdssDir = lsst.utils.getPackageDir('obs_sdss')
         butler = dafPersist.Butler(
-            root=os.path.join(os.environ["OBS_SDSS_DIR"], "tests", "data", "dr7", "runs"))
+            root=os.path.join(obsSdssDir, "tests", "data", "dr7", "runs"))
         sub = butler.subset("fpC", run=5754, camcol=3, field=280, filter="r")
         self.assertEqual(len(sub), 1)
         for ref in sub:
