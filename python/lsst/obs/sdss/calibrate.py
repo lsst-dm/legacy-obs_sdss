@@ -159,6 +159,7 @@ class SdssCalibrateConfig(pexConfig.Config):
         self.initialMeasurement.slots.apFlux = "base_CircularApertureFlux_7_0"
         self.initialMeasurement.slots.modelFlux = None
         self.initialMeasurement.slots.instFlux = None
+        self.initialMeasurement.slots.calibFlux = "base_CircularApertureFlux_7_0"
         self.initialMeasurement.doApplyApCorr = "no" # no aperture correction data yet
         self.measurement.doApplyApCorr = "yes"
         self.repair.doInterpolate = False
