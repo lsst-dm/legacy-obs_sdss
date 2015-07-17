@@ -27,7 +27,7 @@ import lsst.meas.algorithms as measAlg
 from lsst.meas.astrom.catalogStarSelector import CatalogStarSelector
 import lsst.afw.table as afwTable
 import lsst.afw.math as afwMath
-from lsst.meas.base.sfm import SingleFrameMeasurementTask
+from lsst.meas.base import BasePlugin, SingleFrameMeasurementTask, MeasureApCorrTask
 from lsst.meas.astrom import AstrometryTask
 from lsst.pipe.tasks.photoCal import PhotoCalTask
 from lsst.pipe.tasks.calibrate import InitialPsfConfig, CalibrateTask
@@ -74,6 +74,11 @@ class SdssCalibrateConfig(pexConfig.Config):
                " not post-detection re-estimation and subtraction)"),
         default = True,
     )
+    doMeasureApCorr = pexConfig.Field(
+        dtype = bool,
+        doc = "Compute aperture corrections?",
+        default = True,
+    )
     doPhotoCal = pexConfig.Field(
         dtype = bool,
         doc = "Compute photometric zeropoint?",
@@ -95,6 +100,10 @@ class SdssCalibrateConfig(pexConfig.Config):
     measurement = pexConfig.ConfigurableField(
         target = SingleFrameMeasurementTask,
         doc = "Post-PSF-determination measurements used to feed other calibrations",
+    )
+    measureApCorr   = pexConfig.ConfigurableField(
+        target = MeasureApCorrTask,
+        doc = "subtask to measure aperture corrections"
     )
     astrometry    = pexConfig.ConfigurableField(target = AstrometryTask, doc = "")
     photocal      = pexConfig.ConfigurableField(target = PhotoCalTask, doc="")
@@ -126,6 +135,9 @@ class SdssCalibrateConfig(pexConfig.Config):
     
     def validate(self):
         pexConfig.Config.validate(self)
+        if self.measurement.doApplyApCorr.startswith("yes") and not self.doMeasureApCorr:
+            raise ValueError("Cannot set measurement.doApplyApCorr to 'yes...'"
+                " unless doMeasureApCorr is True")
 
     def setDefaults(self):
         self.detection.includeThresholdMultiplier = 10.0
@@ -137,8 +149,12 @@ class SdssCalibrateConfig(pexConfig.Config):
         self.initialMeasurement.slots.apFlux = "base_CircularApertureFlux_0"
         self.initialMeasurement.slots.modelFlux = None
         self.initialMeasurement.slots.instFlux = None
+        self.initialMeasurement.doApplyApCorr = "no" # no aperture correction data yet
+        self.measurement.doApplyApCorr = "yes"
         self.repair.doInterpolate = False
-        self.repair.doCosmicRay = False        
+        self.repair.doCosmicRay = False
+        # we rarely run PSF determination on SDSS data, so use the output of the star selector instead
+        self.measureApCorr.inputFilterFlag = "calib_psfCandidate"
 
 class SdssCalibrateTask(CalibrateTask):
     """SDSS-specific version of lsst.pipe.tasks.calibrate.CalibrateTask
@@ -160,11 +176,11 @@ class SdssCalibrateTask(CalibrateTask):
         self.starSelectors = {}
         self.psfDeterminers = {}
         self.psfCandidateKey = self.schema1.addField(
-            "calib_psf_candidate", type="Flag", 
+            "calib_psfCandidate", type="Flag", 
             doc="Set if the source was selected by the star selector algorithm"
         )
         self.psfUsedKey = self.schema1.addField(
-            "calib_psf_used", type="Flag",
+            "calib_psfUsed", type="Flag",
             doc="Set if the source was used in PSF determination"
         ) 
 
@@ -191,6 +207,7 @@ class SdssCalibrateTask(CalibrateTask):
         # measurements fo the second measurement step done with a second schema
         schema = self.schemaMapper.editOutputSchema()
         self.makeSubtask("measurement", schema=schema, algMetadata=self.algMetadata)
+        self.makeSubtask("measureApCorr", schema=schema)
         # the final schema is the same as the schemaMapper output
         self.schema = self.schemaMapper.getOutputSchema()
 
@@ -262,8 +279,9 @@ class SdssCalibrateTask(CalibrateTask):
         if detRet.fpSets.background:
             backgrounds.append(detRet.fpSets.background)
 
-        # run this unconditionally, even if not using it for PSF estimation.
-        self.initialMeasurement.measure(exposure, sources1)
+        # do the initial measurement.  This is normally done for star selection, but do it 
+        # even if the psf is not going to be calculated for consistency
+        self.initialMeasurement.run(exposure, sources1, allowApCorr=False)
      
         # make a second table with which to do the second measurement
         # the schemaMapper will copy the footprints and ids, which is all we need.
@@ -291,7 +309,7 @@ class SdssCalibrateTask(CalibrateTask):
         # astrometry is always run, though it is run twice if doPsf, the last time on 
         # the results of measurement.
         if not self.config.doPsf:
-            self.measurement.measure(exposure, sources)
+            self.measurement.run(exposure, sources, allowApCorr=False)
 
         # We always run astrometry; if you want to effectively turn it off, set
         # "forceKnownWcs=True" in config.astrometry.
@@ -343,12 +361,21 @@ class SdssCalibrateTask(CalibrateTask):
         if self.config.doPsf:
             self.repair.run(exposure, defects=defects, keepCRs=None)
             self.display('repair', exposure=exposure)
-            self.measurement.run(exposure, sources)
+            self.measurement.run(exposure, sources, allowApCorr=False)
             self.log.log(self.log.INFO, "Re-running astrometry after measurement with improved PSF.")
             astromRet = self.astrometry.run(exposure, sources)
             matches = astromRet.matches
             matchMeta = astromRet.matchMeta
 
+        if self.config.doMeasureApCorr:
+            # Run measurement through all flux measurements (all have the same execution order),
+            # then apply aperture corrections, then run the rest of the measurements
+            self.measurement.run(exposure, sources, endOrder=BasePlugin.APCORR_ORDER)
+            apCorrMap = self.measureApCorr.run(bbox=exposure.getBBox(), catalog=sources).apCorrMap
+            exposure.getInfo().setApCorrMap(apCorrMap)
+            self.measurement.run(exposure, sources, beginOrder=BasePlugin.APCORR_ORDER)
+        else:
+            self.measurement.run(exposure, sources, allowApCorr=False)
 
         if self.config.doPhotoCal:
             photocalRet = self.photocal.run(exposure, matches)
