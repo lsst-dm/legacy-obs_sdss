@@ -1,11 +1,11 @@
 # overrides for pipe_tasks CoaddTask.ConfigClass
 from lsst.obs.sdss.selectSdssImages import SelectSdssImagesTask
 
-root.select.retarget(SelectSdssImagesTask)
+config.select.retarget(SelectSdssImagesTask)
 
-root.doOverwrite=True
+config.doOverwrite=True
 
 #Configs for deep coadd
-root.coaddName='deep'
-root.select.maxFwhm=2.0
-root.select.quality=2
+config.coaddName='deep'
+config.select.maxFwhm=2.0
+config.select.quality=2
