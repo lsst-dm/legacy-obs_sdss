@@ -22,13 +22,12 @@
 #
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
-import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 from .makeCamera import makeCamera
-from lsst.pipe.tasks.processImage import ProcessImageTask
+from lsst.pipe.tasks.processCcd import ProcessCcdTask
 
-class ProcessCcdSdssConfig(ProcessImageTask.ConfigClass):
+class ProcessCcdSdssConfig(ProcessCcdTask.ConfigClass):
     """Config for ProcessCcdSdss"""
     removePedestal = pexConfig.Field(dtype=bool, default=True, doc="Remove SDSS pedestal from fpC file")
     pedestalVal = pexConfig.Field(dtype=int, default=1000, doc="Number of counts in the SDSS pedestal")
@@ -42,8 +41,12 @@ class ProcessCcdSdssConfig(ProcessImageTask.ConfigClass):
         doc = ("Load WCS from asTrans; it can then be used as-is or updated by our own code, "
                "dependening on calibrate.astrometry parameters.")
     )
-        
-class ProcessCcdSdssTask(ProcessImageTask):
+
+    def setDefaults(self):
+        ProcessCcdTask.ConfigClass.setDefaults(self)
+        self.doIsr = False
+
+class ProcessCcdSdssTask(ProcessCcdTask):
     """Process a CCD for SDSS
     """
     ConfigClass = ProcessCcdSdssConfig
@@ -51,7 +54,7 @@ class ProcessCcdSdssTask(ProcessImageTask):
     dataPrefix = ""
 
     def __init__(self, **kwargs):
-        ProcessImageTask.__init__(self, **kwargs)
+        ProcessCcdTask.__init__(self, **kwargs)
         self.camera = makeCamera()
 
     @classmethod
@@ -59,14 +62,6 @@ class ProcessCcdSdssTask(ProcessImageTask):
         parser = pipeBase.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", datasetType="fpC", help="data ID, e.g. --id run=1 camcol=2 field=345")
         return parser
-
-    def makeIdFactory(self, sensorRef):
-        expBits = sensorRef.get("ccdExposureId_bits")
-        expId = long(sensorRef.get("ccdExposureId"))
-        return afwTable.IdFactory.makeSource(expId, 64 - expBits)        
-
-    def getExposureId(self, sensorRef):
-        return long(sensorRef.get("ccdExposureId"))
 
     @pipeBase.timeMethod
     def makeExp(self, sensorRef):
@@ -102,6 +97,23 @@ class ProcessCcdSdssTask(ProcessImageTask):
 
         return exp
 
+    def setPostIsrExposure(self, sensorRef):
+        """Load the post instrument signature removal image
+
+        \param[in]  sensorRef        sensor-level butler data reference
+
+        \return     postIsrExposure  exposure to be passed to processCcdExposure
+        """
+        if self.config.doCalibrate:
+            exp = self.makeExp(sensorRef)
+            if self.config.loadSdssWcs:
+                self.log.info("Loading WCS from asTrans")
+                wcs = sensorRef.get("asTrans")
+                exp.setWcs(wcs)
+        else:
+            exp = None
+        return exp
+
     @pipeBase.timeMethod
     def run(self, sensorRef):
         """Process a CCD: including source detection, photometry and WCS determination
@@ -113,17 +125,6 @@ class ProcessCcdSdssTask(ProcessImageTask):
         - calib: object returned by calibration process if config.doCalibrate, else None
         - sources: detected source if config.doPhotometry, else None
         """
-        self.log.info("Processing %s" % (sensorRef.dataId))
-
-        if self.config.doCalibrate:
-            exp = self.makeExp(sensorRef)
-            if self.config.loadSdssWcs:
-                self.log.info("Loading WCS from asTrans")
-                wcs = sensorRef.get("asTrans")
-                exp.setWcs(wcs)
-        else:
-            exp = None
-
-        # delegate most of the work to ProcessImageTask
-        result = self.process(sensorRef, exp)
+        # delegate most of the work to ProcessCcdTask (which, in turn, delegates to ProcessImageTask)
+        result = ProcessCcdTask.run(self, sensorRef)
         return result
