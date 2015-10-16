@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -13,12 +13,12 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# see <https://www.lsstcorp.org/LegalNotices/>.
 #
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
@@ -32,14 +32,13 @@ class ProcessCcdSdssConfig(ProcessCcdTask.ConfigClass):
     removePedestal = pexConfig.Field(dtype=bool, default=True, doc="Remove SDSS pedestal from fpC file")
     pedestalVal = pexConfig.Field(dtype=int, default=1000, doc="Number of counts in the SDSS pedestal")
 
-    removeOverlap =  pexConfig.Field(dtype=bool, default=True, 
-                                     doc="Remove SDSS field overlap from fpC file")
+    removeOverlap = pexConfig.Field(dtype=bool, default=True,
+                                    doc="Remove SDSS field overlap from fpC file")
     overlapSize = pexConfig.Field(dtype=int, default=128,
                                   doc="Number of pixels to remove from top of the fpC file")
-    loadSdssWcs = pexConfig.Field(
-        dtype=bool, default=False,
-        doc = ("Load WCS from asTrans; it can then be used as-is or updated by our own code, "
-               "dependening on calibrate.astrometry parameters.")
+    loadSdssWcs = pexConfig.Field(dtype=bool, default=False,
+                                  doc = ("Load WCS from asTrans; it can then be used as-is or updated by "
+                                         "our own code, dependening on calibrate.astrometry parameters.")
     )
 
     def setDefaults(self):
@@ -68,25 +67,25 @@ class ProcessCcdSdssTask(ProcessCcdTask):
         image = sensorRef.get("fpC").convertF()
         if self.config.removePedestal:
             image -= self.config.pedestalVal
-        mask  = sensorRef.get("fpM")
-        wcs   = sensorRef.get("asTrans")
+        mask = sensorRef.get("fpM")
+        wcs = sensorRef.get("asTrans")
         calib, gain = sensorRef.get("tsField")
-        var   = afwImage.ImageF(image, True)
-        var  /= gain
+        var = afwImage.ImageF(image, True)
+        var /= gain
 
-        mi    = afwImage.MaskedImageF(image, mask, var)
+        mi = afwImage.MaskedImageF(image, mask, var)
 
         if self.config.removeOverlap:
-            bbox    = mi.getBBox(afwImage.LOCAL)
-            begin   = bbox.getBegin()
-            extent  = bbox.getDimensions()
+            bbox = mi.getBBox(afwImage.LOCAL)
+            begin = bbox.getBegin()
+            extent = bbox.getDimensions()
             extent -= afwGeom.Extent2I(0, self.config.overlapSize)
-            tbbox   = afwGeom.BoxI(begin, extent)
-            mi      = afwImage.MaskedImageF(mi, tbbox, True)
+            tbbox = afwGeom.BoxI(begin, extent)
+            mi = afwImage.MaskedImageF(mi, tbbox, True)
 
-        exp   = afwImage.ExposureF(mi, wcs)
+        exp = afwImage.ExposureF(mi, wcs)
         exp.setCalib(calib)
-        
+
         det = sensorRef.get('camera')["%s%d"%(sensorRef.dataId["filter"], sensorRef.dataId["camcol"])]
         exp.setDetector(det)
         exp.setFilter(afwImage.Filter(sensorRef.dataId['filter']))
@@ -117,7 +116,7 @@ class ProcessCcdSdssTask(ProcessCcdTask):
     @pipeBase.timeMethod
     def run(self, sensorRef):
         """Process a CCD: including source detection, photometry and WCS determination
-        
+
         @param sensorRef: sensor-level butler data reference to SDSS fpC file
         @return pipe_base Struct containing these fields:
         - exposure: calibrated exposure (calexp): as computed if config.doCalibrate,
