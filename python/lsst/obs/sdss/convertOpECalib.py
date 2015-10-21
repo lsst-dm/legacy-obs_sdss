@@ -50,5 +50,6 @@ class SdssCameraState(Yanny):
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 if __name__ == "__main__":
-    sc = SdssCameraState("/lsst7/stripe82/dr7/opfiles", "opConfig-50000.par", "opECalib-50000.par")
-    print [(i, ep.getGain(), ep.getReadNoise(), ep.getSaturationLevel()) for i, ep in sc.getEParams("g2")]
+    sc = SdssCameraState(os.path.expandvars("$OBS_SDSS_DIR/etc"), "opConfig-50000.par", "opECalib-50000.par")
+    # sc = SdssCameraState("/lsst7/stripe82/dr7/opfiles", "opConfig-50000.par", "opECalib-50000.par")
+    print [(i, ep['gain'], ep['readNoise'], ep['fullWell']) for i, ep in sc.getEParams("g2")]
