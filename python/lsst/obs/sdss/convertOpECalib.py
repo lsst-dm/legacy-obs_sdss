@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import lsst.utils
 from lsst.obs.sdss.yanny import yanny as Yanny
 
 class SdssCameraState(Yanny):
@@ -50,5 +51,5 @@ class SdssCameraState(Yanny):
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 if __name__ == "__main__":
-    sc = SdssCameraState("/lsst7/stripe82/dr7/opfiles", "opConfig-50000.par", "opECalib-50000.par")
-    print [(i, ep.getGain(), ep.getReadNoise(), ep.getSaturationLevel()) for i, ep in sc.getEParams("g2")]
+    sc = SdssCameraState(os.path.join(lsst.utils.getPackageDir("obs_sdss"),"etc"), "opConfig-50000.par", "opECalib-50000.par")
+    print [(i, ep['gain'], ep['readNoise'], ep['fullWell']) for i, ep in sc.getEParams("g2")]
