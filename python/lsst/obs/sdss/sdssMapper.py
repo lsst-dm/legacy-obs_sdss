@@ -32,13 +32,10 @@ import lsst.afw.image.utils as afwImageUtils
 # Solely to get boost serialization registrations for Measurement subclasses
 import lsst.meas.algorithms as measAlgo
 
-class SdssMapper(CameraMapper):
+class BaseSdssMapper(CameraMapper):
     packageName = 'obs_sdss'
 
-    def __init__(self, inputPolicy=None, **kwargs):
-        policyFile = pexPolicy.DefaultPolicyFile(self.packageName, "SdssMapper.paf", "policy")
-        policy = pexPolicy.Policy(policyFile)
-
+    def __init__(self, inputPolicy=None, policy=None, policyFile=None, **kwargs):
         self.doFootprints = False
         if inputPolicy is not None:
             for kw in inputPolicy.paramNames(True):
@@ -47,7 +44,7 @@ class SdssMapper(CameraMapper):
                 else:
                     kwargs[kw] = inputPolicy.get(kw)
 
-        super(SdssMapper, self).__init__(policy, policyFile.getRepositoryPath(), **kwargs)
+        super(BaseSdssMapper, self).__init__(policy, policyFile.getRepositoryPath(), **kwargs)
         # define filters?
         self.filterIdMap = dict(u=0, g=1, r=2, i=3, z=4)
 
@@ -106,7 +103,14 @@ class SdssMapper(CameraMapper):
             item = exposureFromImage(item)
         return item
 
-###############################################################################
+
+class SdssMapper(BaseSdssMapper):
+    """For working with fpC and associated files (pre-DR9)."""
+    def __init__(self, inputPolicy=None, **kwargs):
+        policyFile = pexPolicy.DefaultPolicyFile(self.packageName, "SdssMapper.paf", "policy")
+        policy = pexPolicy.Policy(policyFile)
+
+        super(SdssMapper, self).__init__(inputPolicy=inputPolicy, policy=policy, policyFile=policyFile, **kwargs)
 
     def bypass_fpM(self, datasetType, pythonType, location, dataId):
         return convertfpM(location.getLocations()[0])
@@ -145,9 +149,28 @@ class SdssMapper(CameraMapper):
     bypass_keithCoaddId_bits = bypass_ccdExposureId_bits
 
 
-###############################################################################
+class Sdss3Mapper(BaseSdssMapper):
+    """For working with Frame files (DR9 and up).
+
+    Starting with DR9, SDSS released Frame files that contain most of the
+    information that was in separate files (fpC, tsField, asTrans) before.
+    The fpM mask files are still separate, however.
+    """
+    def __init__(self, inputPolicy=None, **kwargs):
+        policyFile = pexPolicy.DefaultPolicyFile(self.packageName, "Sdss3Mapper.paf", "policy")
+        policy = pexPolicy.Policy(policyFile)
+
+        super(Sdss3Mapper, self).__init__(inputPolicy=inputPolicy, policy=policy, policyFile=policyFile, **kwargs)
+
+    # def bypass_fpM(self, datasetType, pythonType, location, dataId):
+    #     return convertfpM(location.getLocations()[0])
+
 
 
 for dsType in ("fpC", "fpM", "calexp"):
     setattr(SdssMapper, "std_" + dsType + "_md",
+            lambda self, item, dataId: self._setCcdExposureId(item, dataId))
+
+for dsType in ("frame"):
+    setattr(Sdss3Mapper, "std_" + dsType + "_md",
             lambda self, item, dataId: self._setCcdExposureId(item, dataId))

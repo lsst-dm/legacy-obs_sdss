@@ -26,7 +26,6 @@ import unittest
 
 import lsst.utils
 import lsst.utils.tests as utilsTests
-import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.afw.image
 import lsst.afw.detection
@@ -34,7 +33,7 @@ import lsst.afw.detection
 class SdssMapperTestCase(unittest.TestCase):
     """A test case for the SdssMapper."""
 
-    def testGetDR7(self):
+    def test_get_DR7(self):
         obsSdssDir = lsst.utils.getPackageDir('obs_sdss')
         butler = dafPersist.Butler(
             root=os.path.join(obsSdssDir, "tests", "data", "dr7", "runs"))
@@ -77,10 +76,68 @@ class SdssMapperTestCase(unittest.TestCase):
             self.assertAlmostEqual(calib.getExptime(), 53.907456, 6)
             self.assertAlmostEqual(gain, 4.72, 2)
 
+    @unittest.skip('nothing implemented at present')
+    def test_get_DR12(self):
+        # TODO: Try to open some frame data, and check that a useful message was emitted.
+        self.assertFalse('Should make this mapper fail gracefully if DR<8 data is requested.')
+
+class Sdss3MapperTestCase(unittest.TestCase):
+    """A test case for the Sdss3Mapper."""
+
+    def test_get_DR12(self):
+        obsSdssDir = lsst.utils.getPackageDir('obs_sdss')
+        butler = dafPersist.Butler(root=os.path.join(obsSdssDir, "tests", "data", "dr12", "frames"))
+        # NOTE TODO: this is going to fail until DM-4115 is fixed (cfitsio update)
+        sub = butler.subset("frame", run=94, camcol=1, field=131, filter="g")
+        self.assertEqual(len(sub), 1)
+        for ref in sub:
+            im = ref.get("frame")
+            w, h = im.getWidth(), im.getHeight()
+            self.assertEqual(im.__class__, lsst.afw.image.ImageU)
+            self.assertEqual(w, 2048)
+            self.assertEqual(h, 1489)
+
+            im_md = ref.get("frame_md")
+            self.assertEqual(im_md.get("RUN"), 5754)
+            self.assertEqual(im_md.get("FRAME"), 280)
+            self.assertEqual(im_md.get("STRIPE"), 82)
+
+            msk = ref.get("fpM")
+            w, h = msk.getWidth(), msk.getHeight()
+            self.assertEqual(msk.__class__, lsst.afw.image.MaskU)
+            self.assertEqual(w, 2048)
+            self.assertEqual(h, 1489)
+
+            psf = ref.get("psField")
+            k = psf.getKernel()
+            w, h = k.getWidth(), k.getHeight()
+            self.assertEqual(psf.__class__, lsst.meas.algorithms.PcaPsf)
+            self.assertEqual(w, 31)
+            self.assertEqual(h, 31)
+
+            wcs = ref.get("asTrans")
+            self.assertEqual(wcs.__class__, lsst.afw.image.TanWcs)
+            self.assertFalse(wcs.isFlipped())
+            self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX1"), 1.0, 5)
+            self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX2"), 1.0, 5)
+
+            calib, gain = ref.get("tsField")
+            self.assertAlmostEqual(calib.getMidTime().get(),
+                    53664.2260706 + 0.5 * 53.907456/3600/24, 7)
+            self.assertAlmostEqual(calib.getExptime(), 53.907456, 6)
+            self.assertAlmostEqual(gain, 4.72, 2)
+
+    @unittest.skip('nothing implemented at present')
+    def test_get_DR7(self):
+        # TODO: Try to open some fpC data, and check that a useful message was emitted.
+        self.assertFalse('Should make this mapper fail gracefully if DR>=8 data is requested.')
+
+
 def suite():
     utilsTests.init()
     suites = []
     suites += unittest.makeSuite(SdssMapperTestCase)
+    suites += unittest.makeSuite(Sdss3MapperTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
