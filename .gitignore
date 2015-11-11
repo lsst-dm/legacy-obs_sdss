@@ -14,3 +14,7 @@ doc/*.inc
 doc/doxygen.conf
 tests/.tests
 version.py
+bin/genCameraRegistry.py
+bin/genCoaddRegistry.py
+bin/genInputRegistry.py
+bin/processCcdSdss.py
