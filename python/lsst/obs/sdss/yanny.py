@@ -23,6 +23,7 @@ https://github.com/weaverba137/pydl/blob/0.4.1/pydl/pydlutils/yanny/yanny.py
 It is used for the makeCcd step of makeCamera, to read the opConfig and opECalib
 files in etc/.
 """
+
 #
 # Modules
 #
@@ -32,10 +33,12 @@ import os
 import os.path
 import datetime
 import numpy
-from astropy.extern import six
+# from astropy.extern import six
 
-if six.PY3:
-    long = int
+# NOTE: commented out to remove astropy.extern.six dependency
+# NOTE: Should be revisited when Python 3 support is added to the stack
+# if six.PY3:
+    # long = int
 
 #
 # Classes
@@ -330,7 +333,10 @@ class yanny(dict):
             #
             # Handle file-like objects
             #
-            if isinstance(filename, six.string_types):
+            # NOTE: commented out to remove astropy.extern.six dependency
+            # NOTE: Should be revisited when Python 3 support is added to the stack
+            # if isinstance(filename, six.string_types):
+            if isinstance(filename, basestring):
                 if os.access(filename,os.R_OK):
                     self.filename = filename
                     with open(filename,'r') as f:
