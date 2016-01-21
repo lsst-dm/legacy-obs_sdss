@@ -168,6 +168,9 @@ class SdssCalibrateConfig(pexConfig.Config):
         self.repair.doCosmicRay = False
         # we rarely run PSF determination on SDSS data, so use the output of the star selector instead
         self.measureApCorr.inputFilterFlag = "calib_psfCandidate"
+        # Because we don't deblend in CalibrateTask, we want to minimize merge detections caused by
+        # growing the footprints.
+        self.detection.returnOriginalFootprints = True
 
 class SdssCalibrateTask(CalibrateTask):
     """SDSS-specific version of lsst.pipe.tasks.calibrate.CalibrateTask
