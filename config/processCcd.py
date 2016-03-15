@@ -27,7 +27,6 @@ config.charImage.detectAndMeasure.measurement.slots.apFlux = "base_CircularApert
 config.charImage.detectAndMeasure.measurement.slots.modelFlux = None
 config.charImage.detectAndMeasure.measurement.slots.instFlux = None
 config.charImage.detectAndMeasure.measurement.slots.calibFlux = "base_CircularApertureFlux_7_0"
-config.charImage.detectAndMeasure.measureApCorr.refFluxName = "slot_CalibFlux"
 
 config.calibrate.detectAndMeasure.detection.background.binSize = 512
 config.calibrate.detectAndMeasure.detection.background.binSize = 512
