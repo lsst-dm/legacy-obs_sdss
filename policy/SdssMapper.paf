@@ -389,7 +389,7 @@ datasets: {
     }
     processCcd_config: {
         template:      "config/processCcd.py"
-        python:        "lsst.obs.sdss.processCcdSdss.ProcessCcdSdssConfig"
+        python:        "lsst.pipe.tasks.processCcd.ProcessCcdConfig"
         persistable:      "Config"
         storage:    "ConfigStorage"
         tables:        raw
