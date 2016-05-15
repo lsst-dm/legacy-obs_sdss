@@ -18,10 +18,12 @@ config.charImage.detectAndMeasure.measurement.algorithms["base_CircularApertureF
 config.charImage.detectAndMeasure.measurement.slots.apFlux = "base_CircularApertureFlux_7_0"
 config.charImage.detectAndMeasure.measurement.slots.calibFlux = "base_CircularApertureFlux_7_0"
 
+# we rarely run PSF determination on SDSS data, so we have to run our own star selector instead
+from lsst.meas.algorithms import ObjectSizeStarSelectorTask
+config.charImage.detectAndMeasure.measureApCorr.starSelector.retarget(ObjectSizeStarSelectorTask)
+
 config.calibrate.detectAndMeasure.detection.background.binSize = 512
 config.calibrate.detectAndMeasure.detection.background.binSize = 512
-# we rarely run PSF determination on SDSS data, so use the output of the star selector instead
-config.calibrate.detectAndMeasure.measureApCorr.inputFilterFlag = "calib_psfCandidate"
 
 # use the WCS determined by SDSS (why?)
 config.calibrate.astrometry.forceKnownWcs = True
