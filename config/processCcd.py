@@ -14,18 +14,8 @@ config.charImage.background.binSize = 512
 config.charImage.detectAndMeasure.detection.includeThresholdMultiplier = 10.0
 config.charImage.detectAndMeasure.detection.background.binSize = 512
 config.charImage.detectAndMeasure.detection.background.binSize = 512
-config.charImage.detectAndMeasure.measurement.algorithms.names = [
-    "base_SdssCentroid",
-    "base_PixelFlags",
-    "base_SdssShape",
-    "base_PsfFlux",
-    "base_CircularApertureFlux",
-]
 config.charImage.detectAndMeasure.measurement.algorithms["base_CircularApertureFlux"].radii = [7.0]
-config.charImage.detectAndMeasure.measurement.slots.centroid = "base_SdssCentroid"
 config.charImage.detectAndMeasure.measurement.slots.apFlux = "base_CircularApertureFlux_7_0"
-config.charImage.detectAndMeasure.measurement.slots.modelFlux = None
-config.charImage.detectAndMeasure.measurement.slots.instFlux = None
 config.charImage.detectAndMeasure.measurement.slots.calibFlux = "base_CircularApertureFlux_7_0"
 
 config.calibrate.detectAndMeasure.detection.background.binSize = 512
