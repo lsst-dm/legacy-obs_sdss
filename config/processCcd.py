@@ -26,10 +26,6 @@ config.calibrate.detectAndMeasure.measureApCorr.inputFilterFlag = "calib_psfCand
 # use the WCS determined by SDSS (why?)
 config.calibrate.astrometry.forceKnownWcs = True
 
-# Ap correction defaults to true happens in the measurement algorithm: 'correctFluxes'
 # SDSS the standard aperture correction is quoted as out to a radius of 7.43.
 # According to http://www.sdss.org/dr7/algorithms/photometry.html#photo_profile this corresponds to 18.58.
 # Note that 7.43/0.3961270 = 18.7566 <> 18.58. Why?
-
-#psf flux = ap flux at this radius. Will also be applied to galaxies Same everywhere'
-#config.calibrate.detectAndMeasure.measurement.algorithms['correctfluxes'].apCorrRadius = 18.58 #pixels
