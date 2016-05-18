@@ -64,7 +64,8 @@ class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
         allowed={1:"All data", 2:"Flagged ACCEPTABLE or GOOD", 3:"Flagged GOOD"},
     )
     cullBlacklisted = pexConfig.Field(
-        doc="Omit blacklisted images? (Some run/field combinations have been blacklisted even though the quality metrics may have missed them.)",
+        doc="Omit blacklisted images? (Some run/field combinations have been blacklisted even though "
+            "the quality metrics may have missed them.)",
         dtype=bool,
         default=True,
     )
@@ -80,7 +81,8 @@ class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
         optional=False,
     )
     rejectWholeRuns = pexConfig.Field(
-        doc="If any exposure in the region is bad or the run does not cover the whole region, then reject the whole run?",
+        doc="If any exposure in the region is bad or the run does not cover the whole region, "
+            "then reject the whole run?",
         dtype=bool,
         default=True,
     )
@@ -301,7 +303,8 @@ from %s as ccdExp where """ % (self.config.table,)
                         if runRaRange is None:
                             runRaRange = expRaRange
                         else:
-                            runRaRange = (min(runRaRange[0], expRaRange[0]), max(runRaRange[1], expRaRange[1]))
+                            runRaRange = (min(runRaRange[0], expRaRange[0]),
+                                          max(runRaRange[1], expRaRange[1]))
                 else:
                     # all exposures in this run are valid;
                     # if approriate, check that the run starts and ends outside the region

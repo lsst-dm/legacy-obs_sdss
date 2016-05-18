@@ -1,7 +1,7 @@
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -9,14 +9,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
@@ -30,7 +30,7 @@ from lsst.obs.sdss.converttsField import converttsField
 import lsst.afw.image.utils as afwImageUtils
 
 # Solely to get boost serialization registrations for Measurement subclasses
-import lsst.meas.algorithms as measAlgo
+import lsst.meas.algorithms as measAlgo  # flake8: noqa
 
 class SdssMapper(CameraMapper):
     packageName = 'obs_sdss'
@@ -71,7 +71,7 @@ class SdssMapper(CameraMapper):
         """Compute the 64-bit (long) identifier for a coadd.
 
         @param dataId (dict)       Data identifier with tract and patch.
-        @param singleFilter (bool) True means the desired ID is for a single- 
+        @param singleFilter (bool) True means the desired ID is for a single-
                                    filter coadd, in which case dataId
                                    must contain filter.
         """
@@ -138,7 +138,7 @@ class SdssMapper(CameraMapper):
     def bypass_chiSquaredCoaddId(self, datasetType, pythonType, location, dataId):
         return self._computeCoaddExposureId(dataId, False)
     def bypass_chiSquaredCoaddId_bits(self, datasetType, pythonType, location, dataId):
-        return 1 + 7 + 13*2 
+        return 1 + 7 + 13*2
 
     # Keith coadds use run, camcol, field, filter just like CCD exposures
     bypass_keithCoaddId = bypass_ccdExposureId

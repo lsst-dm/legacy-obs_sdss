@@ -51,5 +51,6 @@ class SdssCameraState(Yanny):
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 if __name__ == "__main__":
-    sc = SdssCameraState(os.path.join(lsst.utils.getPackageDir("obs_sdss"),"etc"), "opConfig-50000.par", "opECalib-50000.par")
+    sc = SdssCameraState(os.path.join(lsst.utils.getPackageDir("obs_sdss"),"etc"), "opConfig-50000.par",
+                         "opECalib-50000.par")
     print [(i, ep['gain'], ep['readNoise'], ep['fullWell']) for i, ep in sc.getEParams("g2")]

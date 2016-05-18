@@ -14,12 +14,11 @@ field=101), field=1)
 
 """
 import lsst.afw.cameraGeom.utils as cgUtils
-import lsst.afw.geom as afwGeom
 
 class SdssCcdImage(cgUtils.GetCcdImage):
     raise NotImplementedError("This will be re-implemented in Summer 2014")
     """A class to return an Image of a given SDSS Ccd by using the butler"""
-    ''' 
+    '''
     def __init__(self, butler, run, field, *args):
         """Initialise"""
         super(SdssCcdImage, self).__init__(*args)
