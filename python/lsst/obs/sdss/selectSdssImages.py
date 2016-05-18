@@ -20,10 +20,11 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-import MySQLdb
-import numpy
 import os
 import re
+
+import MySQLdb
+import numpy as np
 
 import lsst.pex.config as pexConfig
 from lsst.afw.coord import IcrsCoord
@@ -333,8 +334,8 @@ from %s as ccdExp where """ % (self.config.table,)
         
         if exposureInfoList:
             # compute qscore according to RHL's formula and sort by it
-            qArr = numpy.array([expInfo.q for expInfo in exposureInfoList])
-            qMax = numpy.percentile(qArr, 95.0)
+            qArr = np.array([expInfo.q for expInfo in exposureInfoList])
+            qMax = np.percentile(qArr, 95.0)
             for expInfo in exposureInfoList:
                 expInfo.qscore = (expInfo.q / qMax) - expInfo.quality
             exposureInfoList.sort(key=lambda expInfo: expInfo.qscore)
@@ -360,7 +361,7 @@ from %s as ccdExp where """ % (self.config.table,)
                 if len(runQualListDict) > self.config.maxRuns:
                     qualRunList = []
                     for run, qualList in runQualListDict.iteritems():
-                        runQscore = numpy.median(qualList)
+                        runQscore = np.median(qualList)
                         qualRunList.append((runQscore, run))
                     qualRunList.sort()
                     qualRunList = qualRunList[0:self.config.maxRuns]
@@ -454,7 +455,7 @@ def _computeRaRange(coordList, ctrRa=None):
         ctrRa.wrapCtr()
     for ra in raList:
         ra.wrapNear(ctrRa)
-    raRadList = numpy.array([ra.asRadians() for ra in raList])
-    minAngRad = numpy.min(raRadList)
-    maxAngRad = numpy.max(raRadList)
+    raRadList = np.array([ra.asRadians() for ra in raList])
+    minAngRad = np.min(raRadList)
+    maxAngRad = np.max(raRadList)
     return (minAngRad * afwGeom.radians, maxAngRad * afwGeom.radians)

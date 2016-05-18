@@ -21,6 +21,7 @@
 #
 
 import re
+
 import lsst.pex.policy as pexPolicy
 from lsst.daf.butlerUtils import CameraMapper, exposureFromImage
 from lsst.obs.sdss.convertfpM import convertfpM

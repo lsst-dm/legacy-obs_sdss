@@ -1,5 +1,7 @@
-import numpy as np
 import os
+
+import numpy as np
+
 import lsst.utils
 from lsst.obs.sdss.yanny import yanny as Yanny
 

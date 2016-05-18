@@ -20,16 +20,18 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 import sys
+
 import pyfits
-import numpy as num
+import numpy as np
+
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 import lsst.afw.coord as afwCoord
 import lsst.afw.table as afwTable
 import lsst.meas.astrom.sip as sip
 
-deg2rad = num.pi / 180.
-rad2deg = 180. / num.pi
+deg2rad = np.pi / 180.
+rad2deg = 180. / np.pi
 
 class CoordinateMapper(object):
     # COMMENT mu nu are defined as:
@@ -90,14 +92,14 @@ class CoordinateMapper(object):
         return mu_rad, nu_rad
 
     def muNuToRaDec(self, mu_rad, nu_rad):
-        x2  = num.cos(mu_rad - self.node_rad) * num.cos(nu_rad)
-        y2  = num.sin(mu_rad - self.node_rad) * num.cos(nu_rad)
-        z2  = num.sin(nu_rad)
-        y1  = y2 * num.cos(self.incl_rad) - z2 * num.sin(self.incl_rad)
-        z1  = y2 * num.sin(self.incl_rad) + z2 * num.cos(self.incl_rad)
+        x2  = np.cos(mu_rad - self.node_rad) * np.cos(nu_rad)
+        y2  = np.sin(mu_rad - self.node_rad) * np.cos(nu_rad)
+        z2  = np.sin(nu_rad)
+        y1  = y2 * np.cos(self.incl_rad) - z2 * np.sin(self.incl_rad)
+        z1  = y2 * np.sin(self.incl_rad) + z2 * np.cos(self.incl_rad)
 
-        ra_rad  = num.arctan2(y1, x2) + self.node_rad
-        dec_rad = num.arcsin(z1)
+        ra_rad  = np.arctan2(y1, x2) + self.node_rad
+        dec_rad = np.arcsin(z1)
 
         return ra_rad, dec_rad
 
@@ -120,7 +122,6 @@ def createWcs(x, y, mapper, order = 4, cOffset = 1.0):
     # Minimial table + centroids for focal plane coordintes
     srcSchema   = afwTable.SourceTable.makeMinimalSchema()
     centroidKey = afwTable.Point2DKey.addFields(srcSchema, "centroid", "centroid", "pixel")
-    flagKey     = srcSchema.addField("centroid_flag", type="Flag")
 
     srcTable    = afwTable.SourceTable.make(srcSchema)
     srcTable.defineCentroid("centroid")
@@ -179,7 +180,7 @@ def validate(xs, ys, mapper, wcs):
         dist   = coord1.angularSeparation(coord2).asArcseconds()
         dists.append(dist)
 
-    print num.mean(dists), num.std(dists)
+    print np.mean(dists), np.std(dists)
 
 
 def convertasTrans(infile, filt, camcol, field, stepSize = 50, doValidate = False):
@@ -243,11 +244,11 @@ def convertasTrans(infile, filt, camcol, field, stepSize = 50, doValidate = Fals
     f     = edat.field('f')[fIdx]
 
     # We need to fit for a TAN-SIP
-    x        = num.arange(0, 1489+stepSize, stepSize)
-    y        = num.arange(0, 2048+stepSize, stepSize)
-    coords   = num.meshgrid(x, y)
-    xs       = num.ravel(coords[0]).astype(num.float)
-    ys       = num.ravel(coords[1]).astype(num.float)
+    x        = np.arange(0, 1489+stepSize, stepSize)
+    y        = np.arange(0, 2048+stepSize, stepSize)
+    coords   = np.meshgrid(x, y)
+    xs       = np.ravel(coords[0]).astype(np.float)
+    ys       = np.ravel(coords[1]).astype(np.float)
     mapper   = CoordinateMapper(node_rad, incl_rad, dRow0, dRow1, dRow2, dRow3, dCol0, dCol1, dCol2, dCol3,
                                 a, b, c, d, e, f)
     wcs      = createWcs(xs, ys, mapper)

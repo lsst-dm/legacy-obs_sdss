@@ -21,8 +21,10 @@
 #
 import sys
 import os
+
 import pyfits
-import numpy as num
+import numpy as np
+
 import lsst.afw.image as afwImage
 import lsst.daf.base as dafBase
 
@@ -42,7 +44,7 @@ def converttsField(infile, filt, exptime = 53.907456):
     # Conversions
     mjdTaiMid   = mjdTaiStart + 0.5 * exptime / 3600 / 24
     fluxMag0    = 10**(-0.4 * aa) * exptime
-    dfluxMag0   = fluxMag0 * 0.4 * num.log(10.0) * aaErr
+    dfluxMag0   = fluxMag0 * 0.4 * np.log(10.0) * aaErr
 
     calib  = afwImage.Calib()
     calib.setMidTime(dafBase.DateTime(mjdTaiMid))
