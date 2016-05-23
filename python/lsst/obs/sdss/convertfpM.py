@@ -1,7 +1,7 @@
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -9,14 +9,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
@@ -79,19 +79,19 @@ class Objmask(object):
 
         for i in range(self.nspan):
             y = int(self.spans[i].y - self.row0)
-      
+
             if (y < 0 or y >= nrow):
                 continue
-            
+
             x1 = self.spans[i].x1 - self.col0
             x2 = self.spans[i].x2 - self.col0
 
             if (x1 < 0):
                 x1 = 0
-                
+
             if(x2 >= ncol):
                 x2 = ncol - 1
-                
+
             x = int(x1)
             while x <= x2:
                 mask.set(x, y, mask.get(x, y) | self.cval)
@@ -109,7 +109,7 @@ def convertfpM(infile, allPlanes = False):
     names  = hdr[-1].data.names
     if (not "attributeName" in names) or (not "Value" in names):
         raise LookupError, "Missing data in fpM header"
-        
+
     planes = hdr[-1].data.field("attributeName").tolist()
     values = hdr[-1].data.field("Value").tolist()
     mask   = afwImage.MaskU(afwGeom.ExtentI(nCols, nRows))
@@ -129,7 +129,7 @@ def convertfpM(infile, allPlanes = False):
 
     # Add the rest of the SDSS planes
     if allPlanes:
-        for plane in ['S_MASK_NOTCHECKED', 'S_MASK_OBJECT', 'S_MASK_BRIGHTOBJECT', 
+        for plane in ['S_MASK_NOTCHECKED', 'S_MASK_OBJECT', 'S_MASK_BRIGHTOBJECT',
                       'S_MASK_BINOBJECT', 'S_MASK_CATOBJECT', 'S_MASK_SUBTRACTED', 'S_MASK_GHOST']:
             idx     = planes.index(plane) + 1
             planeName = re.sub("S_MASK_", "", plane)
@@ -148,17 +148,17 @@ def convertfpM(infile, allPlanes = False):
         for i in range(nmask):
             frow = hdr[plane].data[i]
             Objmask(frow, bitmask).setMask(mask)
-    
+
     return mask
 
 
 if __name__ == '__main__':
     infile  = sys.argv[1]
     outfile = sys.argv[2]
-    
+
     if not os.path.isfile(infile):
         sys.exit(1)
-    
+
     convertfpM(infile).writeFits(outfile)
 
     comparison = """

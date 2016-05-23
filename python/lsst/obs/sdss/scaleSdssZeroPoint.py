@@ -20,7 +20,8 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-import numpy
+import numpy as np
+
 import lsst.pex.config as pexConfig
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
@@ -86,14 +87,14 @@ class SdssImageScaler(object):
         x0, y0 = bbox.getMin()
 
         interp = afwMath.makeInterpolate(xvec, zvec, self.interpStyle)
-        interpValArr = numpy.zeros(width, dtype=numpy.float32)
+        interpValArr = np.zeros(width, dtype=np.float32)
 
         for i, xInd in enumerate(range(x0, x0 + width)):
             xPos = afwImage.indexToPosition(xInd)
             interpValArr[i] = interp.interpolate(xPos)
 
         # assume the maskedImage being scaled is MaskedImageF (which is usually true); see ticket #3070
-        interpGrid = numpy.meshgrid(interpValArr, range(0, height))[0].astype(numpy.float32)
+        interpGrid = np.meshgrid(interpValArr, range(0, height))[0].astype(np.float32)
         image = afwImage.makeImageFromArray(interpGrid)
         image.setXY0(x0, y0)
         return image

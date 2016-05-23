@@ -1,7 +1,7 @@
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -9,14 +9,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 import os
@@ -24,7 +24,7 @@ import os
 import lsst.utils
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom.utils as cameraGeomUtils
-from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig,\
+from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig, \
                                 SCIENCE, PIXELS, PUPIL, FOCAL_PLANE
 import lsst.afw.table as afwTable
 from lsst.obs.sdss.convertOpECalib import SdssCameraState
@@ -34,11 +34,11 @@ from lsst.obs.sdss.convertOpECalib import SdssCameraState
 #
 def addAmp(ampCatalog, i, eparams):
     """ Add an amplifier to an AmpInfoCatalog
-    
+
     @param ampCatalog: An instance of an AmpInfoCatalog object to fill with amp properties
     @param i which amplifier? (i == 0 ? left : right)
-    @param eparams: Electronic parameters.  This is a list of tuples with (i, params), where params is a dictionary of
-                    electronic parameters. 
+    @param eparams: Electronic parameters.  This is a list of tuples with (i, params),
+                    where params is a dictionary of electronic parameters.
     """
     #
     # Layout of active and overclock pixels in the as-readout data  The layout is:
@@ -48,7 +48,7 @@ def addAmp(ampCatalog, i, eparams):
     height = 1361      # number of rows in a frame
     width = 1024       # number of data pixels read out through one amplifier
     nExtended = 8             # number of pixels in the extended register
-    nOverclock = 32           # number of (horizontal) overclock pixels 
+    nOverclock = 32           # number of (horizontal) overclock pixels
     #
     # Construct the needed bounding boxes given that geometrical information.
     #
@@ -59,7 +59,7 @@ def addAmp(ampCatalog, i, eparams):
     xtot = width + nExtended + nOverclock
     allPixels = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(xtot, height))
     biasSec = afwGeom.BoxI(afwGeom.PointI(nExtended if i == 0 else width, 0),
-                           afwGeom.ExtentI(nOverclock, height)) 
+                           afwGeom.ExtentI(nOverclock, height))
     dataSec = afwGeom.BoxI(afwGeom.PointI(nExtended + nOverclock if i == 0 else 0, 0),
                            afwGeom.ExtentI(width, height))
     emptyBox = afwGeom.BoxI()
@@ -74,10 +74,11 @@ def addAmp(ampCatalog, i, eparams):
     record.setBBox(bbox)
     record.setRawXYOffset(afwGeom.ExtentI(0,0))
     record.setName('left' if i==0 else 'right')
-    record.setReadoutCorner(afwTable.LL if i==0 else afwTable.LR)    
+    record.setReadoutCorner(afwTable.LL if i==0 else afwTable.LR)
     record.setGain(eparams['gain'])
     record.setReadNoise(eparams['readNoise'])
-    record.setSaturation(int(eparams['fullWell']))
+    record.setSaturation(eparams['fullWell'])
+    record.setSuspectLevel(float("nan"))
     record.setLinearityType('Proportional')
     record.setLinearityCoeffs([1.,])
     record.setHasRawInfo(True)
@@ -195,8 +196,8 @@ def printCcd(title, ccd, trimmed=True, indent=""):
         allPixels = cameraGeomUtils.calcRawCcdBBox(ccd)
     print indent, "Total size: %dx%d" % (allPixels.getWidth(), allPixels.getHeight())
     for i, amp in enumerate(ccd):
-        biasSec = amp.getRawHorizontalOverscanBBox() 
-        dataSec = amp.getRawDataBBox() 
+        biasSec = amp.getRawHorizontalOverscanBBox()
+        dataSec = amp.getRawDataBBox()
 
         print indent, "   Amp: %s gain: %g" % (amp.getName(),
                                                amp.getGain())
@@ -228,17 +229,17 @@ def printCamera(title, camera):
 #************************************************************************************************************
 
 def main():
-    camera = makeCamera("SDSS") 
+    camera = makeCamera("SDSS")
 
     print
-    printCamera("", camera) 
+    printCamera("", camera)
 
     ccd = camera["r1"]
 
-    printCcd("Raw ", ccd, trimmed=False) 
+    printCcd("Raw ", ccd, trimmed=False)
 
     print
-    printCcd("Trimmed ", ccd, trimmed=True) 
+    printCcd("Trimmed ", ccd, trimmed=True)
 
 if __name__ == "__main__":
     main()

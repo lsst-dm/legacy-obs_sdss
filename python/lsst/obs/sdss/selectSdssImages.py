@@ -20,10 +20,11 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-import MySQLdb
-import numpy
 import os
 import re
+
+import MySQLdb
+import numpy as np
 
 import lsst.pex.config as pexConfig
 from lsst.afw.coord import IcrsCoord
@@ -64,7 +65,8 @@ class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
         allowed={1:"All data", 2:"Flagged ACCEPTABLE or GOOD", 3:"Flagged GOOD"},
     )
     cullBlacklisted = pexConfig.Field(
-        doc="Omit blacklisted images? (Some run/field combinations have been blacklisted even though the quality metrics may have missed them.)",
+        doc="Omit blacklisted images? (Some run/field combinations have been blacklisted even though "
+            "the quality metrics may have missed them.)",
         dtype=bool,
         default=True,
     )
@@ -80,7 +82,8 @@ class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
         optional=False,
     )
     rejectWholeRuns = pexConfig.Field(
-        doc="If any exposure in the region is bad or the run does not cover the whole region, then reject the whole run?",
+        doc="If any exposure in the region is bad or the run does not cover the whole region, "
+            "then reject the whole run?",
         dtype=bool,
         default=True,
     )
@@ -301,7 +304,8 @@ from %s as ccdExp where """ % (self.config.table,)
                         if runRaRange is None:
                             runRaRange = expRaRange
                         else:
-                            runRaRange = (min(runRaRange[0], expRaRange[0]), max(runRaRange[1], expRaRange[1]))
+                            runRaRange = (min(runRaRange[0], expRaRange[0]),
+                                          max(runRaRange[1], expRaRange[1]))
                 else:
                     # all exposures in this run are valid;
                     # if approriate, check that the run starts and ends outside the region
@@ -330,8 +334,8 @@ from %s as ccdExp where """ % (self.config.table,)
         
         if exposureInfoList:
             # compute qscore according to RHL's formula and sort by it
-            qArr = numpy.array([expInfo.q for expInfo in exposureInfoList])
-            qMax = numpy.percentile(qArr, 95.0)
+            qArr = np.array([expInfo.q for expInfo in exposureInfoList])
+            qMax = np.percentile(qArr, 95.0)
             for expInfo in exposureInfoList:
                 expInfo.qscore = (expInfo.q / qMax) - expInfo.quality
             exposureInfoList.sort(key=lambda expInfo: expInfo.qscore)
@@ -357,7 +361,7 @@ from %s as ccdExp where """ % (self.config.table,)
                 if len(runQualListDict) > self.config.maxRuns:
                     qualRunList = []
                     for run, qualList in runQualListDict.iteritems():
-                        runQscore = numpy.median(qualList)
+                        runQscore = np.median(qualList)
                         qualRunList.append((runQscore, run))
                     qualRunList.sort()
                     qualRunList = qualRunList[0:self.config.maxRuns]
@@ -451,7 +455,7 @@ def _computeRaRange(coordList, ctrRa=None):
         ctrRa.wrapCtr()
     for ra in raList:
         ra.wrapNear(ctrRa)
-    raRadList = numpy.array([ra.asRadians() for ra in raList])
-    minAngRad = numpy.min(raRadList)
-    maxAngRad = numpy.max(raRadList)
+    raRadList = np.array([ra.asRadians() for ra in raList])
+    minAngRad = np.min(raRadList)
+    maxAngRad = np.max(raRadList)
     return (minAngRad * afwGeom.radians, maxAngRad * afwGeom.radians)

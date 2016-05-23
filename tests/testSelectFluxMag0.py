@@ -26,14 +26,13 @@
 """
 import unittest
 
+import lsst.utils.tests as utilsTests
 import lsst.daf.base
+from lsst.daf.persistence import DbAuth
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.coord as afwCoord
-
-import lsst.utils.tests as utilsTests
-from lsst.daf.persistence import DbAuth
 from lsst.obs.sdss.scaleSdssZeroPoint import ScaleSdssZeroPointTask
 from lsst.obs.sdss.selectFluxMag0 import SelectSdssFluxMag0Task
 
