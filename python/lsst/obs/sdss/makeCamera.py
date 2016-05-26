@@ -25,7 +25,7 @@ import lsst.utils
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom.utils as cameraGeomUtils
 from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig, \
-                                SCIENCE, PIXELS, PUPIL, FOCAL_PLANE
+                                SCIENCE, PIXELS, PUPIL, FOCAL_PLANE, NullLinearityType
 import lsst.afw.table as afwTable
 from lsst.obs.sdss.convertOpECalib import SdssCameraState
 
@@ -79,7 +79,7 @@ def addAmp(ampCatalog, i, eparams):
     record.setReadNoise(eparams['readNoise'])
     record.setSaturation(eparams['fullWell'])
     record.setSuspectLevel(float("nan"))
-    record.setLinearityType('Proportional')
+    record.setLinearityType(NullLinearityType)
     record.setLinearityCoeffs([1.,])
     record.setHasRawInfo(True)
     record.setRawFlipX(False)
