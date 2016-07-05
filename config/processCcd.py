@@ -11,19 +11,18 @@ config.charImage.repair.doInterpolate = False
 config.charImage.repair.doCosmicRay = False
 
 config.charImage.background.binSize = 512
-config.charImage.detectAndMeasure.detection.includeThresholdMultiplier = 10.0
-config.charImage.detectAndMeasure.detection.background.binSize = 512
-config.charImage.detectAndMeasure.detection.background.binSize = 512
-config.charImage.detectAndMeasure.measurement.algorithms["base_CircularApertureFlux"].radii = [7.0]
-config.charImage.detectAndMeasure.measurement.slots.apFlux = "base_CircularApertureFlux_7_0"
-config.charImage.detectAndMeasure.measurement.slots.calibFlux = "base_CircularApertureFlux_7_0"
+config.charImage.detection.includeThresholdMultiplier = 10.0
+config.charImage.detection.background.binSize = 512
+config.charImage.detection.background.binSize = 512
+config.charImage.measurement.algorithms["base_CircularApertureFlux"].radii = [7.0]
+config.charImage.measurement.slots.apFlux = "base_CircularApertureFlux_7_0"
+config.charImage.measurement.slots.calibFlux = "base_CircularApertureFlux_7_0"
 
-# we rarely run PSF determination on SDSS data, so the flag needed by the default star selector
-# for measuring aperture correction is not available; run our own star selector instead
-config.charImage.detectAndMeasure.measureApCorr.starSelector.name = "objectSize"
+# we rarely run PSF determination on SDSS data, so we have to run our own star selector instead
+config.charImage.measureApCorr.starSelector.name = "objectSize"
 
-config.calibrate.detectAndMeasure.detection.background.binSize = 512
-config.calibrate.detectAndMeasure.detection.background.binSize = 512
+config.calibrate.detection.background.binSize = 512
+config.calibrate.detection.background.binSize = 512
 
 # use the WCS determined by SDSS (why?)
 config.calibrate.astrometry.forceKnownWcs = True
