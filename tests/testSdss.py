@@ -25,13 +25,13 @@ import os
 import unittest
 
 import lsst.utils
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 import lsst.daf.persistence as dafPersist
 import lsst.afw.image
 import lsst.afw.detection
 
 
-class SdssMapperTestCase(unittest.TestCase):
+class SdssMapperTestCase(lsst.utils.tests.TestCase):
     """A test case for the SdssMapper."""
 
     def testGetDR7(self):
@@ -78,16 +78,13 @@ class SdssMapperTestCase(unittest.TestCase):
             self.assertAlmostEqual(gain, 4.72, 2)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(SdssMapperTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    return unittest.TestSuite(suites)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
 
-def run(shouldExit=False):
-    utilsTests.run(suite(), shouldExit)
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
