@@ -30,6 +30,7 @@ import lsst.daf.persistence as dafPersist
 import lsst.afw.image
 import lsst.afw.detection
 
+
 class SdssMapperTestCase(unittest.TestCase):
     """A test case for the SdssMapper."""
 
@@ -72,9 +73,10 @@ class SdssMapperTestCase(unittest.TestCase):
 
             calib, gain = ref.get("tsField")
             self.assertAlmostEqual(calib.getMidTime().get(),
-                    53664.2260706 + 0.5 * 53.907456/3600/24, 7)
+                                   53664.2260706 + 0.5 * 53.907456/3600/24, 7)
             self.assertAlmostEqual(calib.getExptime(), 53.907456, 6)
             self.assertAlmostEqual(gain, 4.72, 2)
+
 
 def suite():
     utilsTests.init()
@@ -82,6 +84,7 @@ def suite():
     suites += unittest.makeSuite(SdssMapperTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     utilsTests.run(suite(), shouldExit)

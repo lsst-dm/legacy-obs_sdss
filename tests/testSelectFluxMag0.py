@@ -41,12 +41,15 @@ from lsst.obs.sdss.selectFluxMag0 import SelectSdssFluxMag0Task
 class WrapDataId():
     """A container for dataId that looks like dataRef to computeImageScaler()
     """
+
     def __init__(self, dataId):
         self.dataId = dataId
+
 
 class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
     """A test case for ScaleSdssZeroPointTask
     """
+
     def makeTestExposure(self, xNumPix=2060, yNumPix=1967):
         """
         Create and return an exposure with wcs. Wcs is chosen such that the exposure is
@@ -70,7 +73,7 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         metadata.set("CUNIT2", "deg")
         metadata.set("LTV1", -341970)
         metadata.set("LTV2", -11412)
-        #exposure needs a wcs and a bbox
+        # exposure needs a wcs and a bbox
         wcs = afwImage.makeWcs(metadata)
         bbox = afwGeom.Box2I(afwGeom.Point2I(341970, 11412), afwGeom.Extent2I(xNumPix, yNumPix))
         exposure = afwImage.ExposureF(bbox, wcs)
@@ -95,7 +98,6 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         fmInfoList = fmInfoStruct.fluxMagInfoList
         self.assertEqual(2, len(fmInfoList))
 
-
     def testScaleZeroPoint(self):
         ZEROPOINT = 27
         self.sctrl = afwMath.StatisticsControl()
@@ -107,32 +109,30 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         config.selectFluxMag0.database = "test_select_sdss_images"
         zpScaler = ScaleSdssZeroPointTask(config=config)
 
-
         outCalib = zpScaler.getCalib()
         self.assertAlmostEqual(outCalib.getMagnitude(1.0), ZEROPOINT)
 
         exposure = self.makeTestExposure()
-        #create dataId for exposure. Visit is only field needed. Others ignored.
+        # create dataId for exposure. Visit is only field needed. Others ignored.
         exposureId = {'ignore_fake_key': 1234, 'run': 4192, 'filter': 'i'}
 
-        #test methods: computeImageScale(), scaleMaskedImage(), getInterpImage()
+        # test methods: computeImageScale(), scaleMaskedImage(), getInterpImage()
         dataRef = WrapDataId(exposureId)
-        imageScaler = zpScaler.computeImageScaler(exposure,dataRef)
+        imageScaler = zpScaler.computeImageScaler(exposure, dataRef)
         scaleFactorIm = imageScaler.getInterpImage(exposure.getBBox())
 
-        predScale = 0.402867736 #image mean for "NATURAL_SPLINE"
+        predScale = 0.402867736  # image mean for "NATURAL_SPLINE"
         self.assertAlmostEqual(afwMath.makeStatistics(scaleFactorIm, afwMath.MEAN, self.sctrl).getValue(),
                                predScale)
 
         mi = exposure.getMaskedImage()
         imageScaler.scaleMaskedImage(mi)
-        pixel11 = scaleFactorIm.getArray()[1,1]
-        self.assertAlmostEqual(mi.get(1,1)[0], pixel11) #check image plane scaled
-        self.assertAlmostEqual(mi.get(1,1)[2], pixel11**2) #check variance plane scaled
+        pixel11 = scaleFactorIm.getArray()[1, 1]
+        self.assertAlmostEqual(mi.get(1, 1)[0], pixel11)  # check image plane scaled
+        self.assertAlmostEqual(mi.get(1, 1)[2], pixel11**2)  # check variance plane scaled
 
         exposure.setCalib(zpScaler.getCalib())
         self.assertAlmostEqual(exposure.getCalib().getFlux(ZEROPOINT), 1.0)
-
 
     def makeCalib(self, zeroPoint):
         calib = afwImage.Calib()
