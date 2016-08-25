@@ -23,13 +23,13 @@
 #
 
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
 from lsst.obs.sdss import SdssMapper
 
 
-class GetIdTestCase(unittest.TestCase):
+class GetIdTestCase(lsst.utils.tests.TestCase):
     """Testing butler exposure id retrieval"""
 
     def setUp(self):
@@ -63,22 +63,14 @@ class GetIdTestCase(unittest.TestCase):
         self.assertEqual(bits, 34)
         self.assertEqual(id, (((1L * 8192) + 2) * 8192) + 3)
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(GetIdTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), shouldExit)
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
