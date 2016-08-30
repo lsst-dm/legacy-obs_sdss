@@ -251,14 +251,16 @@ class SelectSdssImagesTestCase(unittest.TestCase):
                 config.maxExposures = maxExposures
                 config.maxRuns = maxRuns
                 if maxExposures and maxRuns:
-                    self.assertRaises(Exception, config.validate)
+                    with self.assertRaises(Exception):
+                        config.validate()
                 else:
                     config.validate()  # should not raise an exception
 
         config = SelectSdssImagesTask.ConfigClass()
         config.database = Database
         config.table = "invalid*name"
-        self.assertRaises(Exception, config.validate)
+        with self.assertRaises(Exception):
+            config.validate()
 
     @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
     def testFilterValidation(self):
@@ -273,7 +275,8 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             if filter in ("u", "g", "r", "i", "z"):
                 task.run(coordList=coordList, filter=filter)
             else:
-                self.assertRaises(Exception, task.run, coordList, filter)
+                with self.assertRaises(Exception):
+                    task.run(coordList, filter)
 
     @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
     def testAcrossWrap(self):
@@ -330,7 +333,8 @@ class SelectSdssImagesTestCase(unittest.TestCase):
         task = SelectSdssImagesTask(config=config)
         for coordList in [None, getCoordList(333.746, -0.63606, 334.522, -0.41341)]:
             filter = "g"
-            self.assertRaises(Exception, task.run, coordList, filter)
+            with self.assertRaises(Exception):
+                task.run(coordList, filter)
 
     @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
     def testWholeSky(self):
