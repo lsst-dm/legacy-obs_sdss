@@ -49,7 +49,6 @@ except Exception, e:
     noConnection = True
 
 
-
 class WrapDataId():
     """A container for dataId that looks like dataRef to computeImageScaler()
     """
