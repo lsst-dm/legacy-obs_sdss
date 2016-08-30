@@ -35,9 +35,21 @@ import lsst.afw.math as afwMath
 import lsst.afw.coord as afwCoord
 from lsst.obs.sdss.scaleSdssZeroPoint import ScaleSdssZeroPointTask
 from lsst.obs.sdss.selectFluxMag0 import SelectSdssFluxMag0Task
+import lsst.log
+
+logger = lsst.log.Log.getLogger("obs_sdss.testSelectFluxMag0")
+
+config = ScaleSdssZeroPointTask.ConfigClass()
+noConnection = False
+try:
+    DbAuth.username(config.selectFluxMag0.host, str(config.selectFluxMag0.port))
+except Exception, e:
+    logger.warn("Did not find host={0}, port={1} in your db-auth file; \nWarning generated: {2} ".format(
+                config.selectFluxMag0.host, str(config.selectFluxMag0.port), e))
+    noConnection = True
 
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 class WrapDataId():
     """A container for dataId that looks like dataRef to computeImageScaler()
     """
@@ -46,7 +58,7 @@ class WrapDataId():
         self.dataId = dataId
 
 
-class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
+class ScaleSdssZeroPointTaskTestCase(lsst.utils.tests.TestCase):
     """A test case for ScaleSdssZeroPointTask
     """
 
@@ -82,6 +94,7 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         mi.getVariance().set(1.0)
         return exposure
 
+    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
     def testSelectFluxMag0(self):
         """Test SelectFluxMag0"""
         config = SelectSdssFluxMag0Task.ConfigClass()
@@ -98,6 +111,7 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         fmInfoList = fmInfoStruct.fluxMagInfoList
         self.assertEqual(2, len(fmInfoList))
 
+    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
     def testScaleZeroPoint(self):
         ZEROPOINT = 27
         self.sctrl = afwMath.StatisticsControl()
@@ -141,32 +155,13 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         return calib
 
 
-def suite():
-    """Return a suite containing all the test cases in this module.
-    """
-    utilsTests.init()
-
-    suites = [
-        unittest.makeSuite(ScaleSdssZeroPointTaskTestCase),
-        unittest.makeSuite(utilsTests.MemoryTestCase),
-    ]
-
-    return unittest.TestSuite(suites)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
 
-def run(shouldExit=False):
-    """Run the tests"""
-    config = ScaleSdssZeroPointTask.ConfigClass()
-    try:
-        DbAuth.username(config.selectFluxMag0.host, str(config.selectFluxMag0.port)),
-    except Exception, e:
-        print "Warning: did not find host=%s, port=%s in your db-auth file; or %s " \
-              "skipping unit tests" % \
-            (config.selectFluxMag0.host, str(config.selectFluxMag0.port), e)
-        return
-
-    utilsTests.run(suite(), shouldExit)
-
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
