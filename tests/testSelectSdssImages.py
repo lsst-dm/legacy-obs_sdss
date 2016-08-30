@@ -35,6 +35,10 @@ logger = lsst.log.Log.getLogger("obs_sdss.testSelectFluxMag0")
 Database = "test_select_sdss_images"
 
 config = SelectSdssImagesTask.ConfigClass()
+
+# Some of the tests require loading SDSS images from "lsst-db.ncsa.illinois.edu" and
+# require a login name and password. If the test is unable to connect to the external data,
+# some of the tests are skipped.
 noConnection = False
 try:
     DbAuth.username(config.host, str(config.port)),

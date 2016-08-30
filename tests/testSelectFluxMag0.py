@@ -40,6 +40,10 @@ import lsst.log
 logger = lsst.log.Log.getLogger("obs_sdss.testSelectFluxMag0")
 
 config = ScaleSdssZeroPointTask.ConfigClass()
+
+# Some of the tests require loading SDSS images from "lsst-db.ncsa.illinois.edu" and
+# require a login name and password. If the test is unable to connect to the external data,
+# some of the tests are skipped.
 noConnection = False
 try:
     DbAuth.username(config.selectFluxMag0.host, str(config.selectFluxMag0.port))
