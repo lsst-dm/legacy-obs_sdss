@@ -6,6 +6,7 @@ setupRequired(meas_astrom)
 setupRequired(mysqlpython)
 setupRequired(pipe_tasks)
 setupRequired(utils)
+setupRequired(log)
 
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
