@@ -24,7 +24,9 @@
 
 """Test lsst.obs.sdss.selectFluxMag0Task and integration with lsst.obs.sdss.scaleSdssZeroPointTask
 """
+from __future__ import print_function
 import unittest
+import sys
 
 import lsst.utils.tests as utilsTests
 import lsst.daf.base
@@ -35,9 +37,6 @@ import lsst.afw.math as afwMath
 import lsst.afw.coord as afwCoord
 from lsst.obs.sdss.scaleSdssZeroPoint import ScaleSdssZeroPointTask
 from lsst.obs.sdss.selectFluxMag0 import SelectSdssFluxMag0Task
-import lsst.log
-
-logger = lsst.log.Log.getLogger("obs_sdss.testSelectFluxMag0")
 
 config = ScaleSdssZeroPointTask.ConfigClass()
 
@@ -47,9 +46,9 @@ config = ScaleSdssZeroPointTask.ConfigClass()
 noConnection = False
 try:
     DbAuth.username(config.selectFluxMag0.host, str(config.selectFluxMag0.port))
-except Exception, e:
-    logger.warn("Did not find host={0}, port={1} in your db-auth file; \nWarning generated: {2} ".format(
-                config.selectFluxMag0.host, str(config.selectFluxMag0.port), e))
+except Exception as e:
+    print("Did not find host={0}, port={1} in your db-auth file; \nWarning generated: {2} ".format(
+          config.selectFluxMag0.host, str(config.selectFluxMag0.port), e), file=sys.stderr)
     noConnection = True
 
 

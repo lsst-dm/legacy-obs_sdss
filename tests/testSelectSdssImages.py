@@ -21,16 +21,15 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from __future__ import print_function
 import unittest
+import sys
 
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.daf.persistence import DbAuth
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
 from lsst.obs.sdss.selectSdssImages import SelectSdssImagesTask
-import lsst.log
-
-logger = lsst.log.Log.getLogger("obs_sdss.testSelectFluxMag0")
 
 Database = "test_select_sdss_images"
 
@@ -43,8 +42,8 @@ noConnection = False
 try:
     DbAuth.username(config.host, str(config.port)),
 except Exception as e:
-    logger.warn("Did not find host={0}, port={1} in your db-auth file; \nWarning generated: {2} ".format(
-                config.host, str(config.port), e))
+    print("Did not find host={0}, port={1} in your db-auth file; \nWarning generated: {2} ".format(
+          config.host, str(config.port), e), file=sys.stderr)
     noConnection = True
 
 
@@ -354,7 +353,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
         filter = "g"
         expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
         self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.quality < config.quality), ())
-        print "found %s exposures" % (len(expInfoList),)
+        print("found %s exposures" % (len(expInfoList),))
         self.assertEqual(tuple(expInfo for expInfo in expInfoList
                                if expInfo.dataId["camcol"] not in config.camcols), ())
 
