@@ -24,7 +24,9 @@
 
 """Test lsst.obs.sdss.selectFluxMag0Task and integration with lsst.obs.sdss.scaleSdssZeroPointTask
 """
+from __future__ import print_function
 import unittest
+import sys
 
 import lsst.utils.tests as utilsTests
 import lsst.daf.base
@@ -36,17 +38,32 @@ import lsst.afw.coord as afwCoord
 from lsst.obs.sdss.scaleSdssZeroPoint import ScaleSdssZeroPointTask
 from lsst.obs.sdss.selectFluxMag0 import SelectSdssFluxMag0Task
 
+config = ScaleSdssZeroPointTask.ConfigClass()
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Some of the tests require loading SDSS images from "lsst-db.ncsa.illinois.edu" and
+# require a login name and password. If the test is unable to connect to the external data,
+# some of the tests are skipped.
+noConnection = False
+try:
+    DbAuth.username(config.selectFluxMag0.host, str(config.selectFluxMag0.port))
+except Exception as e:
+    print("Did not find host={0}, port={1} in your db-auth file; \nWarning generated: {2} ".format(
+          config.selectFluxMag0.host, str(config.selectFluxMag0.port), e), file=sys.stderr)
+    noConnection = True
+
+
 class WrapDataId():
     """A container for dataId that looks like dataRef to computeImageScaler()
     """
+
     def __init__(self, dataId):
         self.dataId = dataId
 
-class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
+
+class ScaleSdssZeroPointTaskTestCase(lsst.utils.tests.TestCase):
     """A test case for ScaleSdssZeroPointTask
     """
+
     def makeTestExposure(self, xNumPix=2060, yNumPix=1967):
         """
         Create and return an exposure with wcs. Wcs is chosen such that the exposure is
@@ -70,7 +87,7 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         metadata.set("CUNIT2", "deg")
         metadata.set("LTV1", -341970)
         metadata.set("LTV2", -11412)
-        #exposure needs a wcs and a bbox
+        # exposure needs a wcs and a bbox
         wcs = afwImage.makeWcs(metadata)
         bbox = afwGeom.Box2I(afwGeom.Point2I(341970, 11412), afwGeom.Extent2I(xNumPix, yNumPix))
         exposure = afwImage.ExposureF(bbox, wcs)
@@ -79,6 +96,7 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         mi.getVariance().set(1.0)
         return exposure
 
+    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
     def testSelectFluxMag0(self):
         """Test SelectFluxMag0"""
         config = SelectSdssFluxMag0Task.ConfigClass()
@@ -95,7 +113,7 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         fmInfoList = fmInfoStruct.fluxMagInfoList
         self.assertEqual(2, len(fmInfoList))
 
-
+    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
     def testScaleZeroPoint(self):
         ZEROPOINT = 27
         self.sctrl = afwMath.StatisticsControl()
@@ -107,32 +125,30 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         config.selectFluxMag0.database = "test_select_sdss_images"
         zpScaler = ScaleSdssZeroPointTask(config=config)
 
-
         outCalib = zpScaler.getCalib()
         self.assertAlmostEqual(outCalib.getMagnitude(1.0), ZEROPOINT)
 
         exposure = self.makeTestExposure()
-        #create dataId for exposure. Visit is only field needed. Others ignored.
+        # create dataId for exposure. Visit is only field needed. Others ignored.
         exposureId = {'ignore_fake_key': 1234, 'run': 4192, 'filter': 'i'}
 
-        #test methods: computeImageScale(), scaleMaskedImage(), getInterpImage()
+        # test methods: computeImageScale(), scaleMaskedImage(), getInterpImage()
         dataRef = WrapDataId(exposureId)
-        imageScaler = zpScaler.computeImageScaler(exposure,dataRef)
+        imageScaler = zpScaler.computeImageScaler(exposure, dataRef)
         scaleFactorIm = imageScaler.getInterpImage(exposure.getBBox())
 
-        predScale = 0.402867736 #image mean for "NATURAL_SPLINE"
+        predScale = 0.402867736  # image mean for "NATURAL_SPLINE"
         self.assertAlmostEqual(afwMath.makeStatistics(scaleFactorIm, afwMath.MEAN, self.sctrl).getValue(),
                                predScale)
 
         mi = exposure.getMaskedImage()
         imageScaler.scaleMaskedImage(mi)
-        pixel11 = scaleFactorIm.getArray()[1,1]
-        self.assertAlmostEqual(mi.get(1,1)[0], pixel11) #check image plane scaled
-        self.assertAlmostEqual(mi.get(1,1)[2], pixel11**2) #check variance plane scaled
+        pixel11 = scaleFactorIm.getArray()[1, 1]
+        self.assertAlmostEqual(mi.get(1, 1)[0], pixel11)  # check image plane scaled
+        self.assertAlmostEqual(mi.get(1, 1)[2], pixel11**2)  # check variance plane scaled
 
         exposure.setCalib(zpScaler.getCalib())
         self.assertAlmostEqual(exposure.getCalib().getFlux(ZEROPOINT), 1.0)
-
 
     def makeCalib(self, zeroPoint):
         calib = afwImage.Calib()
@@ -141,32 +157,13 @@ class ScaleSdssZeroPointTaskTestCase(unittest.TestCase):
         return calib
 
 
-def suite():
-    """Return a suite containing all the test cases in this module.
-    """
-    utilsTests.init()
-
-    suites = [
-        unittest.makeSuite(ScaleSdssZeroPointTaskTestCase),
-        unittest.makeSuite(utilsTests.MemoryTestCase),
-    ]
-
-    return unittest.TestSuite(suites)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
 
-def run(shouldExit=False):
-    """Run the tests"""
-    config = ScaleSdssZeroPointTask.ConfigClass()
-    try:
-        DbAuth.username(config.selectFluxMag0.host, str(config.selectFluxMag0.port)),
-    except Exception, e:
-        print "Warning: did not find host=%s, port=%s in your db-auth file; or %s " \
-              "skipping unit tests" % \
-            (config.selectFluxMag0.host, str(config.selectFluxMag0.port), e)
-        return
-
-    utilsTests.run(suite(), shouldExit)
-
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
