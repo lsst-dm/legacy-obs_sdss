@@ -23,7 +23,6 @@
 #
 from __future__ import print_function
 import unittest
-import sys
 
 import lsst.utils.tests
 from lsst.daf.persistence import DbAuth
@@ -42,8 +41,9 @@ noConnection = False
 try:
     DbAuth.username(config.host, str(config.port)),
 except Exception as e:
-    print("Did not find host={0}, port={1} in your db-auth file; \nWarning generated: {2} ".format(
-          config.host, str(config.port), e), file=sys.stderr)
+    noConnectionStr = ("No remote connection to SDSS image database\n"
+                       "Did not find host={0}, port={1} in your db-auth file;\n"
+                       "Warning generated: {2} ".format(config.host, str(config.port), e))
     noConnection = True
 
 
@@ -60,7 +60,7 @@ def getCoordList(minRa, minDec, maxRa, maxDec):
 class SelectSdssImagesTestCase(unittest.TestCase):
     """A test case for SelectSdssImagesTask."""
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testMaxFwhm(self):
         """Test config.maxFwhm
         """
@@ -74,7 +74,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.fwhm > maxFwhm), ())
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testMaxAirmass(self):
         """Test config.maxAirmass
         """
@@ -88,7 +88,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.airmass > maxAirmass), ())
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testMaxSky(self):
         """Test config.maxSky
         """
@@ -102,7 +102,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.sky > maxSky), ())
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testQuality(self):
         """Test config.quality
         """
@@ -116,7 +116,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.quality < quality), ())
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testCullBlacklisted(self):
         """Test config.cullBlacklisted
         """
@@ -135,7 +135,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             else:
                 self.assertGreater(len(blacklistedList), 0)
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testCamcols(self):
         """Test config.camcols
         """
@@ -150,7 +150,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             self.assertEqual(
                 tuple(expInfo for expInfo in expInfoList if expInfo.dataId["camcol"] not in camcols), ())
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testStrip(self):
         """Test config.strip
         """
@@ -169,7 +169,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
                 self.assertEqual(tuple(expInfo for expInfo in expInfoList if expInfo.strip != 'N'), ())
             # no assert for "Both"
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testRejectWholeRuns(self):
         """Test config.rejectWholeRuns
         """
@@ -193,7 +193,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
 
         self.checkExpList(minRa, maxRa, runExpInfoDict)
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testMaxExposures(self):
         """Test config.maxExposures
         """
@@ -207,7 +207,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             expInfoList = task.run(coordList=coordList, filter=filter).exposureInfoList
             self.assertEqual(len(expInfoList), maxExposures)
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testMaxRuns(self):
         """Test config.maxRuns
         """
@@ -222,7 +222,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             runSet = set(expInfo.dataId["run"] for expInfo in expInfoList)
             self.assertEqual(len(runSet), maxRuns)
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testQScore(self):
         """Test QScore sorting
         """
@@ -243,7 +243,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
         self.assertGreater(bestExp.quality, worstExp.quality)
         self.assertEqual(bestExp.quality, 3)
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testConfigValidate(self):
         """Test validation of config
         """
@@ -265,7 +265,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
         with self.assertRaises(Exception):
             config.validate()
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testFilterValidation(self):
         """Test filter name validation
         """
@@ -281,7 +281,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
                 with self.assertRaises(Exception):
                     task.run(coordList, filter)
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testAcrossWrap(self):
         """Test rejectWholeRuns across the RA 0/360 boundary
         """
@@ -327,7 +327,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
         self.assertGreaterEqual(minRa, raDegList[0])
         self.assertGreaterEqual(raDegList[-1], maxRa)
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testTable(self):
         """Test config.table
         """
@@ -339,7 +339,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
             with self.assertRaises(Exception):
                 task.run(coordList, filter)
 
-    @unittest.skipIf(noConnection, "No remote connection to SDSS image database")
+    @unittest.skipIf(noConnection, noConnectionStr)
     def testWholeSky(self):
         """Test whole-sky search (slow so don't do much)
         """
