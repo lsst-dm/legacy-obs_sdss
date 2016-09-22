@@ -134,12 +134,20 @@ class SdssNullIsrTask(pipeBase.Task):
             mi = afwImage.MaskedImageF(mi, tbbox, True)
 
         exposure = afwImage.ExposureF(mi, wcs)
-        exposure.setCalib(calib)
+        expInfo = exposure.getInfo()
+        expInfo.setCalib(calib)
 
         camera = sensorRef.get('camera')
         detector = camera["%(filter)s%(camcol)d" % sensorRef.dataId]
-        exposure.setDetector(detector)
-        exposure.setFilter(afwImage.Filter(sensorRef.dataId['filter']))
+        expInfo.setDetector(detector)
+        expInfo.setFilter(afwImage.Filter(sensorRef.dataId['filter']))
+
+        visitInfo = afwImage.makeVisitInfo(
+            exposureTime = tsField.exptime,
+            date = tsField.dateAvg,
+            boresightAirmass = tsField.airmass,
+        )
+        expInfo.setVisitInfo(visitInfo)
 
         # Install the SDSS PSF here; if we want to overwrite it later, we can.
         psf = sensorRef.get('psField')
