@@ -21,6 +21,7 @@
 #
 import sys
 import os
+import collections
 
 import pyfits
 import numpy as np
@@ -28,7 +29,22 @@ import numpy as np
 import lsst.afw.image as afwImage
 import lsst.daf.base as dafBase
 
+TsField = collections.namedtuple("TsField", "calib gain dateAvg exptime airmass")
+
 def converttsField(infile, filt, exptime = 53.907456):
+    """Extract data from a tsField table
+
+    @param[in] infile  path to tsField FITS file
+    @param[in] filt  index of filter in tsField FILTERS metadata entry
+    @param[in] exptime  exposure time (sec)
+
+    @return a dict with the following entries:
+    - calib: an lsst.afw.Calib
+    - gain: gain as a float
+    - dateAvg: date of exposure at middle of exposure, as an lsst.daf.base.DateTime
+    - exptime: exposure time (sec)
+    - airmass: airmass
+    """
     ptr    = pyfits.open(infile)
     if ptr[0].header['NFIELDS'] != 1:
         print "INVALID TSFIELD FILE"
@@ -37,23 +53,29 @@ def converttsField(infile, filt, exptime = 53.907456):
     idx    = filts.index(filt)
 
     mjdTaiStart = ptr[1].data.field('mjd')[0][idx]        # MJD(TAI) when row 0 was read
+    airmass = ptr[1].data.field("airmass")[0][idx]
+
     gain        = float(ptr[1].data.field('gain')[0][idx])# comes out as numpy.float32
     aa          = ptr[1].data.field('aa')[0][idx]         # f0 = 10**(-0.4*aa) counts/second
     aaErr       = ptr[1].data.field('aaErr')[0][idx]
 
     # Conversions
-    mjdTaiMid   = mjdTaiStart + 0.5 * exptime / 3600 / 24
+    dateAvg   = dafBase.DateTime(mjdTaiStart + 0.5 * exptime / 3600 / 24)
     fluxMag0    = 10**(-0.4 * aa) * exptime
     dfluxMag0   = fluxMag0 * 0.4 * np.log(10.0) * aaErr
 
     calib  = afwImage.Calib()
-    calib.setMidTime(dafBase.DateTime(mjdTaiMid))
-    calib.setExptime(exptime)
     calib.setFluxMag0(fluxMag0, dfluxMag0)
 
     ptr.close()
 
-    return calib, gain
+    return TsField(
+        calib = calib,
+        gain = gain,
+        dateAvg = dateAvg,
+        exptime = exptime,
+        airmass = airmass,
+    )
 
 if __name__ == '__main__':
     infile  = sys.argv[1]

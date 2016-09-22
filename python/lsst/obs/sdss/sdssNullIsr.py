@@ -117,7 +117,9 @@ class SdssNullIsrTask(pipeBase.Task):
             image -= self.config.pedestalVal
         mask = sensorRef.get("fpM")
         wcs = sensorRef.get("asTrans")
-        calib, gain = sensorRef.get("tsField")
+        tsField = sensorRef.get("tsField")
+        calib = tsField.calib
+        gain = tsField.gain
         var = afwImage.ImageF(image, True)
         var /= gain
 
