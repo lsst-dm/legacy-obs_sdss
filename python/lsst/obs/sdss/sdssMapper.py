@@ -61,12 +61,31 @@ class SdssMapper(CameraMapper):
     def _computeCcdExposureId(self, dataId):
         """Compute the 64-bit (long) identifier for a CCD exposure.
 
-        @param dataId (dict) Data identifier with run, rerun, filter, camcol, field
+        @param dataId (dict) Data identifier with run, filter, camcol, field
         """
         return ((long(dataId['run']) \
                 * 10 + self.filterIdMap[dataId['filter']]) \
                 * 10 + dataId['camcol']) \
                 * 10000 + dataId['field']
+
+    def _decomposeCcdExposureId(self, ccdExposureId):
+        """Decompose the 64-bit (long) identifier for a CCD exposure.
+
+        @param (int) CCD exposure identifier
+        @returns (dict) Dictionary with run, filter, camcol, field
+        """
+        field = ccdExposureId % 10000
+        camcol = ccdExposureId % 100000 // 10000
+        filterNum = ccdExposureId % 1000000 // 100000
+        filterNames = [k for k, v in self.filterIdMap.items() if v == filterNum]
+        assert len(filterNames) <= 1
+        if not filterNames:
+            raise RuntimeError("Unknown filter number {} "
+                    "embedded in CCD exposure ID {}".format(
+                        filterNum, ccdExposureId))
+        filterName = filterNames[0]
+        run = ccdExposureId // 1000000
+        return dict(run=run, filter=filterName, camcol=camcol, field=field)
 
     def _computeCoaddExposureId(self, dataId, singleFilter):
         """Compute the 64-bit (long) identifier for a coadd.
@@ -126,6 +145,9 @@ class SdssMapper(CameraMapper):
         return self._computeCcdExposureId(dataId)
     def bypass_ccdExposureId_bits(self, datasetType, pythonType, location, dataId):
         return 38
+
+    def bypass_ccdExposureDataId(self, datasetType, pythonType, location, dataId):
+        return self._decomposeCcdExposureId(dataId['ccdExposureId'])
 
     def bypass_goodSeeingCoaddId(self, datasetType, pythonType, location, dataId):
         return self._computeCoaddExposureId(dataId, True)

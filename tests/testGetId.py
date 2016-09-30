@@ -50,6 +50,9 @@ class GetIdTestCase(lsst.utils.tests.TestCase):
         id = self.butler.get("ccdExposureId", run=4933,
                              camcol=3, filter='g', field=748)
         self.assertEqual(id, 4933130748)
+        dataId = self.butler.get("ccdExposureDataId", ccdExposureId=4933130748)
+        self.assertEqual(dataId, dict(run=4933, camcol=3, filter='g',
+            field=748))
 
         dataId = dict(tract=1, patch='2,3', filter='z')
         bits = self.butler.get("goodSeeingCoaddId_bits", dataId)
