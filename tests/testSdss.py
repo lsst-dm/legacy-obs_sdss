@@ -21,12 +21,14 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from __future__ import absolute_import, division, print_function
 import os
 import unittest
 
 import lsst.utils
 import lsst.utils.tests
 import lsst.daf.persistence as dafPersist
+from lsst.daf.base import DateTime
 import lsst.afw.image
 import lsst.afw.detection
 
@@ -71,11 +73,14 @@ class SdssMapperTestCase(lsst.utils.tests.TestCase):
             self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX1"), 1.0, 5)
             self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX2"), 1.0, 5)
 
-            calib, gain = ref.get("tsField")
-            self.assertAlmostEqual(calib.getMidTime().get(),
-                                   53664.2260706 + 0.5 * 53.907456/3600/24, 7)
-            self.assertAlmostEqual(calib.getExptime(), 53.907456, 6)
-            self.assertAlmostEqual(gain, 4.72, 2)
+            tsField = ref.get("tsField")
+            self.assertAlmostEqual(tsField.gain, 4.72, 2)
+            self.assertAlmostEqual(tsField.airmass, 1.2815132857671601)
+            self.assertAlmostEqual(tsField.exptime, 53.907456)
+            predDateStart = DateTime(53664.226070589997, DateTime.MJD, DateTime.TAI)
+            predDateAvg = DateTime(predDateStart.nsecs(DateTime.TAI) + int(0.5e9*tsField.exptime),
+                                   DateTime.TAI)
+            self.assertAlmostEqual(tsField.dateAvg.get(), predDateAvg.get())
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
