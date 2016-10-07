@@ -23,7 +23,7 @@
 import re
 
 import lsst.pex.policy as pexPolicy
-from lsst.daf.butlerUtils import CameraMapper, exposureFromImage
+from lsst.obs.base import CameraMapper, exposureFromImage
 from lsst.obs.sdss.convertfpM import convertfpM
 from lsst.obs.sdss.convertpsField import convertpsField
 from lsst.obs.sdss.convertasTrans import convertasTrans
@@ -96,7 +96,7 @@ class SdssMapper(CameraMapper):
             trimmed=True):
 
         """Default standardization function for images.
-        @param mapping (lsst.daf.butlerUtils.Mapping)
+        @param mapping (lsst.obs.base.Mapping)
         @param[in,out] item (lsst.afw.image.Exposure)
         @param dataId (dict) Dataset identifier
         @param filter (bool) Set filter?
