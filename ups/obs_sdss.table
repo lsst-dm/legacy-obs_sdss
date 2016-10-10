@@ -1,5 +1,5 @@
 setupRequired(pex_policy)
-setupRequired(daf_butlerUtils)
+setupRequired(obs_base)
 setupRequired(afw)
 setupRequired(meas_algorithms)
 setupRequired(meas_astrom)
