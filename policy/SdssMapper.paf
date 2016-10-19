@@ -310,13 +310,6 @@ datasets: {
         tables:        raw_skyTile
     }
 
-    deepCoadd_depth: {
-        template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/depth-%(filter)s-%(tract)d-%(patch)s.fits"
-        python:      "lsst.afw.image.ImageF"
-        persistable: "ImageF"
-        storage:     "FitsStorage"
-        tables:      raw
-    }
     deep_makeSkyMap_config: {
         template:      "config/deep_makeSkyMap.py"
         python:        "lsst.pipe.tasks.makeSkyMap.MakeSkyMapTask.ConfigClass"
