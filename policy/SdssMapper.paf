@@ -73,11 +73,9 @@ exposures: {
         level:        "None"
         tables:      raw
     }
+    # dataset defined in obs_base modifield in this mapper as follows:
     deepCoadd: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits"
-        python:      "lsst.afw.image.ExposureF"
-        persistable: "ExposureF"
-        storage:     "FitsStorage"
         level:        "None"
     }
 
@@ -133,11 +131,9 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
+    # dataset defined in obs_base modifield in this mapper as follows:
     icSrc_schema: {
-        template:      "schema/icSrc.fits"
-        python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
     }
     icMatch: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/icMatch/icMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
@@ -171,11 +167,9 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
+    # dataset defined in obs_base modifield in this mapper as follows:
     src_schema: {
-        template:      "schema/src.fits"
-        python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
     }
 
     sourceHist: {
@@ -317,11 +311,9 @@ datasets: {
         storage:       "ConfigStorage"
         tables:        raw
     }
+    # dataset defined in obs_base modifield in this mapper as follows:
     deep_assembleCoadd_metadata: {
         template:      "deep_assembleCoadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
     }
     deepCoadd_icMatch: {
         template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/icMatch-%(filter)s-%(tract)d-%(patch)s.fits"
@@ -348,37 +340,21 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
+    # dataset defined in obs_base modifield in this mapper as follows:
     deepDiff_metadata: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/metadata-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:   "PropertySet"
-        storage:       "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
+    # dataset defined in obs_base modifield in this mapper as follows:
     deepDiff_differenceExp: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/diffexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.image.ExposureF"
-        persistable:   "ExposureF"
-        storage:       "FitsStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
+    # dataset defined in obs_base modifield in this mapper as follows:
     deepDiff_matchedExp: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/matchexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.image.ExposureF"
-        persistable:   "ExposureF"
-        storage:       "FitsStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
+    # dataset defined in obs_base modifield in this mapper as follows:
     deepDiff_diaSrc: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/diaSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:   "SourceCatalog"
-        storage:       "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
     deepDiff_diaSrc_schema: {
         template:      "schema/deepDiff_diaSrc.fits"
@@ -388,13 +364,9 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
+    # dataset defined in obs_base modifield in this mapper as follows:
     deepDiff_kernelSrc: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/kernelSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:   "SourceCatalog"
-        storage:       "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
 
 
