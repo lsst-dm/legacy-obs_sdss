@@ -73,13 +73,21 @@ exposures: {
         level:        "None"
         tables:      raw
     }
-    # dataset defined in obs_base modifield in this mapper as follows:
+    # dataset defined in obs_base modified in this mapper as follows:
     deepCoadd: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits"
         level:        "None"
     }
 
 
+    # dataset defined in obs_base modified in this mapper as follows:
+    deepDiff_differenceExp: {
+        template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/diffexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+    }
+    # dataset defined in obs_base modified in this mapper as follows:
+    deepDiff_matchedExp: {
+        template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/matchexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+    }
 
 }
 
@@ -131,7 +139,7 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    # dataset defined in obs_base modifield in this mapper as follows:
+    # dataset defined in obs_base modified in this mapper as follows:
     icSrc_schema: {
         persistable:        "ignored"
     }
@@ -167,7 +175,7 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    # dataset defined in obs_base modifield in this mapper as follows:
+    # dataset defined in obs_base modified in this mapper as follows:
     src_schema: {
         persistable:        "ignored"
     }
@@ -311,7 +319,7 @@ datasets: {
         storage:       "ConfigStorage"
         tables:        raw
     }
-    # dataset defined in obs_base modifield in this mapper as follows:
+    # dataset defined in obs_base modified in this mapper as follows:
     deep_assembleCoadd_metadata: {
         template:      "deep_assembleCoadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.boost"
     }
@@ -340,19 +348,11 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    # dataset defined in obs_base modifield in this mapper as follows:
+    # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_metadata: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/metadata-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
     }
-    # dataset defined in obs_base modifield in this mapper as follows:
-    deepDiff_differenceExp: {
-        template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/diffexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-    }
-    # dataset defined in obs_base modifield in this mapper as follows:
-    deepDiff_matchedExp: {
-        template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/matchexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-    }
-    # dataset defined in obs_base modifield in this mapper as follows:
+    # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_diaSrc: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/diaSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
     }
@@ -364,7 +364,7 @@ datasets: {
         tables:        raw
         tables:        raw_skyTile
     }
-    # dataset defined in obs_base modifield in this mapper as follows:
+    # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_kernelSrc: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/kernelSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
     }
