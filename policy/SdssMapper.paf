@@ -65,18 +65,13 @@ exposures: {
         tables:        raw_skyTile
     }
 
+    # dataset defined in obs_base modified in this mapper as follows:
     deepCoadd_tempExp: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)stempExp/%(run)d-f%(filter)s.fits"
-        python:      "lsst.afw.image.ExposureF"
-        persistable: "ExposureF"
-        storage:     "FitsStorage"
-        level:        "None"
-        tables:      raw
     }
     # dataset defined in obs_base modified in this mapper as follows:
     deepCoadd: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits"
-        level:        "None"
     }
 
 
@@ -323,30 +318,15 @@ datasets: {
     deep_assembleCoadd_metadata: {
         template:      "deep_assembleCoadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.boost"
     }
-    deepCoadd_icMatch: {
-        template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/icMatch-%(filter)s-%(tract)d-%(patch)s.fits"
-        python:        "lsst.afw.table.BaseCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
+    # dataset defined in obs_base modified in this mapper as follows:
     deepCoadd_srcMatch: {
         template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/srcMatch-%(filter)s-%(tract)d-%(patch)s.fits"
-        python:        "lsst.afw.table.BaseCatalog"
         persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
 
+    # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_config: {
-        template:      "config/deepDiff.py"
         python:        "lsst.pex.config.Config"
-        persistable:   "Config"
-        storage:       "ConfigStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
     # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_metadata: {
@@ -355,14 +335,6 @@ datasets: {
     # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_diaSrc: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/diaSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-    }
-    deepDiff_diaSrc_schema: {
-        template:      "schema/deepDiff_diaSrc.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:   "SourceCatalog"
-        storage:       "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
     # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_kernelSrc: {
