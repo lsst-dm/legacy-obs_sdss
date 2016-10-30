@@ -52,16 +52,10 @@ class GetIdTestCase(lsst.utils.tests.TestCase):
         self.assertEqual(id, 4933130748)
 
         dataId = dict(tract=1, patch='2,3', filter='z')
-        bits = self.butler.get("goodSeeingCoaddId_bits", dataId)
-        id = self.butler.get("goodSeeingCoaddId", dataId)
+        bits = self.butler.get("deepCoaddId_bits", dataId)
+        id = self.butler.get("deepCoaddId", dataId)
         self.assertEqual(bits, 37)
         self.assertEqual(id, ((((1L * 8192) + 2) * 8192) + 3)*8 + 4)
-        self.assertEqual(self.butler.get("deepCoaddId_bits", dataId), bits)
-        self.assertEqual(self.butler.get("deepCoaddId", dataId), id)
-        bits = self.butler.get("chiSquaredCoaddId_bits", dataId)
-        id = self.butler.get("chiSquaredCoaddId", dataId)
-        self.assertEqual(bits, 34)
-        self.assertEqual(id, (((1L * 8192) + 2) * 8192) + 3)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
