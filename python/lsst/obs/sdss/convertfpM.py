@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -75,7 +76,7 @@ class Objmask(object):
         # 5759/40/objcs/1/fpM-005759-r1-0011.fit
         # Plane S_MASK_NOTCHECKED
         if self.npix != npixcheck and verbose:
-            print "WARNING: npix != npixcheck (%d != %d)" % (self.npix, npixcheck)
+            print("WARNING: npix != npixcheck (%d != %d)" % (self.npix, npixcheck))
 
         self.cval = cval
 
@@ -115,7 +116,7 @@ def convertfpM(infile, allPlanes=False):
 
     names = hdr[-1].data.names
     if (not "attributeName" in names) or (not "Value" in names):
-        raise LookupError, "Missing data in fpM header"
+        raise LookupError("Missing data in fpM header")
 
     planes = hdr[-1].data.field("attributeName").tolist()
     values = hdr[-1].data.field("Value").tolist()
@@ -199,4 +200,4 @@ interp.writeFits("/tmp/mask_diff.fits")
 print len(num.where(interp.getArray() != 0)[0])
 
 """ % (infile, infile, infile, outfile)
-    print comparison
+    print(comparison)

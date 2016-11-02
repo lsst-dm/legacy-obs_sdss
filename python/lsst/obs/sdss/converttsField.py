@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -48,7 +49,7 @@ def converttsField(infile, filt, exptime=53.907456):
     """
     ptr = pyfits.open(infile)
     if ptr[0].header['NFIELDS'] != 1:
-        print "INVALID TSFIELD FILE"
+        print("INVALID TSFIELD FILE")
         sys.exit(1)
     filts = ptr[0].header['FILTERS'].split()
     idx = filts.index(filt)
