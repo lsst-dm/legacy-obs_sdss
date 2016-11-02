@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -28,40 +29,41 @@ import lsst.afw.math as afwMath
 import lsst.meas.algorithms as measAlg
 DEBUG = False
 
-filtToHdu = {'u':1,'g':2,'r':3,'i':4,'z':5}
+filtToHdu = {'u': 1, 'g': 2, 'r': 3, 'i': 4, 'z': 5}
 
 # Mapping from psField coefficient locations to PolynomialFunction2 locations
 skMatrixPos2TriSeqPosT = [
-    0,  2,   5,  9, 14,
-    1,  4,   8, 13, 19,
-    3,  7,  12, 18, 25,
-    6,  11, 17, 24, 32,
+    0, 2, 5, 9, 14,
+    1, 4, 8, 13, 19,
+    3, 7, 12, 18, 25,
+    6, 11, 17, 24, 32,
     10, 16, 23, 31, 40,
 ]
 
-def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, LSST_ORDER = 4):
+
+def convertpsField(infile, filt, trim=True, rcscale=0.001, MAX_ORDER_B=5, LSST_ORDER=4):
     if filt not in filtToHdu:
-        print "INVALID FILTER", filt
+        print("INVALID FILTER", filt)
         sys.exit(1)
 
     buff = open(infile, "rb")
-    pstruct = pyfits.getdata(buff, ext = filtToHdu[filt])
+    pstruct = pyfits.getdata(buff, ext=filtToHdu[filt])
 
     spaParList = [[]]*len(pstruct)
     kernelList = afwMath.KernelList()
     for i in range(len(pstruct)):
-        nrow_b = pstruct[i][0] # ny
-        ncol_b = pstruct[i][1] # nx
-        cmat   = pstruct[i][2].reshape((MAX_ORDER_B, MAX_ORDER_B))
-        krow   = pstruct[i][4] # RNROW
-        kcol   = pstruct[i][5] # RNCOL
+        nrow_b = pstruct[i][0]  # ny
+        ncol_b = pstruct[i][1]  # nx
+        cmat = pstruct[i][2].reshape((MAX_ORDER_B, MAX_ORDER_B))
+        krow = pstruct[i][4]  # RNROW
+        kcol = pstruct[i][5]  # RNCOL
         # This is *not* transposed
-        karr   = pstruct[i][7].reshape((krow, kcol)).astype(num.float64)
+        karr = pstruct[i][7].reshape((krow, kcol)).astype(num.float64)
 
         if trim:
             karr = karr[10:41, 10:41]
 
-        kim  = afwImage.ImageD(karr)
+        kim = afwImage.ImageD(karr)
         kern = afwMath.FixedKernel(kim)
         kernelList.push_back(kern)
 
@@ -100,10 +102,10 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
 
         spaParamsTri = num.zeros(MAX_ORDER_B * MAX_ORDER_B)
         for k in range(nrow_b * ncol_b):
-            row         = k % nrow_b
-            col         = k // nrow_b
-            coeff       = cmat[row,col]
-            scale       = pow(rcscale, row) * pow(rcscale, col)
+            row = k % nrow_b
+            col = k // nrow_b
+            coeff = cmat[row, col]
+            scale = pow(rcscale, row) * pow(rcscale, col)
             scaledCoeff = coeff * scale
 
             # Was originally written like this, but the SDSS code
@@ -112,15 +114,15 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
             #
             # idx         = row * MAX_ORDER_B + col
 
-            idx         = col * MAX_ORDER_B + row
+            idx = col * MAX_ORDER_B + row
             spaParamsTri[skMatrixPos2TriSeqPosT[idx]] = scaledCoeff
 
             # print "%d y=%d x=%d %10.3e %2d %2d %10.3e" % \
             # (i, row, col, cmat[row,col], idx, skMatrixPos2TriSeqPosT[idx], scaledCoeff)
 
-        #print spaParamsTri
+        # print spaParamsTri
         nTerms = (LSST_ORDER + 1) * (LSST_ORDER + 2) // 2
-        spaParamsTri  = spaParamsTri[:nTerms]
+        spaParamsTri = spaParamsTri[:nTerms]
         spaParList[i] = spaParamsTri
 
     buff.close()
@@ -130,13 +132,14 @@ def convertpsField(infile, filt, trim = True, rcscale = 0.001, MAX_ORDER_B = 5, 
     spatialPsf = measAlg.PcaPsf(spatialKernel)
     return spatialPsf
 
-def directCompare(infile, filt, x, y, soft_bias = 1000, amp = 30000, outfile = "/tmp/sdss_psf.fits"):
+
+def directCompare(infile, filt, x, y, soft_bias=1000, amp=30000, outfile="/tmp/sdss_psf.fits"):
     if filt not in filtToHdu.keys():
-        print "INVALID FILTER", filt
+        print("INVALID FILTER", filt)
         sys.exit(1)
 
     # Make the kernel image from LSST
-    psf = convertpsField(infile, filt, trim = False)
+    psf = convertpsField(infile, filt, trim=False)
     kernel = psf.getKernel()
 
     # Assumes you have built dervish and have read_PSF in your path
@@ -145,47 +148,47 @@ def directCompare(infile, filt, x, y, soft_bias = 1000, amp = 30000, outfile = "
     cmd = "read_PSF %s %s %f %f %s" % (infile, filtToHdu[filt], y, x, outfile)
     os.system(cmd)
     if not os.path.isfile(outfile):
-        print "Cannot find SDSS-derived kernel", outfile
+        print("Cannot find SDSS-derived kernel", outfile)
         sys.exit(1)
 
     if False:
         # Default version that integerizes Psf
-        kImage1  = afwImage.ImageD(outfile)
+        kImage1 = afwImage.ImageD(outfile)
         kImage1 -= soft_bias
         kImage1 /= (amp - soft_bias)
-        maxVal   = afwMath.makeStatistics(kImage1, afwMath.MAX).getValue(afwMath.MAX)
-        print "TEST 1", maxVal == 1.0
+        maxVal = afwMath.makeStatistics(kImage1, afwMath.MAX).getValue(afwMath.MAX)
+        print("TEST 1", maxVal == 1.0)
         kImage1.writeFits("/tmp/sdss_psf_scaled.fits")
     else:
         # Hacked version of main_PSF.c that writes floats
-        kImage1  = afwImage.ImageD(outfile)
-        maxVal   = afwMath.makeStatistics(kImage1, afwMath.MAX).getValue(afwMath.MAX)
+        kImage1 = afwImage.ImageD(outfile)
+        maxVal = afwMath.makeStatistics(kImage1, afwMath.MAX).getValue(afwMath.MAX)
         kImage1 /= maxVal
         kImage1.writeFits("/tmp/sdss_psf_scaled.fits")
 
     #
-    kImage2  = afwImage.ImageD(kernel.getDimensions())
+    kImage2 = afwImage.ImageD(kernel.getDimensions())
     kernel.computeImage(kImage2, True, x, y)
-    maxVal   = afwMath.makeStatistics(kImage2, afwMath.MAX).getValue(afwMath.MAX)
+    maxVal = afwMath.makeStatistics(kImage2, afwMath.MAX).getValue(afwMath.MAX)
     kImage2 /= maxVal
     kImage2.writeFits("/tmp/kernel.fits")
 
-    kImage3  = afwImage.ImageD(kImage2, True)
+    kImage3 = afwImage.ImageD(kImage2, True)
     kImage3 -= kImage1
     kImage3.writeFits("/tmp/diff.fits")
     residSum = afwMath.makeStatistics(kImage3, afwMath.SUM).getValue(afwMath.SUM)
-    print "TEST 2", residSum
+    print("TEST 2", residSum)
 
-    kImage4  = afwImage.ImageD(kImage2, True)
+    kImage4 = afwImage.ImageD(kImage2, True)
     kImage4 /= kImage1
     kImage4.writeFits("/tmp/rat.fits")
 
 
 if __name__ == '__main__':
-    infile  = sys.argv[1]
-    filt    = sys.argv[2]
-    x       = float(sys.argv[3]) # col
-    y       = float(sys.argv[4]) # row
+    infile = sys.argv[1]
+    filt = sys.argv[2]
+    x = float(sys.argv[3])  # col
+    y = float(sys.argv[4])  # row
     outfile = sys.argv[5]
 
     if not os.path.isfile(infile):
