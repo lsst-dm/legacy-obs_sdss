@@ -20,3 +20,4 @@ bin/genCameraRegistry.py
 bin/genCoaddRegistry.py
 bin/genInputRegistry.py
 bin/processCcdSdss.py
+.cache
