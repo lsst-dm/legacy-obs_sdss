@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -42,7 +43,7 @@ skMatrixPos2TriSeqPosT = [
 
 def convertpsField(infile, filt, trim=True, rcscale=0.001, MAX_ORDER_B=5, LSST_ORDER=4):
     if filt not in filtToHdu:
-        print "INVALID FILTER", filt
+        print("INVALID FILTER", filt)
         sys.exit(1)
 
     buff = open(infile, "rb")
@@ -134,7 +135,7 @@ def convertpsField(infile, filt, trim=True, rcscale=0.001, MAX_ORDER_B=5, LSST_O
 
 def directCompare(infile, filt, x, y, soft_bias=1000, amp=30000, outfile="/tmp/sdss_psf.fits"):
     if filt not in filtToHdu.keys():
-        print "INVALID FILTER", filt
+        print("INVALID FILTER", filt)
         sys.exit(1)
 
     # Make the kernel image from LSST
@@ -147,7 +148,7 @@ def directCompare(infile, filt, x, y, soft_bias=1000, amp=30000, outfile="/tmp/s
     cmd = "read_PSF %s %s %f %f %s" % (infile, filtToHdu[filt], y, x, outfile)
     os.system(cmd)
     if not os.path.isfile(outfile):
-        print "Cannot find SDSS-derived kernel", outfile
+        print("Cannot find SDSS-derived kernel", outfile)
         sys.exit(1)
 
     if False:
@@ -156,7 +157,7 @@ def directCompare(infile, filt, x, y, soft_bias=1000, amp=30000, outfile="/tmp/s
         kImage1 -= soft_bias
         kImage1 /= (amp - soft_bias)
         maxVal = afwMath.makeStatistics(kImage1, afwMath.MAX).getValue(afwMath.MAX)
-        print "TEST 1", maxVal == 1.0
+        print("TEST 1", maxVal == 1.0)
         kImage1.writeFits("/tmp/sdss_psf_scaled.fits")
     else:
         # Hacked version of main_PSF.c that writes floats
@@ -176,7 +177,7 @@ def directCompare(infile, filt, x, y, soft_bias=1000, amp=30000, outfile="/tmp/s
     kImage3 -= kImage1
     kImage3.writeFits("/tmp/diff.fits")
     residSum = afwMath.makeStatistics(kImage3, afwMath.SUM).getValue(afwMath.SUM)
-    print "TEST 2", residSum
+    print("TEST 2", residSum)
 
     kImage4 = afwImage.ImageD(kImage2, True)
     kImage4 /= kImage1

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -20,5 +21,5 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 from .version import *
-from sdssMapper import *
-import makeCamera
+from .sdssMapper import *
+from . import makeCamera

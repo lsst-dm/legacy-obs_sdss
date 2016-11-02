@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -196,26 +197,26 @@ def printCcd(title, ccd, trimmed=True, indent=""):
     @param trimmed: Find out information about a trimmed ccd?
     @param indent: Prefix to each output line
     """
-    print indent, title, "CCD: ", ccd.getName()
+    print(indent, title, "CCD: ", ccd.getName())
     if trimmed:
         allPixels = ccd.getBBox()
     else:
         allPixels = cameraGeomUtils.calcRawCcdBBox(ccd)
-    print indent, "Total size: %dx%d" % (allPixels.getWidth(), allPixels.getHeight())
+    print(indent, "Total size: %dx%d" % (allPixels.getWidth(), allPixels.getHeight()))
     for i, amp in enumerate(ccd):
         biasSec = amp.getRawHorizontalOverscanBBox()
         dataSec = amp.getRawDataBBox()
 
-        print indent, "   Amp: %s gain: %g" % (amp.getName(),
-                                               amp.getGain())
+        print(indent, "   Amp: %s gain: %g" % (amp.getName(),
+                                               amp.getGain()))
 
-        print indent, "   bias sec: %dx%d+%d+%d" % (biasSec.getWidth(), biasSec.getHeight(),
-                                                    biasSec.getMinX(), biasSec.getMinY())
+        print(indent, "   bias sec: %dx%d+%d+%d" % (biasSec.getWidth(), biasSec.getHeight(),
+                                                    biasSec.getMinX(), biasSec.getMinY()))
 
-        print indent, "   data sec: %dx%d+%d+%d" % (dataSec.getWidth(), dataSec.getHeight(),
-                                                    dataSec.getMinX(), dataSec.getMinY())
+        print(indent, "   data sec: %dx%d+%d+%d" % (dataSec.getWidth(), dataSec.getHeight(),
+                                                    dataSec.getMinX(), dataSec.getMinY()))
         if i == 0:
-            print
+            print()
 
 #
 # Print a Camera
@@ -227,13 +228,13 @@ def printCamera(title, camera):
     @param title: title for camera output
     @param camera: Camera object to use to print the information
     """
-    print title, "Camera:", camera.getName()
+    print(title, "Camera:", camera.getName())
 
     for det in camera:
-        print "%s %dx%d centre (mm): %s" % \
+        print("%s %dx%d centre (mm): %s" % \
             (det.getName(),
              det.getBBox().getWidth(), det.getBBox().getHeight(),
-             det.getCenter(FOCAL_PLANE).getPoint())
+             det.getCenter(FOCAL_PLANE).getPoint()))
 
 #************************************************************************************************************
 
@@ -241,14 +242,14 @@ def printCamera(title, camera):
 def main():
     camera = makeCamera("SDSS")
 
-    print
+    print()
     printCamera("", camera)
 
     ccd = camera["r1"]
 
     printCcd("Raw ", ccd, trimmed=False)
 
-    print
+    print()
     printCcd("Trimmed ", ccd, trimmed=True)
 
 if __name__ == "__main__":

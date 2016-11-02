@@ -22,6 +22,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import print_function
 import glob
 from optparse import OptionParser
 import os
@@ -39,11 +40,11 @@ import lsst.skypix as skypix
 
 def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
     if os.path.exists(outputRegistry):
-        print >>sys.stderr, "Output registry exists; will not overwrite."
+        print("Output registry exists; will not overwrite.", file=sys.stderr)
         sys.exit(1)
     if inputRegistry is not None:
         if not os.path.exists(inputRegistry):
-            print >>sys.stderr, "Input registry does not exist."
+            print("Input registry does not exist.", file=sys.stderr)
             sys.exit(1)
         shutil.copy(inputRegistry, outputRegistry)
 
@@ -72,7 +73,7 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
             for filterDir in glob.iglob(os.path.join(dir, "*")):
                 processBand(filterDir, conn, done, qsp)
     finally:
-        print >>sys.stderr, "Cleaning up..."
+        print("Cleaning up...", file=sys.stderr)
         conn.execute("CREATE INDEX ix_skyTile_id ON raw_skyTile (id)")
         conn.execute("CREATE INDEX ix_skyTile_tile ON raw_skyTile (skyTile)")
         conn.commit()
@@ -83,12 +84,12 @@ def processBand(filterDir, conn, done, qsp):
     nProcessed = 0
     nSkipped = 0
     nUnrecognized = 0
-    print >>sys.stderr, filterDir, "... started"
+    print(filterDir, "... started", file=sys.stderr)
     for fits in glob.iglob(
             os.path.join(filterDir, "fpC*_ts_coaddNorm_NN.fit.gz")):
         m = re.search(r'/([ugriz])/fpC-(\d{6})-\1(\d)-(\d{4})_ts_coaddNorm_NN.fit.gz', fits)
         if not m:
-            print >>sys.stderr, "Warning: Unrecognized file:", fits
+            print("Warning: Unrecognized file:", fits, file=sys.stderr)
             nUnrecognized += 1
             continue
 
@@ -97,7 +98,7 @@ def processBand(filterDir, conn, done, qsp):
         run = int(run)
         field = int(field)
         key = "%d_B%s_C%d_F%d" % (run, filter, camcol, field)
-        if done.has_key(key):
+        if key in done:
             nSkipped += 1
             continue
 
@@ -123,9 +124,9 @@ def processBand(filterDir, conn, done, qsp):
             conn.commit()
 
     conn.commit()
-    print >>sys.stderr, filterDir, \
+    print(filterDir, \
         "... %d processed, %d skipped, %d unrecognized" % \
-        (nProcessed, nSkipped, nUnrecognized)
+        (nProcessed, nSkipped, nUnrecognized), file=sys.stderr)
 
 if __name__ == "__main__":
     parser = OptionParser(usage="""%prog [options] DIR ...

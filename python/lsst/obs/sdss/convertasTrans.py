@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -182,7 +183,7 @@ def validate(xs, ys, mapper, wcs):
         dist = coord1.angularSeparation(coord2).asArcseconds()
         dists.append(dist)
 
-    print np.mean(dists), np.std(dists)
+    print(np.mean(dists), np.std(dists))
 
 
 def convertasTrans(infile, filt, camcol, field, stepSize=50, doValidate=False):
@@ -204,13 +205,13 @@ def convertasTrans(infile, filt, camcol, field, stepSize=50, doValidate=False):
     try:
         cIdx = cList.index(camcol)
     except:
-        print "Cannot extract data for camcol %s" % (camcol)
+        print("Cannot extract data for camcol %s" % (camcol))
         return None
 
     try:
         fIdx = fList.index(filt)
     except:
-        print "Cannot extract data for filter %s" % (filt)
+        print("Cannot extract data for filter %s" % (filt))
         return None
 
     ext = cIdx * len(fList) + (fIdx + 1)
@@ -218,14 +219,14 @@ def convertasTrans(infile, filt, camcol, field, stepSize=50, doValidate=False):
     edat = hdulist[ext].data
 
     if ehdr['CAMCOL'] != camcol or ehdr['FILTER'] != filt:
-        print "Extracted incorrect header; fix me"
+        print("Extracted incorrect header; fix me")
         return None
 
     fields = edat.field('field').tolist()
     try:
         fIdx = fields.index(field)
     except:
-        print "Cannot extract data for field %d" % (field)
+        print("Cannot extract data for field %d" % (field))
         return None
 
     dRow0 = edat.field('dRow0')[fIdx]
