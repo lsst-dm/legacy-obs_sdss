@@ -1,3 +1,4 @@
+from builtins import map
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -64,7 +65,7 @@ class SdssMapper(CameraMapper):
 
         @param dataId (dict) Data identifier with run, rerun, filter, camcol, field
         """
-        return ((long(dataId['run'])
+        return ((int(dataId['run'])
                  * 10 + self.filterIdMap[dataId['filter']])
                 * 10 + dataId['camcol']) \
             * 10000 + dataId['field']
@@ -77,10 +78,10 @@ class SdssMapper(CameraMapper):
                                    filter coadd, in which case dataId
                                    must contain filter.
         """
-        tract = long(dataId['tract'])
+        tract = int(dataId['tract'])
         if tract < 0 or tract >= 128:
             raise RuntimeError('tract not in range [0,128)')
-        patchX, patchY = map(int, dataId['patch'].split(','))
+        patchX, patchY = [int(n) for n in dataId['patch'].split(',')]
         for p in (patchX, patchY):
             if p < 0 or p >= 2**13:
                 raise RuntimeError('patch component not in range [0, 8192)')

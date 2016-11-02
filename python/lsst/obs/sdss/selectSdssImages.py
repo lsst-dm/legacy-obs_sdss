@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 #!/usr/bin/env python
 #
 # LSST Data Management System
@@ -294,7 +296,7 @@ from %s as ccdExp where """ % (self.config.table,)
                 regionCtrRa = (regionRaRange[0] + regionRaRange[1]) * 0.5
 
             numRangeCuts = 0
-            for run, expInfoSet in runExpInfoSetDict.iteritems():
+            for run, expInfoSet in runExpInfoSetDict.items():
                 runRaRange = None
                 for expInfo in expInfoSet:
                     if self._isBadExposure(expInfo):
@@ -361,7 +363,7 @@ from %s as ccdExp where """ % (self.config.table,)
 
                 if len(runQualListDict) > self.config.maxRuns:
                     qualRunList = []
-                    for run, qualList in runQualListDict.iteritems():
+                    for run, qualList in runQualListDict.items():
                         runQscore = np.median(qualList)
                         qualRunList.append((runQscore, run))
                     qualRunList.sort()

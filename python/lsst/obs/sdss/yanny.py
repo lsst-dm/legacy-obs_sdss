@@ -28,6 +28,9 @@ files in etc/.
 # Modules
 #
 from __future__ import print_function
+from builtins import str
+from builtins import range
+from past.builtins import basestring
 import re
 import os
 import os.path
@@ -688,9 +691,9 @@ class yanny(dict):
                 return int(value)
         if typ == 'long':
             if self.isarray(structure, variable):
-                return [long(v) for v in value]
+                return [int(v) for v in value]
             else:
-                return long(value)
+                return int(value)
         if (typ == 'float' or typ == 'double'):
             if self.isarray(structure, variable):
                 return [float(v) for v in value]
@@ -708,7 +711,7 @@ class yanny(dict):
         keys removed.
         """
         foo = list()
-        for k in self['symbols'].keys():
+        for k in self['symbols']:
             if k not in ('struct', 'enum'):
                 foo.append(k)
         return foo
@@ -766,7 +769,7 @@ class yanny(dict):
         """
         p = list()
         foo = self.tables()
-        for k in self.keys():
+        for k in list(self.keys()):
             if k != 'symbols' and k not in foo:
                 p.append(k)
         return p
@@ -984,7 +987,7 @@ class yanny(dict):
         #
         # Print any key/value pairs
         #
-        for key in datatable.keys():
+        for key in datatable:
             if key.upper() in self.tables() or key == 'symbols':
                 continue
             contents += "{0} {1}\n".format(key, datatable[key])
@@ -1134,7 +1137,7 @@ class yanny(dict):
                 #
                 (key, value) = self.get_token(line)
                 uckey = key.upper()
-                if uckey in self['symbols'].keys():
+                if uckey in self['symbols']:
                     #
                     # Structure data
                     #

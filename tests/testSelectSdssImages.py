@@ -22,6 +22,9 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 from __future__ import print_function
+from builtins import str
+from builtins import chr
+from builtins import range
 import unittest
 
 import lsst.utils.tests
@@ -318,7 +321,7 @@ class SelectSdssImagesTestCase(unittest.TestCase):
         minRaAngle.wrapNear(maxRaAngle)
         ctrRaAngle = (minRaAngle + maxRaAngle) * 0.5
         raDegList = []
-        for expInfoList in runExpInfoDict.itervalues():
+        for expInfoList in runExpInfoDict.values():
             for expInfo in expInfoList:
                 raAngleList = [coord.getLongitude() for coord in expInfo.coordList]
                 for raAngle in raAngleList:

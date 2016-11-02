@@ -123,7 +123,7 @@ def processRun(runDir, conn, done, qsp):
         taiObs = dafBase.DateTime(int(year), int(month), int(day), int(hour),
                                   int(minute), second, dafBase.DateTime.TAI)
         taiObs = dafBase.DateTime(taiObs.nsecs() +
-                                  long((seconds - second) * 1000000000), dafBase.DateTime.TAI)
+                                  int((seconds - second) * 1000000000), dafBase.DateTime.TAI)
         taiObs = taiObs.toString(dafBase.DateTime.UTC)[:-1]
         strip = "%d%s" % (md.get('STRIPE'), md.get('STRIP'))
         conn.execute("""INSERT INTO raw VALUES

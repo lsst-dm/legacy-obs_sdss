@@ -1,4 +1,7 @@
 from __future__ import print_function
+from builtins import map
+from builtins import range
+from builtins import object
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -199,7 +202,7 @@ def convertasTrans(infile, filt, camcol, field, stepSize=50, doValidate=False):
     node_rad = node_deg * deg2rad
     incl_rad = incl_deg * deg2rad
 
-    cList = map(int, camcols.split())
+    cList = [int(cc) for cc in camcols.split()]
     fList = filters.split()
 
     try:

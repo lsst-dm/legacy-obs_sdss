@@ -1,3 +1,6 @@
+from builtins import zip
+from builtins import range
+from builtins import object
 #!/usr/bin/env python
 #
 # LSST Data Management System
@@ -80,7 +83,7 @@ class SdssImageScaler(object):
         if npoints < 1:
             raise RuntimeError("Cannot create scaling image. Found no fluxMag0s to interpolate")
 
-        x, z = zip(*sorted(zip(self._xList, self._scaleList)))
+        x, z = list(zip(*sorted(zip(self._xList, self._scaleList))))
 
         xvec = afwMath.vectorD(x)
         zvec = afwMath.vectorD(z)
