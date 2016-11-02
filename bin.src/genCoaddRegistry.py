@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -11,14 +11,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
@@ -35,6 +35,7 @@ except ImportError:
 import sys
 import lsst.afw.image as afwImage
 import lsst.skypix as skypix
+
 
 def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
     if os.path.exists(outputRegistry):
@@ -77,6 +78,7 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
         conn.commit()
         conn.close()
 
+
 def processBand(filterDir, conn, done, qsp):
     nProcessed = 0
     nSkipped = 0
@@ -102,19 +104,19 @@ def processBand(filterDir, conn, done, qsp):
         md = afwImage.readMetadata(fits)
         conn.execute("""INSERT INTO raw VALUES
             (NULL, ?, ?, ?, ?)""", (run, filter, camcol, field))
-   
+
         for row in conn.execute("SELECT last_insert_rowid()"):
             id = row[0]
             break
 
         wcs = afwImage.makeWcs(md)
         poly = skypix.imageToPolygon(wcs,
-                md.get("NAXIS1"), md.get("NAXIS2"),
-                padRad=0.000075) # about 15 arcsec
+                                     md.get("NAXIS1"), md.get("NAXIS2"),
+                                     padRad=0.000075)  # about 15 arcsec
         pix = qsp.intersect(poly)
         for skyTileId in pix:
             conn.execute("INSERT INTO raw_skyTile VALUES(?, ?)",
-                    (id, skyTileId))
+                         (id, skyTileId))
 
         nProcessed += 1
         if nProcessed % 100 == 0:
@@ -122,8 +124,8 @@ def processBand(filterDir, conn, done, qsp):
 
     conn.commit()
     print >>sys.stderr, filterDir, \
-            "... %d processed, %d skipped, %d unrecognized" % \
-            (nProcessed, nSkipped, nUnrecognized)
+        "... %d processed, %d skipped, %d unrecognized" % \
+        (nProcessed, nSkipped, nUnrecognized)
 
 if __name__ == "__main__":
     parser = OptionParser(usage="""%prog [options] DIR ...
@@ -131,7 +133,7 @@ if __name__ == "__main__":
 DIR should contain a directory per filter containing coadd pieces.""")
     parser.add_option("-i", dest="inputRegistry", help="input registry")
     parser.add_option("-o", dest="outputRegistry", default="registry.sqlite3",
-            help="output registry (default=registry.sqlite3)")
+                      help="output registry (default=registry.sqlite3)")
     (options, args) = parser.parse_args()
     if len(args) < 1:
         parser.error("Missing directory argument(s)")

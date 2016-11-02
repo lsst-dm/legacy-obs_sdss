@@ -31,7 +31,8 @@ import lsst.daf.base as dafBase
 
 TsField = collections.namedtuple("TsField", "calib gain dateAvg exptime airmass")
 
-def converttsField(infile, filt, exptime = 53.907456):
+
+def converttsField(infile, filt, exptime=53.907456):
     """Extract data from a tsField table
 
     @param[in] infile  path to tsField FITS file
@@ -45,41 +46,41 @@ def converttsField(infile, filt, exptime = 53.907456):
     - exptime: exposure time (sec)
     - airmass: airmass
     """
-    ptr    = pyfits.open(infile)
+    ptr = pyfits.open(infile)
     if ptr[0].header['NFIELDS'] != 1:
         print "INVALID TSFIELD FILE"
         sys.exit(1)
-    filts  = ptr[0].header['FILTERS'].split()
-    idx    = filts.index(filt)
+    filts = ptr[0].header['FILTERS'].split()
+    idx = filts.index(filt)
 
     mjdTaiStart = ptr[1].data.field('mjd')[0][idx]        # MJD(TAI) when row 0 was read
     airmass = ptr[1].data.field("airmass")[0][idx]
 
-    gain        = float(ptr[1].data.field('gain')[0][idx])# comes out as numpy.float32
-    aa          = ptr[1].data.field('aa')[0][idx]         # f0 = 10**(-0.4*aa) counts/second
-    aaErr       = ptr[1].data.field('aaErr')[0][idx]
+    gain = float(ptr[1].data.field('gain')[0][idx])  # comes out as numpy.float32
+    aa = ptr[1].data.field('aa')[0][idx]         # f0 = 10**(-0.4*aa) counts/second
+    aaErr = ptr[1].data.field('aaErr')[0][idx]
 
     # Conversions
-    dateAvg   = dafBase.DateTime(mjdTaiStart + 0.5 * exptime / 3600 / 24)
-    fluxMag0    = 10**(-0.4 * aa) * exptime
-    dfluxMag0   = fluxMag0 * 0.4 * np.log(10.0) * aaErr
+    dateAvg = dafBase.DateTime(mjdTaiStart + 0.5 * exptime / 3600 / 24)
+    fluxMag0 = 10**(-0.4 * aa) * exptime
+    dfluxMag0 = fluxMag0 * 0.4 * np.log(10.0) * aaErr
 
-    calib  = afwImage.Calib()
+    calib = afwImage.Calib()
     calib.setFluxMag0(fluxMag0, dfluxMag0)
 
     ptr.close()
 
     return TsField(
-        calib = calib,
-        gain = gain,
-        dateAvg = dateAvg,
-        exptime = exptime,
-        airmass = airmass,
+        calib=calib,
+        gain=gain,
+        dateAvg=dateAvg,
+        exptime=exptime,
+        airmass=airmass,
     )
 
 if __name__ == '__main__':
-    infile  = sys.argv[1]
-    filt    = sys.argv[2]
+    infile = sys.argv[1]
+    filt = sys.argv[2]
     if not os.path.isfile(infile):
         sys.exit(1)
 

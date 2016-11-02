@@ -35,6 +35,7 @@ from lsst.pipe.tasks.selectImages import DatabaseSelectImagesConfig, BaseSelectI
 
 __all__ = ["SelectSdssImagesTask"]
 
+
 class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
     """Config for SelectSdssImagesTask
     """
@@ -62,7 +63,7 @@ class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
         doc="SDSS quality flag",
         dtype=int,
         default=3,
-        allowed={1:"All data", 2:"Flagged ACCEPTABLE or GOOD", 3:"Flagged GOOD"},
+        allowed={1: "All data", 2: "Flagged ACCEPTABLE or GOOD", 3: "Flagged GOOD"},
     )
     cullBlacklisted = pexConfig.Field(
         doc="Omit blacklisted images? (Some run/field combinations have been blacklisted even though "
@@ -98,36 +99,37 @@ class SelectSdssImagesConfig(DatabaseSelectImagesConfig):
         self.host = "lsst-db.ncsa.illinois.edu"
         self.port = 3306
         self.database = "krughoff_SDSS_quality_db"
-    
+
     def validate(self):
         BaseSelectImagesTask.ConfigClass.validate(self)
         if (self.maxRuns is not None) and (self.maxExposures is not None):
-            raise RuntimeError("maxRuns=%s or maxExposures=%s must be None" % \
-                (self.maxRuns, self.maxExposures))
+            raise RuntimeError("maxRuns=%s or maxExposures=%s must be None" %
+                               (self.maxRuns, self.maxExposures))
         if not re.match(r"^[a-zA-Z0-9_.]+$", self.table):
             raise RuntimeError("table=%r is an invalid name" % (self.table,))
 
 
 class ExposureInfo(BaseExposureInfo):
     """Data about a selected exposure
-    
+
     Data includes:
     - dataId: data ID of exposure (a dict)
     - coordList: a list of corner coordinates of the exposure (list of IcrsCoord)
     - fwhm: mean FWHM of exposure
     - quality: quality field from self.config.table
     """
+
     def __init__(self, result):
         """Set exposure information based on a query result from a db connection
         """
         self._ind = -1
 
         dataId = dict(
-           run = result[self._nextInd],
-           rerun = result[self._nextInd],
-           camcol = result[self._nextInd],
-           field = result[self._nextInd],
-           filter = result[self._nextInd],
+            run=result[self._nextInd],
+            rerun=result[self._nextInd],
+            camcol=result[self._nextInd],
+            field=result[self._nextInd],
+            filter=result[self._nextInd],
         )
         coordList = []
         for i in range(4):
@@ -145,10 +147,10 @@ class ExposureInfo(BaseExposureInfo):
         self.airmass = result[self._nextInd]
         self.quality = result[self._nextInd]
         self.isBlacklisted = result[self._nextInd]
-        
+
         # compute RHL quality factors
         self.q = self.sky * (self.fwhm**2)
-        self.qscore = None # not known yet
+        self.qscore = None  # not known yet
 
     @property
     def _nextInd(self):
@@ -169,11 +171,11 @@ class ExposureInfo(BaseExposureInfo):
     @staticmethod
     def getColumnNames():
         """Get database columns to retrieve, in a format useful to the database interface
-        
+
         @return database column names as list of strings
         """
         return (
-            "run rerun camcol field filter ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() + \
+            "run rerun camcol field filter ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() +
             "strip psfWidth sky airmass quality isblacklisted".split()
         )
 
@@ -182,35 +184,34 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
     """Select SDSS images suitable for coaddition
     """
     ConfigClass = SelectSdssImagesConfig
-    
+
     @pipeBase.timeMethod
     def run(self, coordList, filter, strip=None):
         """Select SDSS images suitable for coaddition in a particular region
-        
+
         @param[in] filter: filter for images (one of "u", "g", "r", "i" or "z")
         @param[in] coordList: list of coordinates defining region of interest
-        
+
         @return a pipeBase Struct containing:
         - exposureInfoList: a list of ExposureInfo objects
-    
+
         @raise RuntimeError if filter not one of "u", "g", "r", "i" or "z"
         """
         if filter not in set(("u", "g", "r", "i", "z")):
             raise RuntimeError("filter=%r is an invalid name" % (filter,))
 
-        read_default_file=os.path.expanduser("~/.my.cnf")
+        read_default_file = os.path.expanduser("~/.my.cnf")
 
         try:
             open(read_default_file)
             kwargs = dict(
                 read_default_file=read_default_file,
-                )
+            )
         except IOError:
             kwargs = dict(
-                user = DbAuth.username(self.config.host, str(self.config.port)),
-                passwd = DbAuth.password(self.config.host, str(self.config.port)),
+                user=DbAuth.username(self.config.host, str(self.config.port)),
+                passwd=DbAuth.password(self.config.host, str(self.config.port)),
             )
-
 
         db = MySQLdb.connect(
             host=self.config.host,
@@ -219,12 +220,12 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
             **kwargs
         )
         cursor = db.cursor()
-        
+
         columnNames = tuple(ExposureInfo.getColumnNames())
         if not columnNames:
             raise RuntimeError("Bug: no column names")
         queryStr = "select %s " % (", ".join(columnNames),)
-        dataTuple = () # tuple(columnNames)
+        dataTuple = ()  # tuple(columnNames)
 
         if coordList is not None:
             # look for exposures that overlap the specified region
@@ -235,7 +236,7 @@ class SelectSdssImagesTask(BaseSelectImagesTask):
             coordStr = ", ".join(coordStrList)
             coordCmd = "call scisql.scisql_s2CPolyRegion(scisql_s2CPolyToBin(%s), 10)" % (coordStr,)
             cursor.execute(coordCmd)
-            cursor.nextset() # ignore one-line result of coordCmd
+            cursor.nextset()  # ignore one-line result of coordCmd
 
             queryStr += """
 from %s as ccdExp,
@@ -249,7 +250,7 @@ where ccdExp.fieldid = idList.fieldid and """ % (self.config.table,)
             # no region specified; look over the whole sky
             queryStr += """
 from %s as ccdExp where """ % (self.config.table,)
-        
+
         # compute where clauses as a list of (clause, data)
         whereDataList = [
             ("filter = %s", filter),
@@ -258,17 +259,17 @@ from %s as ccdExp where """ % (self.config.table,)
         if self.config.camcols is not None:
             whereDataList.append(_whereDataFromList("camcol", self.config.camcols))
 
-        if strip is not None: # None corresponds to query for both strips: no constraint added
+        if strip is not None:  # None corresponds to query for both strips: no constraint added
             whereDataList.append(("strip = %s", strip))
-        
+
         queryStr += " and ".join(wd[0] for wd in whereDataList)
         dataTuple += tuple(wd[1] for wd in whereDataList)
-        
+
         self.log.info("queryStr=%r; dataTuple=%s" % (queryStr, dataTuple))
 
         cursor.execute(queryStr, dataTuple)
         exposureInfoList = [ExposureInfo(result) for result in cursor]
-        
+
         runExpInfoSetDict = dict()
         for expInfo in exposureInfoList:
             run = expInfo.dataId["run"]
@@ -277,10 +278,10 @@ from %s as ccdExp where """ % (self.config.table,)
                 expInfoSet.add(expInfo)
             else:
                 runExpInfoSetDict[run] = set([expInfo])
-        
-        self.log.info("Before quality cuts found %d exposures in %d runs" % \
-            (len(exposureInfoList), len(runExpInfoSetDict)))
-        
+
+        self.log.info("Before quality cuts found %d exposures in %d runs" %
+                      (len(exposureInfoList), len(runExpInfoSetDict)))
+
         goodRunSet = set()
         goodExposureInfoList = []
         if self.config.rejectWholeRuns:
@@ -298,7 +299,7 @@ from %s as ccdExp where """ % (self.config.table,)
                 for expInfo in expInfoSet:
                     if self._isBadExposure(expInfo):
                         break
-                    
+
                     if regionRaRange is not None:
                         expRaRange = _computeRaRange(expInfo.coordList, ctrRa=regionCtrRa)
                         if runRaRange is None:
@@ -316,22 +317,22 @@ from %s as ccdExp where """ % (self.config.table,)
 
                     goodExposureInfoList += list(expInfoSet)
                     goodRunSet.add(run)
-            self.log.info("Rejected %d whole runs, including %d for incomplete range" % \
-                (len(runExpInfoSetDict) - len(goodRunSet), numRangeCuts))
+            self.log.info("Rejected %d whole runs, including %d for incomplete range" %
+                          (len(runExpInfoSetDict) - len(goodRunSet), numRangeCuts))
         else:
             # reject individual exposures which do not meet our quality criteria
             for expInfo in exposureInfoList:
                 if not self._isBadExposure(expInfo):
                     goodExposureInfoList.append(expInfo)
                     goodRunSet.add(expInfo.dataId["run"])
-            self.log.info("Rejected %d individual exposures" % \
-                (len(exposureInfoList) - len(goodExposureInfoList),))
+            self.log.info("Rejected %d individual exposures" %
+                          (len(exposureInfoList) - len(goodExposureInfoList),))
 
         exposureInfoList = goodExposureInfoList
-        
-        self.log.info("After quality cuts, found %d exposures in %d runs" % \
-            (len(exposureInfoList), len(goodRunSet)))
-        
+
+        self.log.info("After quality cuts, found %d exposures in %d runs" %
+                      (len(exposureInfoList), len(goodRunSet)))
+
         if exposureInfoList:
             # compute qscore according to RHL's formula and sort by it
             qArr = np.array([expInfo.q for expInfo in exposureInfoList])
@@ -339,13 +340,13 @@ from %s as ccdExp where """ % (self.config.table,)
             for expInfo in exposureInfoList:
                 expInfo.qscore = (expInfo.q / qMax) - expInfo.quality
             exposureInfoList.sort(key=lambda expInfo: expInfo.qscore)
-    
+
             if self.config.maxExposures is not None:
                 # select config.maxExposures exposures with the highest qscore
                 exposureInfoList = exposureInfoList[0:self.config.maxExposures]
-                self.log.info("After maxExposures cut, found %d exposures" % \
-                    (len(exposureInfoList),))
-    
+                self.log.info("After maxExposures cut, found %d exposures" %
+                              (len(exposureInfoList),))
+
             elif self.config.maxRuns is not None:
                 # select config.maxRuns runs with the highest median qscore
                 # (of those exposures that overlap the patch)
@@ -357,7 +358,7 @@ from %s as ccdExp where """ % (self.config.table,)
                         qualList.append(expInfo.qscore)
                     else:
                         runQualListDict[run] = [expInfo.qscore]
-                
+
                 if len(runQualListDict) > self.config.maxRuns:
                     qualRunList = []
                     for run, qualList in runQualListDict.iteritems():
@@ -365,17 +366,17 @@ from %s as ccdExp where """ % (self.config.table,)
                         qualRunList.append((runQscore, run))
                     qualRunList.sort()
                     qualRunList = qualRunList[0:self.config.maxRuns]
-                    
+
                     goodRunSet = set(qr[1] for qr in qualRunList)
                     exposureInfoList = [ei for ei in exposureInfoList if ei.dataId["run"] in goodRunSet]
 
         return pipeBase.Struct(
-            exposureInfoList = exposureInfoList,
+            exposureInfoList=exposureInfoList,
         )
-    
+
     def _isBadExposure(self, expInfo):
         """Return True of exposure does not meet quality criteria
-        
+
         @param[in] expInfo: exposure info (an ExposureInfo)
         @return True if exposure does not meet quality criteria
         """
@@ -384,7 +385,7 @@ from %s as ccdExp where """ % (self.config.table,)
             or ((self.config.maxFwhm is not None) and (expInfo.fwhm > self.config.maxFwhm)) \
             or ((self.config.maxSky is not None) and (expInfo.sky > self.config.maxSky)) \
             or ((self.config.maxAirmass is not None) and (expInfo.airmass > self.config.maxAirmass))
-    
+
     def _runArgDictFromDataId(self, dataId):
         """Extract keyword arguments for run (other than coordList) from a data ID
 
@@ -404,25 +405,27 @@ from %s as ccdExp where """ % (self.config.table,)
             raise RuntimeError("Invalid config.strip %s. Must be one of N, S, Auto or Both" %
                                (self.config.strip))
         return dict(
-            filter = dataId["filter"],
-            strip  = stripVal
+            filter=dataId["filter"],
+            strip=stripVal
         )
+
 
 def _formatList(valueList):
     """Format a value list as "v0,v1,v2...vlast"
     """
     return ",".join(str(v) for v in valueList)
 
+
 def _whereDataFromList(name, valueList):
     """Return a where clause and associated value(s)
-    
+
     For example if valueList has a single value then returns
         "name = %s", valueList[0]
     but if valueList has more values then returns
         "name in %s", valueList
-    
+
     This function exists because MySQL requires multiple values for "in" clauses.
-    
+
     @raise RuntimeError if valueList is None or has length 0
     """
     if not valueList:
@@ -433,15 +436,16 @@ def _whereDataFromList(name, valueList):
     else:
         return ("%s in %%s" % (name,), tuple(valueList))
 
+
 def _computeRaRange(coordList, ctrRa=None):
     """Compute RA range from a list of coords
-    
+
     The angles are wrapped to be near ctrRa (or coordList[0] if refCoord is None).
     If refCoord is in the middle of your RA range then the coordinates in coordList can span
     essentially the entire range of RA with predictable results. But if refCoord is omitted
     or is not the center of your range, then it is safer to restrict your coordinates
     to span a range of ctrRa - pi < coord < ctrRa + pi
-    
+
     @param[in] coordList: list of afwCoord.Coord
     @param[in] ctrRa: RA of center of range as an afwGeom.Angle; if None then
         coordList[0].toIcrs().getLongitude() is used after being wrapped into the range [-pi, pi)
