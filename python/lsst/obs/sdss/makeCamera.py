@@ -25,13 +25,15 @@ import lsst.utils
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom.utils as cameraGeomUtils
 from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig, \
-                                SCIENCE, PIXELS, PUPIL, FOCAL_PLANE, NullLinearityType
+    SCIENCE, PIXELS, PUPIL, FOCAL_PLANE, NullLinearityType
 import lsst.afw.table as afwTable
 from lsst.obs.sdss.convertOpECalib import SdssCameraState
 
 #
 # Make an Amp
 #
+
+
 def addAmp(ampCatalog, i, eparams):
     """ Add an amplifier to an AmpInfoCatalog
 
@@ -72,15 +74,15 @@ def addAmp(ampCatalog, i, eparams):
     dataSec.shift(shiftp)
 
     record.setBBox(bbox)
-    record.setRawXYOffset(afwGeom.ExtentI(0,0))
-    record.setName('left' if i==0 else 'right')
-    record.setReadoutCorner(afwTable.LL if i==0 else afwTable.LR)
+    record.setRawXYOffset(afwGeom.ExtentI(0, 0))
+    record.setName('left' if i == 0 else 'right')
+    record.setReadoutCorner(afwTable.LL if i == 0 else afwTable.LR)
     record.setGain(eparams['gain'])
     record.setReadNoise(eparams['readNoise'])
     record.setSaturation(eparams['fullWell'])
     record.setSuspectLevel(float("nan"))
     record.setLinearityType(NullLinearityType)
-    record.setLinearityCoeffs([1.,])
+    record.setLinearityCoeffs([1., ])
     record.setHasRawInfo(True)
     record.setRawFlipX(False)
     record.setRawFlipY(False)
@@ -93,6 +95,8 @@ def addAmp(ampCatalog, i, eparams):
 #
 # Make a Ccd out of 2 Amps
 #
+
+
 def makeCcd(ccdName, ccdId, offsetPoint):
     """make the information necessary to build a set detector
     @param ccdName: string name of the ccd
@@ -132,11 +136,13 @@ def makeCcd(ccdName, ccdId, offsetPoint):
     detConfig.pixelSize_y = pixelSize
     detConfig.transposeDetector = False
     detConfig.transformDict.nativeSys = PIXELS.getSysName()
-    return {'ccdConfig':detConfig, 'ampInfo':ampCatalog}
+    return {'ccdConfig': detConfig, 'ampInfo': ampCatalog}
 
 #
 # Make a Camera out of 6 dewars and 5 chips per dewar
 #
+
+
 def makeCamera(name="SDSS", outputDir=None):
     """Make a camera
     @param name: name of the camera
@@ -146,7 +152,7 @@ def makeCamera(name="SDSS", outputDir=None):
     camConfig = CameraConfig()
     camConfig.name = name
     camConfig.detectorList = {}
-    camConfig.plateScale = 16.5 # arcsec/mm
+    camConfig.plateScale = 16.5  # arcsec/mm
     pScaleRad = afwGeom.arcsecToRad(camConfig.plateScale)
     radialDistortCoeffs = [0.0, 1.0/pScaleRad]
     tConfig = afwGeom.TransformConfig()
@@ -156,9 +162,8 @@ def makeCamera(name="SDSS", outputDir=None):
     tConfig.transform.active.transform.coeffs = radialDistortCoeffs
     tmc = afwGeom.TransformMapConfig()
     tmc.nativeSys = FOCAL_PLANE.getSysName()
-    tmc.transforms = {PUPIL.getSysName():tConfig}
+    tmc.transforms = {PUPIL.getSysName(): tConfig}
     camConfig.transformDict = tmc
-
 
     ccdId = 0
     ampInfoCatDict = {}
@@ -182,6 +187,8 @@ def makeCamera(name="SDSS", outputDir=None):
 #
 # Print a Ccd
 #
+
+
 def printCcd(title, ccd, trimmed=True, indent=""):
     """Print info about a ccd
     @param title: title for the ccd
@@ -202,17 +209,19 @@ def printCcd(title, ccd, trimmed=True, indent=""):
         print indent, "   Amp: %s gain: %g" % (amp.getName(),
                                                amp.getGain())
 
-        print indent,"   bias sec: %dx%d+%d+%d" % (biasSec.getWidth(), biasSec.getHeight(),
+        print indent, "   bias sec: %dx%d+%d+%d" % (biasSec.getWidth(), biasSec.getHeight(),
                                                     biasSec.getMinX(), biasSec.getMinY())
 
         print indent, "   data sec: %dx%d+%d+%d" % (dataSec.getWidth(), dataSec.getHeight(),
-                                                     dataSec.getMinX(), dataSec.getMinY())
+                                                    dataSec.getMinX(), dataSec.getMinY())
         if i == 0:
             print
 
 #
 # Print a Camera
 #
+
+
 def printCamera(title, camera):
     """Print information about a camera
     @param title: title for camera output
@@ -227,6 +236,7 @@ def printCamera(title, camera):
              det.getCenter(FOCAL_PLANE).getPoint())
 
 #************************************************************************************************************
+
 
 def main():
     camera = makeCamera("SDSS")
@@ -243,4 +253,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
