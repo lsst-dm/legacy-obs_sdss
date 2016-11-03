@@ -180,6 +180,8 @@ class ExposureInfo(BaseExposureInfo):
             "run rerun camcol field filter ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() +
             "strip psfWidth sky airmass quality isblacklisted".split()
         )
+    def __hash__(self):
+        return id(self)
 
 
 class SelectSdssImagesTask(BaseSelectImagesTask):
@@ -273,6 +275,7 @@ from %s as ccdExp where """ % (self.config.table,)
         exposureInfoList = [ExposureInfo(result) for result in cursor]
 
         runExpInfoSetDict = dict()
+        
         for expInfo in exposureInfoList:
             run = expInfo.dataId["run"]
             expInfoSet = runExpInfoSetDict.get(run)
