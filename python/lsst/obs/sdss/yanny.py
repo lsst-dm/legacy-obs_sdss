@@ -28,7 +28,6 @@ files in etc/.
 # Modules
 #
 from __future__ import print_function
-from builtins import str
 from builtins import range
 from past.builtins import basestring
 import re
@@ -36,16 +35,6 @@ import os
 import os.path
 import datetime
 import numpy
-# from astropy.extern import six
-
-# NOTE: commented out to remove astropy.extern.six dependency
-# NOTE: Should be revisited when Python 3 support is added to the stack
-# if six.PY3:
-# long = int
-
-#
-# Classes
-#
 
 
 class yanny(dict):

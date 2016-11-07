@@ -1,4 +1,3 @@
-from builtins import str
 from builtins import range
 #!/usr/bin/env python
 #
@@ -181,6 +180,11 @@ class ExposureInfo(BaseExposureInfo):
             "strip psfWidth sky airmass quality isblacklisted".split()
         )
     def __hash__(self):
+        """
+        Objects used in sets are required to be hashable, which requires (among other things) a
+        ``__hash__`` method. In python 2, if no ``__hash`` method was explicitly set, the id is used.
+        Python 3 does not have this behavior, so we explicitly return the id.
+        """
         return id(self)
 
 
