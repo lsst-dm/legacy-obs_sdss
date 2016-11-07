@@ -28,21 +28,15 @@ files in etc/.
 # Modules
 #
 from __future__ import print_function
+from builtins import range
+from past.builtins import basestring
 import re
 import os
 import os.path
 import datetime
 import numpy
-# from astropy.extern import six
 
-# NOTE: commented out to remove astropy.extern.six dependency
-# NOTE: Should be revisited when Python 3 support is added to the stack
-# if six.PY3:
-    # long = int
 
-#
-# Classes
-#
 class yanny(dict):
     """An object interface to a yanny file.
 
@@ -123,21 +117,22 @@ class yanny(dict):
         """
         if string[0] == '"':
             (word, remainder) = re.search(r'^"([^"]*)"\s*(.*)',
-                string).groups()
+                                          string).groups()
         elif string[0] == '{':
             (word, remainder) = re.search(r'^\{\s*([^}]*)\s*\}\s*(.*)',
-                string).groups()
+                                          string).groups()
         else:
             try:
-                (word, remainder) = re.split(r'\s+',string,1)
+                (word, remainder) = re.split(r'\s+', string, 1)
             except ValueError:
                 (word, remainder) = (string, '')
         if remainder is None:
             remainder = ''
-        return (word,remainder)
+        return (word, remainder)
     #
     #
     #
+
     @staticmethod
     def protect(x):
         """Used to appropriately quote string that might contain whitespace.
@@ -162,17 +157,18 @@ class yanny(dict):
         >>> yanny.protect('This string contains a #hashtag.')
         '"This string contains a #hashtag."'
         """
-        if isinstance(x,numpy.bytes_):
+        if isinstance(x, numpy.bytes_):
             s = x.decode()
         else:
             s = str(x)
-        if len(s) == 0 or s.find('#') >= 0 or re.search(r'\s+',s) is not None:
+        if len(s) == 0 or s.find('#') >= 0 or re.search(r'\s+', s) is not None:
             return '"' + s + '"'
         else:
             return s
     #
     #
     #
+
     @staticmethod
     def trailing_comment(line):
         """Identify a trailing comment and strip it.
@@ -225,8 +221,9 @@ class yanny(dict):
     #
     #
     #
+
     @staticmethod
-    def dtype_to_struct(dt,structname='mystruct',enums=None):
+    def dtype_to_struct(dt, structname='mystruct', enums=None):
         """Convert a NumPy dtype object describing a record array to
         a typedef struct statement.
 
@@ -254,8 +251,8 @@ class yanny(dict):
         Examples
         --------
         """
-        dtmap = {'i2':'short','i4':'int','i8':'long','f4':'float',
-            'f8':'double'}
+        dtmap = {'i2': 'short', 'i4': 'int', 'i8': 'long', 'f4': 'float',
+                 'f8': 'double'}
         returnenums = list()
         if enums is not None:
             for e in enums:
@@ -266,7 +263,7 @@ class yanny(dict):
                 lines[-1] = lines[-1].strip(',')
                 lines.append('}} {0};'.format(enums[e][0].upper()))
                 returnenums.append("\n".join(lines))
-                #lines.append('')
+                # lines.append('')
         lines = list()
         lines.append('typedef struct {')
         for c in dt.names:
@@ -294,11 +291,12 @@ class yanny(dict):
             line += ';'
             lines.append(line)
         lines.append('}} {0};'.format(structname.upper()))
-        return {structname.upper():list(dt.names),'enum':returnenums,'struct':["\n".join(lines)]}
+        return {structname.upper(): list(dt.names), 'enum': returnenums, 'struct': ["\n".join(lines)]}
     #
     #
     #
-    def __init__(self,filename=None,np=False,debug=False):
+
+    def __init__(self, filename=None, np=False, debug=False):
         """Create a yanny object using a yanny file.
         """
         #
@@ -337,9 +335,9 @@ class yanny(dict):
             # NOTE: Should be revisited when Python 3 support is added to the stack
             # if isinstance(filename, six.string_types):
             if isinstance(filename, basestring):
-                if os.access(filename,os.R_OK):
+                if os.access(filename, os.R_OK):
                     self.filename = filename
-                    with open(filename,'r') as f:
+                    with open(filename, 'r') as f:
                         self._contents = f.read()
             else:
                 #
@@ -352,6 +350,7 @@ class yanny(dict):
     #
     #
     #
+
     def __str__(self):
         """Implement the ``str()`` function for yanny objects.
 
@@ -361,28 +360,31 @@ class yanny(dict):
     #
     #
     #
-    def __eq__(self,other):
+
+    def __eq__(self, other):
         """Test two yanny objects for equality.
 
         Two yanny objects are assumed to be equal if their contents are equal.
         """
-        if isinstance(other,yanny):
+        if isinstance(other, yanny):
             return str(other) == str(self)
         return NotImplemented
     #
     #
     #
-    def __ne__(self,other):
+
+    def __ne__(self, other):
         """Test two yanny objects for inequality.
 
         Two yanny objects are assumed to be unequal if their contents are unequal.
         """
-        if isinstance(other,yanny):
+        if isinstance(other, yanny):
             return str(other) != str(self)
         return NotImplemented
     #
     #
     #
+
     def __bool__(self):
         """Give a yanny object a definite truth value.
 
@@ -393,12 +395,12 @@ class yanny(dict):
     # `__nonzero__` is needed for Python 2.
     # Python 3 uses `__bool__`.
     # http://stackoverflow.com/a/2233850/498873
-    __nonzero__=__bool__
+    __nonzero__ = __bool__
 
     #
     #
     #
-    def type(self,structure,variable):
+    def type(self, structure, variable):
         """Returns the type of a variable defined in a structure.
 
         Returns ``None`` if the structure or the variable is undefined.
@@ -428,7 +430,7 @@ class yanny(dict):
             cache = self._struct_type_caches[structure]
         except KeyError:
             self._struct_type_caches[structure] = dict()
-            cache = self._struct_type_caches[structure] # cache for one struct type
+            cache = self._struct_type_caches[structure]  # cache for one struct type
         #
         # Lookup (or create) the value for this variable
         #
@@ -437,8 +439,8 @@ class yanny(dict):
         except KeyError:
             if self.debug:
                 print(variable)
-            defl = [ x for x in self['symbols']['struct'] if x.find(structure.lower()) > 0 ]
-            defu = [ x for x in self['symbols']['struct'] if x.find(structure.upper()) > 0 ]
+            defl = [x for x in self['symbols']['struct'] if x.find(structure.lower()) > 0]
+            defu = [x for x in self['symbols']['struct'] if x.find(structure.upper()) > 0]
             if len(defl) != 1 and len(defu) != 1:
                 return None
             elif len(defl) == 1:
@@ -446,14 +448,15 @@ class yanny(dict):
             else:
                 definition = defu
             typere = re.compile(r'(\S+)\s+{0}([[<].*[]>]|);'.format(variable))
-            (typ,array) = typere.search(definition[0]).groups()
-            var_type = typ + array.replace('<','[').replace('>',']')
+            (typ, array) = typere.search(definition[0]).groups()
+            var_type = typ + array.replace('<', '[').replace('>', ']')
             cache[variable] = var_type
         return var_type
     #
     #
     #
-    def basetype(self,structure,variable):
+
+    def basetype(self, structure, variable):
         """Returns the bare type of a variable, stripping off any array information.
 
         Parameters
@@ -468,7 +471,7 @@ class yanny(dict):
         basetype : str
             The type of the variable, stripped of array information.
         """
-        typ = self.type(structure,variable)
+        typ = self.type(structure, variable)
         if self.debug:
             print(variable, typ)
         try:
@@ -478,7 +481,8 @@ class yanny(dict):
     #
     #
     #
-    def isarray(self,structure,variable):
+
+    def isarray(self, structure, variable):
         """Returns ``True`` if the variable is an array type.
 
         For character types, this means a two-dimensional array,
@@ -504,11 +508,11 @@ class yanny(dict):
         try:
             result = cache[variable]
         except KeyError:
-            typ = self.type(structure,variable)
+            typ = self.type(structure, variable)
             character_array = re.compile(r'char[[<]\d*[]>][[<]\d*[]>]')
             if ((character_array.search(typ) is not None) or
                 (typ.find('char') < 0 and (typ.find('[') >= 0
-                or typ.find('<') >= 0))):
+                                           or typ.find('<') >= 0))):
                 cache[variable] = True
             else:
                 cache[variable] = False
@@ -517,7 +521,8 @@ class yanny(dict):
     #
     #
     #
-    def isenum(self,structure,variable):
+
+    def isenum(self, structure, variable):
         """Returns true if a variable is an enum type.
 
         Parameters
@@ -536,15 +541,16 @@ class yanny(dict):
             self._enum_cache = dict()
             if 'enum' in self['symbols']:
                 for e in self['symbols']['enum']:
-                    m = re.search(r'typedef\s+enum\s*\{([^}]+)\}\s*(\w+)\s*;',e).groups()
-                    self._enum_cache[m[1]] = re.split(r',\s*',m[0].strip())
+                    m = re.search(r'typedef\s+enum\s*\{([^}]+)\}\s*(\w+)\s*;', e).groups()
+                    self._enum_cache[m[1]] = re.split(r',\s*', m[0].strip())
             else:
                 return False
-        return self.basetype(structure,variable) in self._enum_cache
+        return self.basetype(structure, variable) in self._enum_cache
     #
     #
     #
-    def array_length(self,structure,variable):
+
+    def array_length(self, structure, variable):
         """Returns the length of an array type or 1 if the variable is not an array.
 
         For character types, this is the length of a two-dimensional
@@ -562,15 +568,16 @@ class yanny(dict):
         array_length : int
             The length of the array variable
         """
-        if self.isarray(structure,variable):
-            typ = self.type(structure,variable)
+        if self.isarray(structure, variable):
+            typ = self.type(structure, variable)
             return int(typ[typ.index('[')+1:typ.index(']')])
         else:
             return 1
     #
     #
     #
-    def char_length(self,structure,variable):
+
+    def char_length(self, structure, variable):
         """Returns the length of a character field.
 
         *e.g.* ``char[5][20]`` is an array of 5 strings of length 20.
@@ -590,20 +597,21 @@ class yanny(dict):
         char_length : int or None
             The length of the char variable.
         """
-        typ = self.type(structure,variable)
+        typ = self.type(structure, variable)
         if typ.find('char') < 0:
             return None
         try:
             return int(typ[typ.rfind('[')+1:typ.rfind(']')])
         except ValueError:
-            if self.isarray(structure,variable):
+            if self.isarray(structure, variable):
                 return max([max([len(x) for x in r]) for r in self[structure][variable]])
             else:
                 return max([len(x) for x in self[structure][variable]])
     #
     #
     #
-    def dtype(self,structure):
+
+    def dtype(self, structure):
         """Returns a NumPy dtype object suitable for describing a table as a record array.
 
         Treats enums as string, which is what the IDL reader does.
@@ -619,26 +627,27 @@ class yanny(dict):
             A dtype object suitable for describing the yanny structure as a record array.
         """
         dt = list()
-        dtmap = {'short':'i2', 'int':'i4', 'long':'i8', 'float':'f',
-            'double':'d' }
+        dtmap = {'short': 'i2', 'int': 'i4', 'long': 'i8', 'float': 'f',
+                 'double': 'd'}
         for c in self.columns(structure):
-            typ = self.basetype(structure,c)
+            typ = self.basetype(structure, c)
             if typ == 'char':
-                d = "S{0:d}".format(self.char_length(structure,c))
-            elif self.isenum(structure,c):
+                d = "S{0:d}".format(self.char_length(structure, c))
+            elif self.isenum(structure, c):
                 d = "S{0:d}".format(max([len(x) for x in self._enum_cache[typ]]))
             else:
                 d = dtmap[typ]
-            if self.isarray(structure,c):
-                dt.append((c,d,(self.array_length(structure,c),)))
+            if self.isarray(structure, c):
+                dt.append((c, d, (self.array_length(structure, c),)))
             else:
-                dt.append((c,d))
+                dt.append((c, d))
         dt = numpy.dtype(dt)
         return dt
     #
     #
     #
-    def convert(self,structure,variable,value):
+
+    def convert(self, structure, variable, value):
         """Converts value into the appropriate (Python) type.
 
         * ``short`` & ``int`` are converted to Python ``int``.
@@ -663,19 +672,19 @@ class yanny(dict):
         convert : int, long, float or str
             `value` converted to a Python numerical type.
         """
-        typ = self.basetype(structure,variable)
+        typ = self.basetype(structure, variable)
         if (typ == 'short' or typ == 'int'):
-            if self.isarray(structure,variable):
+            if self.isarray(structure, variable):
                 return [int(v) for v in value]
             else:
                 return int(value)
         if typ == 'long':
-            if self.isarray(structure,variable):
-                return [long(v) for v in value]
+            if self.isarray(structure, variable):
+                return [int(v) for v in value]
             else:
-                return long(value)
+                return int(value)
         if (typ == 'float' or typ == 'double'):
-            if self.isarray(structure,variable):
+            if self.isarray(structure, variable):
                 return [float(v) for v in value]
             else:
                 return float(value)
@@ -683,6 +692,7 @@ class yanny(dict):
     #
     #
     #
+
     def tables(self):
         """Returns a list of all the defined structures.
 
@@ -690,14 +700,15 @@ class yanny(dict):
         keys removed.
         """
         foo = list()
-        for k in self['symbols'].keys():
-            if k not in ('struct','enum'):
+        for k in self['symbols']:
+            if k not in ('struct', 'enum'):
                 foo.append(k)
         return foo
     #
     #
     #
-    def columns(self,table):
+
+    def columns(self, table):
         """Returns an ordered list of column names associated with a particular table.
 
         The order is the same order as they are defined in the yanny file.
@@ -719,7 +730,8 @@ class yanny(dict):
     #
     #
     #
-    def size(self,table):
+
+    def size(self, table):
         """Returns the number of rows in a table.
 
         Parameters
@@ -737,6 +749,7 @@ class yanny(dict):
     #
     #
     #
+
     def pairs(self):
         """Returns a list of keys to keyword/value pairs.
 
@@ -745,14 +758,15 @@ class yanny(dict):
         """
         p = list()
         foo = self.tables()
-        for k in self.keys():
+        for k in list(self.keys()):
             if k != 'symbols' and k not in foo:
                 p.append(k)
         return p
     #
     #
     #
-    def row(self,table,index):
+
+    def row(self, table, index):
         """Returns a list containing a single row from a specified table in column order
 
         If index is out of range, it returns an empty list.
@@ -782,6 +796,7 @@ class yanny(dict):
     #
     #
     #
+
     def list_of_dicts(self, table):
         """Construct a list of dictionaries.
 
@@ -806,18 +821,19 @@ class yanny(dict):
         """
         return_list = list()
         d = dict()
-        struct_fields = self.columns(table) # I'm assuming these are in order...
+        struct_fields = self.columns(table)  # I'm assuming these are in order...
         for i in range(self.size(table)):
-            one_row = self.row(table, i) # one row as a list
+            one_row = self.row(table, i)  # one row as a list
             j = 0
             for key in struct_fields:
                 d[key] = one_row[j]
                 j = j + 1
-            return_list.append(dict(d)) # append a new dict (copy of d)
+            return_list.append(dict(d))  # append a new dict (copy of d)
         return return_list
     #
     #
     #
+
     def new_dict_from_pairs(self):
         """Returns a new dictionary of keyword/value pairs.
 
@@ -849,7 +865,8 @@ class yanny(dict):
     #
     #
     #
-    def write(self,newfile=None,comments=None):
+
+    def write(self, newfile=None, comments=None):
         """Write a yanny object to a file.
 
         This assumes that the filename used to create the object was not that
@@ -880,7 +897,8 @@ class yanny(dict):
         if comments is None:
             basefile = os.path.basename(newfile)
             timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
-            comments = "#\n# {0}\n#\n# Created by pydl.pydlutils.yanny.yanny\n#\n# {1}\n#\n".format(basefile,timestamp)
+            comments = "#\n# {0}\n#\n# Created by pydl.pydlutils.yanny.yanny\n#\n# {1}\n#\n".format(
+                basefile, timestamp)
         else:
             if not isinstance(comments, str):
                 comments = "\n".join(["# {0}".format(c) for c in comments]) + "\n"
@@ -889,7 +907,7 @@ class yanny(dict):
         # Print any key/value pairs
         #
         for key in self.pairs():
-            contents += "{0} {1}\n".format(key,self[key])
+            contents += "{0} {1}\n".format(key, self[key])
         #
         # Print out enum definitions
         #
@@ -910,7 +928,7 @@ class yanny(dict):
                 line = list()
                 line.append(sym)
                 for col in columns:
-                    if self.isarray(sym,col):
+                    if self.isarray(sym, col):
                         datum = '{' + ' '.join([self.protect(x) for x in self[sym][col][k]]) + '}'
                     else:
                         datum = self.protect(self[sym][col][k])
@@ -919,12 +937,12 @@ class yanny(dict):
         #
         # Actually write the data to file
         #
-        if os.access(newfile,os.F_OK):
+        if os.access(newfile, os.F_OK):
             print("{0} exists, aborting write!".format(newfile))
             print("For reference, here's what would have been written:")
             print(contents)
         else:
-            with open(newfile,'w') as f:
+            with open(newfile, 'w') as f:
                 f.write(contents)
             self._contents = contents
             self.filename = newfile
@@ -933,7 +951,8 @@ class yanny(dict):
     #
     #
     #
-    def append(self,datatable):
+
+    def append(self, datatable):
         """Appends data to an existing FTCL/yanny file.
 
         Tries as much as possible to preserve the ordering & format of the
@@ -948,7 +967,8 @@ class yanny(dict):
             The data to append.
         """
         if len(self.filename) == 0:
-            raise ValueError("No filename is set for this object. Use the filename attribute to set the filename!")
+            raise ValueError(
+                "No filename is set for this object. Use the filename attribute to set the filename!")
         if type(datatable) != dict:
             raise ValueError("Data to append is not of the correct type. Use a dict!")
         timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
@@ -956,7 +976,7 @@ class yanny(dict):
         #
         # Print any key/value pairs
         #
-        for key in datatable.keys():
+        for key in datatable:
             if key.upper() in self.tables() or key == 'symbols':
                 continue
             contents += "{0} {1}\n".format(key, datatable[key])
@@ -974,8 +994,9 @@ class yanny(dict):
                     line = list()
                     line.append(sym)
                     for col in columns:
-                        if self.isarray(sym,col):
-                            datum = '{' + ' '.join([self.protect(x) for x in datatable[datasym][col][k]]) + '}'
+                        if self.isarray(sym, col):
+                            datum = '{' + ' '.join([self.protect(x)
+                                                    for x in datatable[datasym][col][k]]) + '}'
                         else:
                             datum = self.protect(datatable[datasym][col][k])
                         line.append(datum)
@@ -985,8 +1006,8 @@ class yanny(dict):
         #
         if len(contents) > 0:
             contents = ("# Appended by yanny.py at {0}.\n".format(timestamp)) + contents
-            if os.access(self.filename,os.W_OK):
-                with open(self.filename,'a') as f:
+            if os.access(self.filename, os.W_OK):
+                with open(self.filename, 'a') as f:
                     f.write(contents)
                 self._contents += contents
                 self._parse()
@@ -1000,6 +1021,7 @@ class yanny(dict):
     #
     #
     #
+
     def _parse(self):
         """Converts text into tables that users can use.
 
@@ -1049,38 +1071,38 @@ class yanny(dict):
         #
         # Reattach lines ending with \
         #
-        lines = re.sub(r'\\\s*\n',' ',lines)
+        lines = re.sub(r'\\\s*\n', ' ', lines)
         #
         # Find structure & enumeration definitions & strip them out
         #
-        self['symbols']['struct'] = re.findall(r'typedef\s+struct\s*\{[^}]+\}\s*\w+\s*;',lines)
-        self['symbols']['enum'] = re.findall(r'typedef\s+enum\s*\{[^}]+\}\s*\w+\s*;',lines)
-        lines = re.sub(r'typedef\s+struct\s*\{[^}]+\}\s*\w+\s*;','',lines)
-        lines = re.sub(r'typedef\s+enum\s*\{[^}]+\}\s*\w+\s*;','',lines)
+        self['symbols']['struct'] = re.findall(r'typedef\s+struct\s*\{[^}]+\}\s*\w+\s*;', lines)
+        self['symbols']['enum'] = re.findall(r'typedef\s+enum\s*\{[^}]+\}\s*\w+\s*;', lines)
+        lines = re.sub(r'typedef\s+struct\s*\{[^}]+\}\s*\w+\s*;', '', lines)
+        lines = re.sub(r'typedef\s+enum\s*\{[^}]+\}\s*\w+\s*;', '', lines)
         #
         # Interpret the structure definitions
         #
         typedefre = re.compile(r'typedef\s+struct\s*\{([^}]+)\}\s*(\w*)\s*;')
         for typedef in self['symbols']['struct']:
             typedefm = typedefre.search(typedef)
-            (definition,name) = typedefm.groups()
+            (definition, name) = typedefm.groups()
             self[name.upper()] = dict()
             self['symbols'][name.upper()] = list()
-            definitions = re.findall(r'\S+\s+\S+;',definition)
+            definitions = re.findall(r'\S+\s+\S+;', definition)
             for d in definitions:
-                d = d.replace(';','')
-                (datatype,column) = re.split(r'\s+',d)
-                column = re.sub(r'[[<].*[]>]$','',column)
+                d = d.replace(';', '')
+                (datatype, column) = re.split(r'\s+', d)
+                column = re.sub(r'[[<].*[]>]$', '', column)
                 self['symbols'][name.upper()].append(column)
                 self[name.upper()][column] = list()
-        comments = re.compile(r'^\s*#') # Remove lines containing only comments
-        blanks = re.compile(r'^\s*$') # Remove lines containing only whitespace
+        comments = re.compile(r'^\s*#')  # Remove lines containing only comments
+        blanks = re.compile(r'^\s*$')  # Remove lines containing only whitespace
         #
         # Remove trailing comments, but not if they are enclosed in quotes.
         #
-        #trailing_comments = re.compile(r'\s*\#.*$')
-        #trailing_comments = re.compile(r'\s*\#[^"]+$')
-        double_braces = re.compile(r'\{\s*\{\s*\}\s*\}') # Double empty braces get replaced with empty quotes
+        # trailing_comments = re.compile(r'\s*\#.*$')
+        # trailing_comments = re.compile(r'\s*\#[^"]+$')
+        double_braces = re.compile(r'\{\s*\{\s*\}\s*\}')  # Double empty braces get replaced with empty quotes
         if len(lines) > 0:
             for line in lines.split('\n'):
                 if self.debug:
@@ -1097,21 +1119,21 @@ class yanny(dict):
                 line = line.strip()
                 line = self.trailing_comment(line)
                 #line = trailing_comments.sub('',line)
-                line = double_braces.sub('""',line)
+                line = double_braces.sub('""', line)
                 #
                 # Now if the first word on the line does not match a
                 # structure definition it is a keyword/value pair
                 #
                 (key, value) = self.get_token(line)
                 uckey = key.upper()
-                if uckey in self['symbols'].keys():
+                if uckey in self['symbols']:
                     #
                     # Structure data
                     #
                     for column in self['symbols'][uckey]:
                         if len(value) > 0 and blanks.search(value) is None:
-                            (data,value) = self.get_token(value)
-                            if self.isarray(uckey,column):
+                            (data, value) = self.get_token(value)
+                            if self.isarray(uckey, column):
                                 #
                                 # An array value
                                 # if it's character data, it won't be
@@ -1127,13 +1149,13 @@ class yanny(dict):
                                     (token, data) = self.get_token(data)
                                     arraydata.append(token)
                                 self[uckey][column].append(
-                                    self.convert(uckey,column,arraydata))
+                                    self.convert(uckey, column, arraydata))
                             else:
                                 #
                                 # A single value
                                 #
                                 self[uckey][column].append(
-                                    self.convert(uckey,column,data))
+                                    self.convert(uckey, column, data))
                         else:
                             break
                 else:
@@ -1146,9 +1168,8 @@ class yanny(dict):
         #
         if self.np:
             for t in self.tables():
-                record = numpy.zeros((self.size(t),),dtype=self.dtype(t))
+                record = numpy.zeros((self.size(t),), dtype=self.dtype(t))
                 for c in self.columns(t):
                     record[c] = self[t][c]
                 self[t] = record
         return
-

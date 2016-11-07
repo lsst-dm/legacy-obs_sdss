@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import range
+from builtins import object
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -20,41 +23,46 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import sys, os, re
+import sys
+import os
+import re
 import pyfits
 import numpy as num
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 
+
 class Span(object):
+
     def __init__(self, y, x1, x2):
-        self.y  = y
+        self.y = y
         self.x1 = x1
         self.x2 = x2
+
 
 class Objmask(object):
     nperspan = 6
 
-    def __init__(self, frow, cval, verbose = False):
+    def __init__(self, frow, cval, verbose=False):
         self.refcntr = frow[0]
-        self.nspan   = frow[1]
-        self.row0    = frow[2]
-        self.col0    = frow[3]
-        self.rmin    = frow[4]
-        self.rmax    = frow[5]
-        self.cmin    = frow[6]
-        self.cmax    = frow[7]
-        self.npix    = frow[8]
-        self.span    = frow[9]
+        self.nspan = frow[1]
+        self.row0 = frow[2]
+        self.col0 = frow[3]
+        self.rmin = frow[4]
+        self.rmax = frow[5]
+        self.cmin = frow[6]
+        self.cmax = frow[7]
+        self.npix = frow[8]
+        self.span = frow[9]
         if len(self.span) == 0:
-            self.nspan = 0 # some bogus fpM files
+            self.nspan = 0  # some bogus fpM files
 
-        self.spans   = []
-        npixcheck    = 0
+        self.spans = []
+        npixcheck = 0
         for i in range(self.nspan):
             b1 = self.span[6*i + 0]
             b2 = self.span[6*i + 1]
-            y  = (b1 << 8) + b2
+            y = (b1 << 8) + b2
             b1 = self.span[6*i + 2]
             b2 = self.span[6*i + 3]
             x1 = (b1 << 8) + b2
@@ -62,16 +70,17 @@ class Objmask(object):
             b2 = self.span[6*i + 5]
             x2 = (b1 << 8) + b2
             self.spans.append(Span(y, x1, x2))
-            for i in range(x1, x2+1): npixcheck += 1
+            for i in range(x1, x2+1):
+                npixcheck += 1
 
         # Some fpM files are actually wrong and this test fails!
         # So warn, not assert
         # 5759/40/objcs/1/fpM-005759-r1-0011.fit
         # Plane S_MASK_NOTCHECKED
         if self.npix != npixcheck and verbose:
-            print "WARNING: npix != npixcheck (%d != %d)" % (self.npix, npixcheck)
+            print("WARNING: npix != npixcheck (%d != %d)" % (self.npix, npixcheck))
 
-        self.cval    = cval
+        self.cval = cval
 
     def setMask(self, mask):
         nrow = mask.getHeight()
@@ -97,45 +106,46 @@ class Objmask(object):
                 mask.set(x, y, mask.get(x, y) | self.cval)
                 x += 1
 
-def convertfpM(infile, allPlanes = False):
-    hdr    = pyfits.open(infile)
-    run    = hdr[0].header['RUN']
+
+def convertfpM(infile, allPlanes=False):
+    hdr = pyfits.open(infile)
+    run = hdr[0].header['RUN']
     camcol = hdr[0].header['CAMCOL']
-    field  = hdr[0].header['FIELD']
-    nRows  = hdr[0].header['MASKROWS']
-    nCols  = hdr[0].header['MASKCOLS']
+    field = hdr[0].header['FIELD']
+    nRows = hdr[0].header['MASKROWS']
+    nCols = hdr[0].header['MASKCOLS']
     nPlane = hdr[0].header['NPLANE']
 
-    names  = hdr[-1].data.names
+    names = hdr[-1].data.names
     if (not "attributeName" in names) or (not "Value" in names):
-        raise LookupError, "Missing data in fpM header"
+        raise LookupError("Missing data in fpM header")
 
     planes = hdr[-1].data.field("attributeName").tolist()
     values = hdr[-1].data.field("Value").tolist()
-    mask   = afwImage.MaskU(afwGeom.ExtentI(nCols, nRows))
+    mask = afwImage.MaskU(afwGeom.ExtentI(nCols, nRows))
 
     # Minimal sets of mask planes needed for LSST
-    interpPlane   = planes.index("S_MASK_INTERP") + 1
-    satPlane      = planes.index("S_MASK_SATUR") + 1
-    crPlane       = planes.index("S_MASK_CR") + 1
+    interpPlane = planes.index("S_MASK_INTERP") + 1
+    satPlane = planes.index("S_MASK_SATUR") + 1
+    crPlane = planes.index("S_MASK_CR") + 1
 
     interpBitMask = afwImage.MaskU_getPlaneBitMask("INTRP")
-    satBitMask    = afwImage.MaskU_getPlaneBitMask("SAT")
-    crBitMask     = afwImage.MaskU_getPlaneBitMask("CR")
+    satBitMask = afwImage.MaskU_getPlaneBitMask("SAT")
+    crBitMask = afwImage.MaskU_getPlaneBitMask("CR")
 
-    listToSet     = [ (interpPlane, interpBitMask),
-                      (satPlane, satBitMask),
-                      (crPlane, crBitMask) ]
+    listToSet = [(interpPlane, interpBitMask),
+                 (satPlane, satBitMask),
+                 (crPlane, crBitMask)]
 
     # Add the rest of the SDSS planes
     if allPlanes:
         for plane in ['S_MASK_NOTCHECKED', 'S_MASK_OBJECT', 'S_MASK_BRIGHTOBJECT',
                       'S_MASK_BINOBJECT', 'S_MASK_CATOBJECT', 'S_MASK_SUBTRACTED', 'S_MASK_GHOST']:
-            idx     = planes.index(plane) + 1
+            idx = planes.index(plane) + 1
             planeName = re.sub("S_MASK_", "", plane)
             planeId = mask.addMaskPlane(planeName)
             planeBitMask = afwImage.MaskU_getPlaneBitMask(planeName)
-            listToSet.append( (idx, planeBitMask) )
+            listToSet.append((idx, planeBitMask))
 
     for plane, bitmask in listToSet:
         if len(hdr) < plane:
@@ -153,7 +163,7 @@ def convertfpM(infile, allPlanes = False):
 
 
 if __name__ == '__main__':
-    infile  = sys.argv[1]
+    infile = sys.argv[1]
     outfile = sys.argv[2]
 
     if not os.path.isfile(infile):
@@ -192,6 +202,4 @@ interp.writeFits("/tmp/mask_diff.fits")
 print len(num.where(interp.getArray() != 0)[0])
 
 """ % (infile, infile, infile, outfile)
-    print comparison
-
-
+    print(comparison)

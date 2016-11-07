@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import os
 
 import numpy as np
@@ -5,8 +7,9 @@ import numpy as np
 import lsst.utils
 from lsst.obs.sdss.yanny import yanny as Yanny
 
+
 class SdssCameraState(Yanny):
-    _filters = dict(u = 1, g = 2, r = 3, i = 4, z = 5)
+    _filters = dict(u=1, g=2, r=3, i=4, z=5)
 
     def __init__(self, opDir, opConfig, opECalib):
         self._ECalib = Yanny(os.path.join(opDir, opECalib))["ECALIB"]
@@ -43,7 +46,7 @@ class SdssCameraState(Yanny):
                 readNoise = ECALIB["readNoiseDN%d" % i][me]
                 fullWell = ECALIB["fullWellDN%d" % i][me]
 
-                eparams.append((i, {'gain':gain, 'readNoise':readNoise, 'fullWell':fullWell}))
+                eparams.append((i, {'gain': gain, 'readNoise': readNoise, 'fullWell': fullWell}))
 
         if len(eparams) == 1:
             eparams.append((1, eparams[0][1]))
@@ -53,6 +56,6 @@ class SdssCameraState(Yanny):
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 if __name__ == "__main__":
-    sc = SdssCameraState(os.path.join(lsst.utils.getPackageDir("obs_sdss"),"etc"), "opConfig-50000.par",
+    sc = SdssCameraState(os.path.join(lsst.utils.getPackageDir("obs_sdss"), "etc"), "opConfig-50000.par",
                          "opECalib-50000.par")
-    print [(i, ep['gain'], ep['readNoise'], ep['fullWell']) for i, ep in sc.getEParams("g2")]
+    print([(i, ep['gain'], ep['readNoise'], ep['fullWell']) for i, ep in sc.getEParams("g2")])

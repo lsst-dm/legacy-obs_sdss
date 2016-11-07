@@ -26,52 +26,53 @@ import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 from lsst.pipe.tasks.processCcd import ProcessCcdTask
 
+
 class SdssNullIsrConfig(ProcessCcdTask.ConfigClass):
     """Config for SdssNullIsrTask"""
     removePedestal = pexConfig.Field(
-        dtype = bool,
-        doc = "Remove SDSS pedestal from fpC file?",
-        default = True,
+        dtype=bool,
+        doc="Remove SDSS pedestal from fpC file?",
+        default=True,
     )
     pedestalVal = pexConfig.Field(
-        dtype = int,
-        doc = "Number of counts in the SDSS pedestal",
-        default = 1000,
+        dtype=int,
+        doc="Number of counts in the SDSS pedestal",
+        default=1000,
     )
     removeOverlap = pexConfig.Field(
-        dtype = bool,
-        doc = "Remove SDSS field overlap from fpC file?",
-        default = True,
+        dtype=bool,
+        doc="Remove SDSS field overlap from fpC file?",
+        default=True,
     )
     overlapSize = pexConfig.Field(
-        dtype = int,
-        doc = "Number of pixels to remove from top of the fpC file",
-        default = 128,
+        dtype=int,
+        doc="Number of pixels to remove from top of the fpC file",
+        default=128,
     )
     doWrite = pexConfig.Field(
-        dtype = bool,
-        doc = "Persist loaded data as a postISRCCD? The default is false, to avoid duplicating data.",
-        default = False,
+        dtype=bool,
+        doc="Persist loaded data as a postISRCCD? The default is false, to avoid duplicating data.",
+        default=False,
     )
     datasetType = pexConfig.Field(
-        dtype = str,
-        doc = "Dataset type for input data; read by ProcessCcdTask; users will typically leave this alone",
-        default = "fpC",
+        dtype=str,
+        doc="Dataset type for input data; read by ProcessCcdTask; users will typically leave this alone",
+        default="fpC",
     )
 
 
-## \addtogroup LSST_task_documentation
-## \{
-## \page SdssNullIsrTask
-## \ref SdssNullIsrTask_ "SdssNullIsrTask"
-## \copybrief SdssNullIsrTask
-## \}
+# \addtogroup LSST_task_documentation
+# \{
+# \page SdssNullIsrTask
+# \ref SdssNullIsrTask_ "SdssNullIsrTask"
+# \copybrief SdssNullIsrTask
+# \}
 
 class SdssNullIsrTask(pipeBase.Task):
     """!Load SDSS post-ISR data from fpC, fpM, asTrans, etc. files
 
     @anchor SdssNullIsrTask_
-    
+
     @section pipe_tasks_sdssNullIsr_Contents  Contents
 
      - @ref pipe_tasks_sdssNullIsr_Purpose
@@ -143,9 +144,9 @@ class SdssNullIsrTask(pipeBase.Task):
         expInfo.setFilter(afwImage.Filter(sensorRef.dataId['filter']))
 
         visitInfo = afwImage.makeVisitInfo(
-            exposureTime = tsField.exptime,
-            date = tsField.dateAvg,
-            boresightAirmass = tsField.airmass,
+            exposureTime=tsField.exptime,
+            date=tsField.dateAvg,
+            boresightAirmass=tsField.airmass,
         )
         expInfo.setVisitInfo(visitInfo)
 
@@ -173,5 +174,5 @@ class SdssNullIsrTask(pipeBase.Task):
             sensorRef.put(exposure, "postISRCCD")
 
         return pipeBase.Struct(
-            exposure = exposure,
+            exposure=exposure,
         )

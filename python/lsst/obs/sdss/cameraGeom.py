@@ -15,6 +15,7 @@ field=101), field=1)
 """
 import lsst.afw.cameraGeom.utils as cgUtils
 
+
 class SdssCcdImage(cgUtils.GetCcdImage):
     raise NotImplementedError("This will be re-implemented in Summer 2014")
     """A class to return an Image of a given SDSS Ccd by using the butler"""

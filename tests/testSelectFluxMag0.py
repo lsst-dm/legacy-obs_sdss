@@ -25,6 +25,7 @@
 """Test lsst.obs.sdss.selectFluxMag0Task and integration with lsst.obs.sdss.scaleSdssZeroPointTask
 """
 from __future__ import print_function
+from builtins import object
 import unittest
 import sys
 
@@ -52,7 +53,7 @@ except Exception as e:
     noConnection = True
 
 
-class WrapDataId():
+class WrapDataId(object):
     """A container for dataId that looks like dataRef to computeImageScaler()
     """
 
