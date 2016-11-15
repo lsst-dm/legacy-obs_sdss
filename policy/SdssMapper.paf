@@ -39,32 +39,13 @@ exposures: {
     }
     postISRCCD: {
         template:    "postISRCCD/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.image.ExposureF"
-        persistable:        "ExposureF"
-        storage:    "FitsStorage"
-        level:        "Ccd"
-        tables:        raw
-        tables:        raw_skyTile
     }
     icExp: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/icExp/icExp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.image.ExposureF"
-        persistable:        "ExposureF"
-        storage:    "FitsStorage"
-        level:       "None"
-        tables:        raw
-        tables:        raw_skyTile
     }
     calexp: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.image.ExposureF"
-        persistable:        "ExposureF"
-        storage:    "FitsStorage"
-        level:       "None"
-        tables:        raw
-        tables:        raw_skyTile
     }
-
     # dataset defined in obs_base modified in this mapper as follows:
     deepCoadd_tempExp: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)stempExp/%(run)d-f%(filter)s.fits"
@@ -73,8 +54,6 @@ exposures: {
     deepCoadd: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits"
     }
-
-
     # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_differenceExp: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/diffexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
@@ -83,25 +62,13 @@ exposures: {
     deepDiff_matchedExp: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/matchexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
     }
-
 }
-
 datasets: {
     icExpBackground: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/icExp/bkgd-icExp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.math.BackgroundList"
-        persistable:   "PurePythonClass"
-        storage:       "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
     calexpBackground: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/bkgd-calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.math.BackgroundList"
-        persistable:   "PurePythonClass"
-        storage:       "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
     psField: {
         template:    "%(run)d/%(rerun)d/objcs/%(camcol)d/psField-%(run)06d-%(camcol)d-%(field)04d.fit"
@@ -124,15 +91,9 @@ datasets: {
         storage:     "FitsStorage"
         tables:        raw
     }
-
-
     icSrc: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/icSrc/icSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
     # dataset defined in obs_base modified in this mapper as follows:
     icSrc_schema: {
@@ -148,165 +109,27 @@ datasets: {
     }
     srcMatch: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/srcMatch/srcMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.BaseCatalog"
         persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    apCorr: {
-        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/apCorr/apCorr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.pickle"
-        python:        "lsst.meas.algorithms.ApertureCorrection"
-        persistable:        "ApertureCorrection"
-        storage:    "PickleStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
     src: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-        python:        "lsst.afw.table.SourceCatalog"
         persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    # dataset defined in obs_base modified in this mapper as follows:
-    src_schema: {
-        persistable:        "ignored"
-    }
-
-    sourceHist: {
-        template:      "results/st%(skyTile)d/sourceHist.fits"
-        python:        "lsst.afw.image.DecoratedImageU"
-        persistable:        "DecoratedImageU"
-        storage:    "FitsStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    badSourceHist: {
-        template:      "results/st%(skyTile)d/badSourceHist.fits"
-        python:        "lsst.afw.image.DecoratedImageU"
-        persistable:        "DecoratedImageU"
-        storage:    "FitsStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    source: {
-        template:      "results/st%(skyTile)d/source.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    source_schema: {
-        template:      "schema/source.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    badSource: {
-        template:      "results/st%(skyTile)d/badSource.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    badSource_schema: {
-        template:      "schema/badSource.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    invalidSource: {
-        template:      "results/st%(skyTile)d/invalidSource.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    invalidSource_schema: {
-        template:      "schema/invalidSource.fits"
-        python:        "lsst.afw.table.SourceCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    object: {
-        template:      "results/st%(skyTile)d/object.fits"
-        python:        "lsst.ap.cluster.SourceClusterCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    object_schema: {
-        template:      "schema/object.fits"
-        python:        "lsst.ap.cluster.SourceClusterCatalog"
-        persistable:        "ignored"
-        storage:    "FitsCatalogStorage"
-        tables:        raw
-        tables:        raw_skyTile
     }
     processCcd_metadata: {
         template:      "processCcd_metadata/%(run)d/%(camcol)d/%(filter)s/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
-        tables:        raw
     }
     isr_config: {
-        template:      "config/isr.py"
         python:        "lsst.obs.sdss.sdssNullIsr.SdssNullIsrConfig"
-        persistable:      "Config"
-        storage:    "ConfigStorage"
-        tables:        raw
     }
     isr_metadata: {
         template:      "isr_metadata/%(run)d/%(camcol)d/%(filter)s/isr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
-        tables:        raw
     }
     characterizeImage_metadata: {
         template:      "characterizeImage_metadata/%(run)d/%(camcol)d/%(filter)s/characterizeImage-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
-        tables:        raw
     }
     calibrate_metadata: {
         template:      "calibrate_metadata/%(run)d/%(camcol)d/%(filter)s/calibrate-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:        "PropertySet"
-        storage:    "BoostStorage"
-        tables:        raw
     }
-    sourceAssoc_config: {
-        template:      "config/sourceAssoc.py"
-        python:        "lsst.ap.tasks.sourceAssoc.SourceAssocConfig"
-        persistable:   "Config"
-        storage:       "ConfigStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-    sourceAssoc_metadata: {
-        template:      "sourceAssoc_metadata/st%(skyTile)d/metadata.boost"
-        python:        "lsst.daf.base.PropertySet"
-        persistable:   "PropertySet"
-        storage:       "BoostStorage"
-        tables:        raw
-        tables:        raw_skyTile
-    }
-
     deep_makeSkyMap_config: {
         template:      "config/deep_makeSkyMap.py"
         python:        "lsst.pipe.tasks.makeSkyMap.MakeSkyMapTask.ConfigClass"
@@ -323,7 +146,6 @@ datasets: {
         template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/srcMatch-%(filter)s-%(tract)d-%(patch)s.fits"
         persistable:        "ignored"
     }
-
     # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_config: {
         python:        "lsst.pex.config.Config"
@@ -339,21 +161,5 @@ datasets: {
     # dataset defined in obs_base modified in this mapper as follows:
     deepDiff_kernelSrc: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/kernelSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
-    }
-
-
-    # Detections on coadds
-
-    # Merged detections on coadds
-
-    # Measurements on coadds
-
-    # Reference catalog for coadds
-
-    multiband_config: {
-        template:      "config/multiband.py"
-        python:        "lsst.pipe.tasks.multiBand.MultiBandConfig"
-        persistable:   "Config"
-        storage:       "ConfigStorage"
     }
 }
