@@ -37,15 +37,12 @@ exposures: {
         tables:        raw
         tables:        raw_skyTile
     }
-    # dataset defined in obs_base modified in this mapper as follows:
     postISRCCD: {
         template:    "postISRCCD/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
     }
-    # dataset defined in obs_base modified in this mapper as follows:
     icExp: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/icExp/icExp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
     }
-    # dataset defined in obs_base modified in this mapper as follows:
     calexp: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
     }
@@ -67,11 +64,9 @@ exposures: {
     }
 }
 datasets: {
-    # dataset defined in obs_base modified in this mapper as follows:
     icExpBackground: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/icExp/bkgd-icExp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
     }
-    # dataset defined in obs_base modified in this mapper as follows:
     calexpBackground: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/bkgd-calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
     }
@@ -96,7 +91,6 @@ datasets: {
         storage:     "FitsStorage"
         tables:        raw
     }
-    # dataset defined in obs_base modified in this mapper as follows:
     icSrc: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/icSrc/icSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         persistable:        "ignored"
