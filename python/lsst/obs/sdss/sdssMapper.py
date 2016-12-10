@@ -111,17 +111,17 @@ class SdssMapper(CameraMapper):
 ###############################################################################
 
     def bypass_fpM(self, datasetType, pythonType, location, dataId):
-        return convertfpM(location.getLocations()[0])
+        return convertfpM(location.getLocationsWithRoot()[0])
 
     def bypass_psField(self, datasetType, pythonType, location, dataId):
-        return convertpsField(location.getLocations()[0], dataId['filter'])
+        return convertpsField(location.getLocationsWithRoot()[0], dataId['filter'])
 
     def bypass_asTrans(self, datasetType, pythonType, location, dataId):
-        return convertasTrans(location.getLocations()[0], dataId['filter'],
+        return convertasTrans(location.getLocationsWithRoot()[0], dataId['filter'],
                               dataId['camcol'], dataId['field'])
 
     def bypass_tsField(self, datasetType, pythonType, location, dataId):
-        return converttsField(location.getLocations()[0], dataId['filter'])
+        return converttsField(location.getLocationsWithRoot()[0], dataId['filter'])
 
     def bypass_ccdExposureId(self, datasetType, pythonType, location, dataId):
         return self._computeCcdExposureId(dataId)
