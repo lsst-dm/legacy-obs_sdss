@@ -29,7 +29,7 @@ from builtins import object
 import unittest
 import sys
 
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 import lsst.daf.base
 from lsst.daf.persistence import DbAuth
 import lsst.afw.geom as afwGeom
