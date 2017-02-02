@@ -55,8 +55,14 @@ exposures: {
     deepCoadd_tempExp: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)stempExp/%(run)d-f%(filter)s.fits"
     }
+    deepCoadd_tempExpPsfMatched: {
+        template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)stempExp/psfMatched-%(run)d-f%(filter)s.fits"
+    }
     deepCoadd: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits"
+    }
+    deepCoaddPsfMatched: {
+        template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)s/coaddPsfMatched-%(filter)s-%(tract)d-%(patch)s.fits"
     }
     deepDiff_differenceExp: {
         template:      "deepDiff/%(run)d/%(camcol)d/%(filter)s/diffexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
