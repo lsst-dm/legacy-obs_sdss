@@ -1,3 +1,4 @@
+from __future__ import absolute_import, division, print_function
 from builtins import zip
 from builtins import range
 from builtins import object
@@ -59,7 +60,7 @@ class SdssImageScaler(object):
                 "len(xList)=%s len(yList)=%s, len(scaleList)=%s but all lists must have the same length" %
                 (len(xList), len(yList), len(scaleList)))
 
-        self.interpStyle = getattr(afwMath.Interpolate, interpStyle)
+        self.interpStyle = afwMath.stringToInterpStyle(interpStyle)
         self._xList = xList
         self._yList = yList
         self._scaleList = scaleList
@@ -85,8 +86,8 @@ class SdssImageScaler(object):
 
         x, z = list(zip(*sorted(zip(self._xList, self._scaleList))))
 
-        xvec = afwMath.vectorD(x)
-        zvec = afwMath.vectorD(z)
+        xvec = np.array(x, dtype=float)
+        zvec = np.array(z, dtype=float)
         height = bbox.getHeight()
         width = bbox.getWidth()
         x0, y0 = bbox.getMin()
