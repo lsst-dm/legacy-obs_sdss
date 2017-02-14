@@ -127,12 +127,12 @@ class SdssNullIsrTask(pipeBase.Task):
         mi = afwImage.MaskedImageF(image, mask, var)
 
         if self.config.removeOverlap:
-            bbox = mi.getBBox(afwImage.LOCAL)
+            bbox = mi.getBBox()
             begin = bbox.getBegin()
             extent = bbox.getDimensions()
             extent -= afwGeom.Extent2I(0, self.config.overlapSize)
             tbbox = afwGeom.BoxI(begin, extent)
-            mi = afwImage.MaskedImageF(mi, tbbox, True)
+            mi = afwImage.MaskedImageF(mi, tbbox)
 
         exposure = afwImage.ExposureF(mi, wcs)
         expInfo = exposure.getInfo()
