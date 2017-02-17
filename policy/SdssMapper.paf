@@ -52,10 +52,10 @@ exposures: {
     calexp: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
     }
-    deepCoadd_tempExp: {
+    deepCoadd_directWarp: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)stempExp/%(run)d-f%(filter)s.fits"
     }
-    deepCoadd_tempExpPsfMatched: {
+    deepCoadd_psfMatchedWarp: {
         template:    "deepCoadd/%(filter)s/%(tract)d/%(patch)stempExp/psfMatched-%(run)d-f%(filter)s.fits"
     }
     deepCoadd: {
