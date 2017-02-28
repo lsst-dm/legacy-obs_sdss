@@ -315,16 +315,13 @@ class SelectSdssImagesTestCase(unittest.TestCase):
         @param[in] maxRa: maxinum RA (degrees)
         @param[in] runExpInfoDict: a dict of run: list of ExposureInfo objects
         """
-        minRaAngle = minRa * afwGeom.degrees
         maxRaAngle = maxRa * afwGeom.degrees
-        minRaAngle.wrapNear(maxRaAngle)
+        minRaAngle = (minRa * afwGeom.degrees).wrapNear(maxRaAngle)
         ctrRaAngle = (minRaAngle + maxRaAngle) * 0.5
         raDegList = []
         for expInfoList in runExpInfoDict.values():
             for expInfo in expInfoList:
-                raAngleList = [coord.getLongitude() for coord in expInfo.coordList]
-                for raAngle in raAngleList:
-                    raAngle.wrapNear(ctrRaAngle)
+                raAngleList = [coord.getLongitude().wrapNear(ctrRaAngle) for coord in expInfo.coordList]
                 raDegList += [raAngle.asDegrees() for raAngle in raAngleList]
             raDegList.sort()
         self.assertGreaterEqual(minRa, raDegList[0])
