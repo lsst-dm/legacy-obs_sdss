@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 from builtins import range
 from builtins import object
 #
@@ -129,9 +129,9 @@ def convertfpM(infile, allPlanes=False):
     satPlane = planes.index("S_MASK_SATUR") + 1
     crPlane = planes.index("S_MASK_CR") + 1
 
-    interpBitMask = afwImage.MaskU_getPlaneBitMask("INTRP")
-    satBitMask = afwImage.MaskU_getPlaneBitMask("SAT")
-    crBitMask = afwImage.MaskU_getPlaneBitMask("CR")
+    interpBitMask = afwImage.MaskU.getPlaneBitMask("INTRP")
+    satBitMask = afwImage.MaskU.getPlaneBitMask("SAT")
+    crBitMask = afwImage.MaskU.getPlaneBitMask("CR")
 
     listToSet = [(interpPlane, interpBitMask),
                  (satPlane, satBitMask),
@@ -144,7 +144,7 @@ def convertfpM(infile, allPlanes=False):
             idx = planes.index(plane) + 1
             planeName = re.sub("S_MASK_", "", plane)
             planeId = mask.addMaskPlane(planeName)
-            planeBitMask = afwImage.MaskU_getPlaneBitMask(planeName)
+            planeBitMask = afwImage.MaskU.getPlaneBitMask(planeName)
             listToSet.append((idx, planeBitMask))
 
     for plane, bitmask in listToSet:

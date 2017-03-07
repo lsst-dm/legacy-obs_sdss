@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 from builtins import range
 #
 # LSST Data Management System
@@ -51,7 +51,7 @@ def convertpsField(infile, filt, trim=True, rcscale=0.001, MAX_ORDER_B=5, LSST_O
     pstruct = pyfits.getdata(buff, ext=filtToHdu[filt])
 
     spaParList = [[]]*len(pstruct)
-    kernelList = afwMath.KernelList()
+    kernelList = []
     for i in range(len(pstruct)):
         nrow_b = pstruct[i][0]  # ny
         ncol_b = pstruct[i][1]  # nx
@@ -66,7 +66,7 @@ def convertpsField(infile, filt, trim=True, rcscale=0.001, MAX_ORDER_B=5, LSST_O
 
         kim = afwImage.ImageD(karr)
         kern = afwMath.FixedKernel(kim)
-        kernelList.push_back(kern)
+        kernelList.append(kern)
 
         # NOTES:
 

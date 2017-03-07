@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
 # Copyright 2008-2015 AURA/LSST.
@@ -20,6 +19,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
+from __future__ import absolute_import, division, print_function
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 import lsst.afw.image as afwImage
@@ -127,12 +127,12 @@ class SdssNullIsrTask(pipeBase.Task):
         mi = afwImage.MaskedImageF(image, mask, var)
 
         if self.config.removeOverlap:
-            bbox = mi.getBBox(afwImage.LOCAL)
+            bbox = mi.getBBox()
             begin = bbox.getBegin()
             extent = bbox.getDimensions()
             extent -= afwGeom.Extent2I(0, self.config.overlapSize)
             tbbox = afwGeom.BoxI(begin, extent)
-            mi = afwImage.MaskedImageF(mi, tbbox, True)
+            mi = afwImage.MaskedImageF(mi, tbbox)
 
         exposure = afwImage.ExposureF(mi, wcs)
         expInfo = exposure.getInfo()
