@@ -465,10 +465,8 @@ def _computeRaRange(coordList, ctrRa=None):
         raise RuntimeError("coordList contains no elements")
     raList = [coord.toIcrs().getLongitude() for coord in coordList]
     if ctrRa is None:
-        ctrRa = raList[0]
-        ctrRa.wrapCtr()
-    for ra in raList:
-        ra.wrapNear(ctrRa)
+        ctrRa = raList[0].wrapCtr()
+    raList = [ra.wrapNear(ctrRa) for ra in raList]
     raRadList = np.array([ra.asRadians() for ra in raList])
     minAngRad = np.min(raRadList)
     maxAngRad = np.max(raRadList)
