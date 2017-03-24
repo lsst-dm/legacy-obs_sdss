@@ -112,6 +112,10 @@ datasets: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/srcMatch/srcMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         persistable:        "ignored"
     }
+    srcMatchFull: {
+        template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/srcMatch/srcMatchFull-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
+        persistable:        "ignored"
+    }
     src: {
         template:      "sci-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits"
         persistable:        "ignored"
@@ -141,8 +145,12 @@ datasets: {
     deep_assembleCoadd_metadata: {
         template:      "deep_assembleCoadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.boost"
     }
-    deepCoadd_srcMatch: {
+    deepCoadd_measMatch: {
         template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/srcMatch-%(filter)s-%(tract)d-%(patch)s.fits"
+        persistable:        "ignored"
+    }
+    deepCoadd_measMatchFull: {
+        template:      "deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/srcMatchFull-%(filter)s-%(tract)d-%(patch)s.fits"
         persistable:        "ignored"
     }
     deepDiff_config: {
