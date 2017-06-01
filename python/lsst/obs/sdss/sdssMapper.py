@@ -22,9 +22,10 @@ from builtins import map
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import os
 import re
 
-import lsst.pex.policy as pexPolicy
+import lsst.daf.persistence as dafPersist
 from lsst.obs.base import CameraMapper, exposureFromImage
 from lsst.obs.sdss.convertfpM import convertfpM
 from lsst.obs.sdss.convertpsField import convertpsField
@@ -40,8 +41,8 @@ class SdssMapper(CameraMapper):
     packageName = 'obs_sdss'
 
     def __init__(self, inputPolicy=None, **kwargs):
-        policyFile = pexPolicy.DefaultPolicyFile(self.packageName, "SdssMapper.paf", "policy")
-        policy = pexPolicy.Policy(policyFile)
+        policyFile = dafPersist.Policy.defaultPolicyFile(self.packageName, "SdssMapper.yaml", "policy")
+        policy = dafPersist.Policy(policyFile)
 
         self.doFootprints = False
         if inputPolicy is not None:
@@ -51,7 +52,7 @@ class SdssMapper(CameraMapper):
                 else:
                     kwargs[kw] = inputPolicy.get(kw)
 
-        super(SdssMapper, self).__init__(policy, policyFile.getRepositoryPath(), **kwargs)
+        super(SdssMapper, self).__init__(policy, os.path.dirname(policyFile), **kwargs)
         # define filters?
         self.filterIdMap = dict(u=0, g=1, r=2, i=3, z=4)
 
