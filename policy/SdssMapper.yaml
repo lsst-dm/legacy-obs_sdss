@@ -1,0 +1,148 @@
+camera: ../description/camera
+
+needCalibRegistry: false
+
+levels:
+  skyTile:
+  - run
+  - camcol
+  - field
+  - filter
+  run:
+  - camcol
+  - field
+  - filter
+  camcol:
+  - field
+  - filter
+  field: filter
+
+defaultLevel: field
+
+defaultSubLevels:
+  camcol: field
+  field: filter
+  run: field
+  skyTile: field
+
+# exposures and datasets which are needed for all of the mappers are defined
+# in the obs_base package (in either exposures.yaml or datasets.yaml).
+# Where a modification to such a dataset is required for a particular camera,
+# (e.g., for a template or specialized python type), the modification will
+# appear below as a partial dataset definition.
+
+exposures:
+  fpC:
+    level: None
+    persistable: ImageU
+    python: lsst.afw.image.ImageU
+    storage: FitsStorage
+    tables:
+    - raw
+    - raw_skyTile
+    template: '%(run)d/%(rerun)d/corr/%(camcol)d/fpC-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fit.gz'
+  fpM:
+    level: None
+    persistable: ImageU
+    python: lsst.afw.image.ImageU
+    storage: FitsStorage
+    tables:
+    - raw
+    - raw_skyTile
+    template: '%(run)d/%(rerun)d/objcs/%(camcol)d/fpM-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fit'
+  postISRCCD:
+    template: postISRCCD/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  icExp:
+    template: sci-results/%(run)d/%(camcol)d/%(filter)s/icExp/icExp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  calexp:
+    template: sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  deepCoadd_directWarp:
+    template: deepCoadd/%(filter)s/%(tract)d/%(patch)stempExp/%(run)d-f%(filter)s.fits
+  deepCoadd_psfMatchedWarp:
+    template: deepCoadd/%(filter)s/%(tract)d/%(patch)stempExp/psfMatched-%(run)d-f%(filter)s.fits
+  deepCoadd:
+    template: deepCoadd/%(filter)s/%(tract)d/%(patch)s/coadd-%(filter)s-%(tract)d-%(patch)s.fits
+  deepCoaddPsfMatched:
+    template: deepCoadd/%(filter)s/%(tract)d/%(patch)s/coaddPsfMatched-%(filter)s-%(tract)d-%(patch)s.fits
+  deepDiff_differenceExp:
+    template: deepDiff/%(run)d/%(camcol)d/%(filter)s/diffexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  deepDiff_matchedExp:
+    template: deepDiff/%(run)d/%(camcol)d/%(filter)s/matchexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+
+datasets:
+  icExpBackground:
+    template: sci-results/%(run)d/%(camcol)d/%(filter)s/icExp/bkgd-icExp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  calexpBackground:
+    template: sci-results/%(run)d/%(camcol)d/%(filter)s/calexp/bkgd-calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  psField:
+    persistable: ignored
+    python: lsst.afw.detection.Psf
+    storage: FitsStorage
+    tables: raw
+    template: '%(run)d/%(rerun)d/objcs/%(camcol)d/psField-%(run)06d-%(camcol)d-%(field)04d.fit'
+  asTrans:
+    persistable: ignored
+    python: lsst.afw.image.Wcs
+    storage: FitsStorage
+    tables: raw
+    template: '%(run)d/%(rerun)d/astrom/asTrans-%(run)06d.fit'
+  tsField:
+    persistable: ignored
+    python: lsst.afw.image.Calib
+    storage: FitsStorage
+    tables: raw
+    template: '%(run)d/%(rerun)d/calibChunks/%(camcol)d/tsField-%(run)06d-%(camcol)d-%(rerun)d-%(field)04d.fit'
+  icSrc:
+    persistable: ignored
+    template: sci-results/%(run)d/%(camcol)d/%(filter)s/icSrc/icSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  icSrc_schema:
+    persistable: ignored
+  icMatch:
+    persistable: ignored
+    python: lsst.afw.table.BaseCatalog
+    storage: FitsCatalogStorage
+    tables:
+    - raw
+    - raw_skyTile
+    template: sci-results/%(run)d/%(camcol)d/%(filter)s/icMatch/icMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  srcMatch:
+    persistable: ignored
+    template: sci-results/%(run)d/%(camcol)d/%(filter)s/srcMatch/srcMatch-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  srcMatchFull:
+    persistable: ignored
+    template: sci-results/%(run)d/%(camcol)d/%(filter)s/srcMatch/srcMatchFull-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  src:
+    persistable: ignored
+    template: sci-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  processCcd_metadata:
+    template: processCcd_metadata/%(run)d/%(camcol)d/%(filter)s/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+  isr_config:
+    python: lsst.obs.sdss.sdssNullIsr.SdssNullIsrConfig
+  isr_metadata:
+    template: isr_metadata/%(run)d/%(camcol)d/%(filter)s/isr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+  characterizeImage_metadata:
+    template: characterizeImage_metadata/%(run)d/%(camcol)d/%(filter)s/characterizeImage-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+  calibrate_metadata:
+    template: calibrate_metadata/%(run)d/%(camcol)d/%(filter)s/calibrate-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+  deep_makeSkyMap_config:
+    persistable: Config
+    python: lsst.pipe.tasks.makeSkyMap.MakeSkyMapTask.ConfigClass
+    storage: ConfigStorage
+    tables: raw
+    template: config/deep_makeSkyMap.py
+  deep_assembleCoadd_metadata:
+    template: deep_assembleCoadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.boost
+  deepCoadd_measMatch:
+    persistable: ignored
+    template: deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/srcMatch-%(filter)s-%(tract)d-%(patch)s.fits
+  deepCoadd_measMatchFull:
+    persistable: ignored
+    template: deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/srcMatchFull-%(filter)s-%(tract)d-%(patch)s.fits
+  deepDiff_config:
+    python: lsst.pex.config.Config
+  deepDiff_metadata:
+    template: deepDiff/%(run)d/%(camcol)d/%(filter)s/metadata-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+  deepDiff_diaSrc:
+    template: deepDiff/%(run)d/%(camcol)d/%(filter)s/diaSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  deepDiff_kernelSrc:
+    template: deepDiff/%(run)d/%(camcol)d/%(filter)s/kernelSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
