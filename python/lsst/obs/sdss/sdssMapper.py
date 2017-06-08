@@ -107,7 +107,7 @@ class SdssMapper(CameraMapper):
         @return (lsst.afw.image.Exposure) the standardized Exposure"""
 
         if (re.search(r'Exposure', mapping.python) and re.search(r'Image', mapping.persistable)):
-            item = exposureFromImage(item)
+            item = exposureFromImage(item, logger=self.log)
         return item
 
 ###############################################################################
