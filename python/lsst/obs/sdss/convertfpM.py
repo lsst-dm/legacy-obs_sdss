@@ -122,16 +122,16 @@ def convertfpM(infile, allPlanes=False):
 
     planes = hdr[-1].data.field("attributeName").tolist()
     values = hdr[-1].data.field("Value").tolist()
-    mask = afwImage.MaskU(afwGeom.ExtentI(nCols, nRows))
+    mask = afwImage.Mask(afwGeom.ExtentI(nCols, nRows))
 
     # Minimal sets of mask planes needed for LSST
     interpPlane = planes.index("S_MASK_INTERP") + 1
     satPlane = planes.index("S_MASK_SATUR") + 1
     crPlane = planes.index("S_MASK_CR") + 1
 
-    interpBitMask = afwImage.MaskU.getPlaneBitMask("INTRP")
-    satBitMask = afwImage.MaskU.getPlaneBitMask("SAT")
-    crBitMask = afwImage.MaskU.getPlaneBitMask("CR")
+    interpBitMask = afwImage.Mask.getPlaneBitMask("INTRP")
+    satBitMask = afwImage.Mask.getPlaneBitMask("SAT")
+    crBitMask = afwImage.Mask.getPlaneBitMask("CR")
 
     listToSet = [(interpPlane, interpBitMask),
                  (satPlane, satBitMask),
@@ -144,7 +144,7 @@ def convertfpM(infile, allPlanes=False):
             idx = planes.index(plane) + 1
             planeName = re.sub("S_MASK_", "", plane)
             planeId = mask.addMaskPlane(planeName)
-            planeBitMask = afwImage.MaskU.getPlaneBitMask(planeName)
+            planeBitMask = afwImage.Mask.getPlaneBitMask(planeName)
             listToSet.append((idx, planeBitMask))
 
     for plane, bitmask in listToSet:

@@ -56,7 +56,7 @@ class SdssMapperTestCase(lsst.utils.tests.TestCase):
 
             msk = ref.get("fpM")
             w, h = msk.getWidth(), msk.getHeight()
-            self.assertEqual(msk.__class__, lsst.afw.image.MaskU)
+            self.assertEqual(msk.__class__, lsst.afw.image.Mask[lsst.afw.image.MaskPixel])
             self.assertEqual(w, 2048)
             self.assertEqual(h, 1489)
 
