@@ -51,7 +51,7 @@ class GetIdTestCase(lsst.utils.tests.TestCase):
                              camcol=3, filter='g', field=748)
         self.assertEqual(id, 4933130748)
 
-        dataId = dict(tract=1, patch='2,3', filter='z')
+        dataId = dict(tract=1, patch='2x3', filter='z')
         bits = self.butler.get("deepCoaddId_bits", dataId)
         id = self.butler.get("deepCoaddId", dataId)
         self.assertEqual(bits, 37)

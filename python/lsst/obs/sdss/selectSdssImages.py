@@ -406,7 +406,7 @@ from %s as ccdExp where """ % (self.config.table,)
         if self.config.strip.lower() == 'both':
             stripVal = None
         elif self.config.strip.lower() == 'auto':
-            stripVal = 'S' if int(patch.split(",")[1]) % 2 == 0 else 'N'
+            stripVal = 'S' if int(patch.split("x")[1]) % 2 == 0 else 'N'
         elif self.config.strip.lower() == 'n':
             stripVal = 'N'
         elif self.config.strip.lower() == 's':
