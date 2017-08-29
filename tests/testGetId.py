@@ -22,23 +22,29 @@
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
+import os
+import shutil
+import tempfile
 import unittest
 import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
-from lsst.obs.sdss import SdssMapper
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class GetIdTestCase(lsst.utils.tests.TestCase):
     """Testing butler exposure id retrieval"""
 
     def setUp(self):
-        self.bf = dafPersist.ButlerFactory(mapper=SdssMapper(root="."))
-        self.butler = self.bf.create()
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='GetIdTestCase-')
+        self.butler = dafPersist.Butler(
+            outputs={'root': self.testDir, 'mode': 'rw', 'mapper': 'lsst.obs.sdss.SdssMapper'})
 
     def tearDown(self):
         del self.butler
-        del self.bf
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def testId(self):
         """Test retrieval of exposure ids"""
@@ -64,6 +70,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()
