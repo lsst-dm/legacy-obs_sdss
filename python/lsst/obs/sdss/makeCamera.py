@@ -28,7 +28,7 @@ import lsst.utils
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom.utils as cameraGeomUtils
 from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig, \
-    SCIENCE, PIXELS, PUPIL, FOCAL_PLANE, NullLinearityType
+    TransformMapConfig, SCIENCE, PIXELS, FIELD_ANGLE, FOCAL_PLANE, NullLinearityType
 import lsst.afw.table as afwTable
 from lsst.obs.sdss.convertOpECalib import SdssCameraState
 
@@ -160,12 +160,12 @@ def makeCamera(name="SDSS", outputDir=None):
     radialDistortCoeffs = [0.0, 1.0/pScaleRad]
     tConfig = afwGeom.TransformConfig()
     tConfig.transform.name = 'inverted'
-    radialClass = afwGeom.xyTransformRegistry['radial']
+    radialClass = afwGeom.transformRegistry['radial']
     tConfig.transform.active.transform.retarget(radialClass)
     tConfig.transform.active.transform.coeffs = radialDistortCoeffs
-    tmc = afwGeom.TransformMapConfig()
+    tmc = TransformMapConfig()
     tmc.nativeSys = FOCAL_PLANE.getSysName()
-    tmc.transforms = {PUPIL.getSysName(): tConfig}
+    tmc.transforms = {FIELD_ANGLE.getSysName(): tConfig}
     camConfig.transformDict = tmc
 
     ccdId = 0
