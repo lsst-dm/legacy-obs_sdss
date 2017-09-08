@@ -27,6 +27,9 @@ config.calibrate.detection.background.binSize = 512
 # use the WCS determined by SDSS (why?)
 config.calibrate.astrometry.forceKnownWcs = True
 
+# this was the default prior to DM-11521.  New default is 2000.
+config.calibrate.deblend.maxFootprintSize=0
+
 # SDSS the standard aperture correction is quoted as out to a radius of 7.43.
 # According to http://www.sdss.org/dr7/algorithms/photometry.html#photo_profile this corresponds to 18.58.
 # Note that 7.43/0.3961270 = 18.7566 <> 18.58. Why?
