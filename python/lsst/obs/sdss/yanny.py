@@ -511,8 +511,8 @@ class yanny(dict):
             typ = self.type(structure, variable)
             character_array = re.compile(r'char[[<]\d*[]>][[<]\d*[]>]')
             if ((character_array.search(typ) is not None) or
-                (typ.find('char') < 0 and (typ.find('[') >= 0
-                                           or typ.find('<') >= 0))):
+                (typ.find('char') < 0 and (typ.find('[') >= 0 or
+                                           typ.find('<') >= 0))):
                 cache[variable] = True
             else:
                 cache[variable] = False
@@ -1118,7 +1118,7 @@ class yanny(dict):
                 #
                 line = line.strip()
                 line = self.trailing_comment(line)
-                #line = trailing_comments.sub('',line)
+                # line = trailing_comments.sub('',line)
                 line = double_braces.sub('""', line)
                 #
                 # Now if the first word on the line does not match a

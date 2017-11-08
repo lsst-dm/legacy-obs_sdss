@@ -186,7 +186,6 @@ def makeCamera(name="SDSS", outputDir=None):
             ampInfoCatDict[k].writeFits(os.path.join(outputDir, "%s.fits"%(k)))
     return makeCameraFromCatalogs(camConfig, ampInfoCatDict)
 
-#************************************************************************************************************
 #
 # Print a Ccd
 #
@@ -233,12 +232,10 @@ def printCamera(title, camera):
     print(title, "Camera:", camera.getName())
 
     for det in camera:
-        print("%s %dx%d centre (mm): %s" % \
-            (det.getName(),
-             det.getBBox().getWidth(), det.getBBox().getHeight(),
-             det.getCenter(FOCAL_PLANE).getPoint()))
-
-#************************************************************************************************************
+        print("%s %dx%d centre (mm): %s" %
+              (det.getName(),
+               det.getBBox().getWidth(), det.getBBox().getHeight(),
+               det.getCenter(FOCAL_PLANE).getPoint()))
 
 
 def main():
@@ -253,6 +250,7 @@ def main():
 
     print()
     printCcd("Trimmed ", ccd, trimmed=True)
+
 
 if __name__ == "__main__":
     main()

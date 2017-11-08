@@ -124,9 +124,10 @@ def processBand(filterDir, conn, done, qsp):
             conn.commit()
 
     conn.commit()
-    print(filterDir, \
-        "... %d processed, %d skipped, %d unrecognized" % \
-        (nProcessed, nSkipped, nUnrecognized), file=sys.stderr)
+    print(filterDir,
+          "... %d processed, %d skipped, %d unrecognized" %
+          (nProcessed, nSkipped, nUnrecognized), file=sys.stderr)
+
 
 if __name__ == "__main__":
     parser = OptionParser(usage="""%prog [options] DIR ...

@@ -1,5 +1,4 @@
 from __future__ import absolute_import, division, print_function
-from builtins import map
 from builtins import range
 from builtins import object
 #
@@ -84,9 +83,9 @@ class CoordinateMapper(object):
         self.cOff = cOffset
 
     def xyToMuNu(self, x, y):
-        rowm     = (y+self.cOff) + self.dRow0 + self.dRow1*(x+self.cOff) + self.dRow2*((x+self.cOff)**2) + \
+        rowm = (y+self.cOff) + self.dRow0 + self.dRow1*(x+self.cOff) + self.dRow2*((x+self.cOff)**2) + \
             self.dRow3*((x+self.cOff)**3)
-        colm     = (x+self.cOff) + self.dCol0 + self.dCol1*(x+self.cOff) + self.dCol2*((x+self.cOff)**2) + \
+        colm = (x+self.cOff) + self.dCol0 + self.dCol1*(x+self.cOff) + self.dCol2*((x+self.cOff)**2) + \
             self.dCol3*((x+self.cOff)**3)
 
         mu_deg = self.a + self.b * rowm + self.c * colm
@@ -263,6 +262,7 @@ def convertasTrans(infile, filt, camcol, field, stepSize=50, doValidate=False):
         validate(xs, ys, mapper, wcs)
 
     return wcs
+
 
 if __name__ == '__main__':
     infile = sys.argv[1]

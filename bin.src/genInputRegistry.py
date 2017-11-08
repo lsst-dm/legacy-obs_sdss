@@ -148,9 +148,10 @@ def processRun(runDir, conn, done, qsp):
             conn.commit()
 
     conn.commit()
-    print(runDir, \
-        "... %d processed, %d skipped, %d unrecognized" % \
-        (nProcessed, nSkipped, nUnrecognized), file=sys.stderr)
+    print(runDir,
+          "... %d processed, %d skipped, %d unrecognized" %
+          (nProcessed, nSkipped, nUnrecognized), file=sys.stderr)
+
 
 if __name__ == "__main__":
     parser = OptionParser(usage="""%prog [options] DIR ...
