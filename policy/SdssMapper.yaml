@@ -82,7 +82,7 @@ datasets:
     template: '%(run)d/%(rerun)d/objcs/%(camcol)d/psField-%(run)06d-%(camcol)d-%(field)04d.fit'
   asTrans:
     persistable: ignored
-    python: lsst.afw.image.Wcs
+    python: lsst.afw.geom.skyWcs.SkyWcs
     storage: FitsStorage
     tables: raw
     template: '%(run)d/%(rerun)d/astrom/asTrans-%(run)06d.fit'

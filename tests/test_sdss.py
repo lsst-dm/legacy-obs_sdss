@@ -30,6 +30,9 @@ import lsst.utils.tests
 import lsst.daf.persistence as dafPersist
 from lsst.daf.base import DateTime
 import lsst.afw.image
+from lsst.afw.coord import IcrsCoord
+from lsst.afw.geom import SkyWcs
+from lsst.afw.geom import degrees
 import lsst.afw.detection
 
 
@@ -68,10 +71,12 @@ class SdssMapperTestCase(lsst.utils.tests.TestCase):
             self.assertEqual(h, 31)
 
             wcs = ref.get("asTrans")
-            self.assertEqual(wcs.__class__, lsst.afw.image.TanWcs)
-            self.assertFalse(wcs.isFlipped())
-            self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX1"), 1.0, 5)
-            self.assertAlmostEqual(wcs.getFitsMetadata().get("CRPIX2"), 1.0, 5)
+            self.assertIsInstance(wcs, SkyWcs)
+            self.assertFalse(wcs.isFlipped)
+            # comparison is to results from lsst.afw.image.TanWcs class
+            self.assertCoordsAlmostEqual(wcs.pixelToSky(700, 1000),
+                                         IcrsCoord(343.6507738304687 * degrees,
+                                                   -0.3509870420713227 * degrees))
 
             tsField = ref.get("tsField")
             self.assertAlmostEqual(tsField.gain, 4.72, 2)

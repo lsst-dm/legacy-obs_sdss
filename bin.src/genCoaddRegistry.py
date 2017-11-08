@@ -31,7 +31,7 @@ import shutil
 import sqlite3
 import sys
 from lsst.afw.fits import readMetadata
-import lsst.afw.image as afwImage
+from lsst.afw.geom import makeSkyWcs
 import lsst.skypix as skypix
 
 
@@ -107,7 +107,7 @@ def processBand(filterDir, conn, done, qsp):
             id = row[0]
             break
 
-        wcs = afwImage.makeWcs(md)
+        wcs = makeSkyWcs(md)
         poly = skypix.imageToPolygon(wcs,
                                      md.get("NAXIS1"), md.get("NAXIS2"),
                                      padRad=0.000075)  # about 15 arcsec
