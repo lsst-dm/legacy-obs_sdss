@@ -28,11 +28,7 @@ from optparse import OptionParser
 import os
 import re
 import shutil
-try:
-    import sqlite3
-except ImportError:
-    # try external pysqlite package; deprecated
-    import sqlite as sqlite3
+import sqlite3
 import sys
 import lsst.daf.base as dafBase
 import lsst.afw.image as afwImage
