@@ -30,6 +30,7 @@ import re
 import shutil
 import sqlite3
 import sys
+from lsst.afw.fits import readMetadata
 import lsst.afw.image as afwImage
 import lsst.skypix as skypix
 
@@ -98,7 +99,7 @@ def processBand(filterDir, conn, done, qsp):
             nSkipped += 1
             continue
 
-        md = afwImage.readMetadata(fits)
+        md = readMetadata(fits)
         conn.execute("""INSERT INTO raw VALUES
             (NULL, ?, ?, ?, ?)""", (run, filter, camcol, field))
 

@@ -31,6 +31,7 @@ import shutil
 import sqlite3
 import sys
 import lsst.daf.base as dafBase
+from lsst.afw.fits import readMetadata
 import lsst.afw.image as afwImage
 import lsst.skypix as skypix
 
@@ -106,7 +107,7 @@ def processRun(runDir, conn, done, qsp):
             nSkipped += 1
             continue
 
-        md = afwImage.readMetadata(fits)
+        md = readMetadata(fits)
         date = md.get("DATE-OBS")
         if date.find("-") != -1:
             (year, month, day) = md.get("DATE-OBS").split("-")
