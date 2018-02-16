@@ -79,6 +79,7 @@ def converttsField(infile, filt, exptime=53.907456):
         airmass=airmass,
     )
 
+
 if __name__ == '__main__':
     infile = sys.argv[1]
     filt = sys.argv[2]

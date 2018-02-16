@@ -27,7 +27,7 @@ import sys
 import os
 import re
 import pyfits
-import numpy as num
+
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 
@@ -171,7 +171,7 @@ if __name__ == '__main__':
 
     convertfpM(infile).writeFits(outfile)
 
-    comparison = """
+    comparison = """  # noqa ignore the really long line
 import lsst.afw.image as afwImage
 import numpy as num
 import os

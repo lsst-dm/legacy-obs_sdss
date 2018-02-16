@@ -28,13 +28,10 @@ from optparse import OptionParser
 import os
 import re
 import shutil
-try:
-    import sqlite3
-except ImportError:
-    # try external pysqlite package; deprecated
-    import sqlite as sqlite3
+import sqlite3
 import sys
-import lsst.afw.image as afwImage
+from lsst.afw.fits import readMetadata
+from lsst.afw.geom import makeSkyWcs
 import lsst.skypix as skypix
 
 
@@ -102,7 +99,7 @@ def processBand(filterDir, conn, done, qsp):
             nSkipped += 1
             continue
 
-        md = afwImage.readMetadata(fits)
+        md = readMetadata(fits)
         conn.execute("""INSERT INTO raw VALUES
             (NULL, ?, ?, ?, ?)""", (run, filter, camcol, field))
 
@@ -110,7 +107,7 @@ def processBand(filterDir, conn, done, qsp):
             id = row[0]
             break
 
-        wcs = afwImage.makeWcs(md)
+        wcs = makeSkyWcs(md)
         poly = skypix.imageToPolygon(wcs,
                                      md.get("NAXIS1"), md.get("NAXIS2"),
                                      padRad=0.000075)  # about 15 arcsec
@@ -124,9 +121,10 @@ def processBand(filterDir, conn, done, qsp):
             conn.commit()
 
     conn.commit()
-    print(filterDir, \
-        "... %d processed, %d skipped, %d unrecognized" % \
-        (nProcessed, nSkipped, nUnrecognized), file=sys.stderr)
+    print(filterDir,
+          "... %d processed, %d skipped, %d unrecognized" %
+          (nProcessed, nSkipped, nUnrecognized), file=sys.stderr)
+
 
 if __name__ == "__main__":
     parser = OptionParser(usage="""%prog [options] DIR ...

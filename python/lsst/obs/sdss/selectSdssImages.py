@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 from builtins import range
-#!/usr/bin/env python
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -180,6 +179,7 @@ class ExposureInfo(BaseExposureInfo):
             "run rerun camcol field filter ra1 dec1 ra2 dec2 ra3 dec3 ra4 dec4".split() +
             "strip psfWidth sky airmass quality isblacklisted".split()
         )
+
     def __hash__(self):
         """
         Objects used in sets are required to be hashable, which requires (among other things) a
@@ -280,7 +280,7 @@ from %s as ccdExp where """ % (self.config.table,)
         exposureInfoList = [ExposureInfo(result) for result in cursor]
 
         runExpInfoSetDict = dict()
-        
+
         for expInfo in exposureInfoList:
             run = expInfo.dataId["run"]
             expInfoSet = runExpInfoSetDict.get(run)

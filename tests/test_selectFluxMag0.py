@@ -89,7 +89,7 @@ class ScaleSdssZeroPointTaskTestCase(lsst.utils.tests.TestCase):
         metadata.set("LTV1", -341970)
         metadata.set("LTV2", -11412)
         # exposure needs a wcs and a bbox
-        wcs = afwImage.makeWcs(metadata)
+        wcs = afwGeom.makeSkyWcs(metadata)
         bbox = afwGeom.Box2I(afwGeom.Point2I(341970, 11412), afwGeom.Extent2I(xNumPix, yNumPix))
         exposure = afwImage.ExposureF(bbox, wcs)
         mi = exposure.getMaskedImage()
@@ -164,6 +164,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

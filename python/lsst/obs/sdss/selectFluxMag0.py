@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 from builtins import str
 from builtins import range
-#!/usr/bin/env python
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
