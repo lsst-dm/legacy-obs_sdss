@@ -146,3 +146,5 @@ datasets:
     template: deepDiff/%(run)d/%(camcol)d/%(filter)s/diaSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
   deepDiff_kernelSrc:
     template: deepDiff/%(run)d/%(camcol)d/%(filter)s/kernelSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
+  apPipe_metadata:
+    template: apPipe_metadata/%(run)d/%(camcol)d/%(filter)s/apPipe-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
