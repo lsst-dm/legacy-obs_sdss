@@ -34,8 +34,8 @@ defaultSubLevels:
 exposures:
   fpC:
     level: None
-    persistable: DecoratedImageU
-    python: lsst.afw.image.DecoratedImageU
+    persistable: ImageU
+    python: lsst.afw.image.ImageU
     storage: FitsStorage
     tables:
     - raw
