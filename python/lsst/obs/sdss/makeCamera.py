@@ -235,7 +235,7 @@ def printCamera(title, camera):
         print("%s %dx%d centre (mm): %s" %
               (det.getName(),
                det.getBBox().getWidth(), det.getBBox().getHeight(),
-               det.getCenter(FOCAL_PLANE).getPoint()))
+               det.getCenter(FOCAL_PLANE)))
 
 
 def main():
