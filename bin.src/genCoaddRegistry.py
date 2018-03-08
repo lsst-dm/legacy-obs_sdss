@@ -30,9 +30,6 @@ import re
 import shutil
 import sqlite3
 import sys
-from lsst.afw.fits import readMetadata
-from lsst.afw.geom import makeSkyWcs
-import lsst.skypix as skypix
 
 
 def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
@@ -63,12 +60,10 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
         for row in conn.execute(cmd):
             done[row[0]] = True
 
-    qsp = skypix.createQuadSpherePixelization()
-
     try:
         for dir in dirList:
             for filterDir in glob.iglob(os.path.join(dir, "*")):
-                processBand(filterDir, conn, done, qsp)
+                processBand(filterDir, conn, done)
     finally:
         print("Cleaning up...", file=sys.stderr)
         conn.execute("CREATE INDEX ix_skyTile_id ON raw_skyTile (id)")
@@ -77,7 +72,7 @@ def process(dirList, inputRegistry, outputRegistry="registry.sqlite3"):
         conn.close()
 
 
-def processBand(filterDir, conn, done, qsp):
+def processBand(filterDir, conn, done):
     nProcessed = 0
     nSkipped = 0
     nUnrecognized = 0
@@ -99,22 +94,8 @@ def processBand(filterDir, conn, done, qsp):
             nSkipped += 1
             continue
 
-        md = readMetadata(fits)
         conn.execute("""INSERT INTO raw VALUES
             (NULL, ?, ?, ?, ?)""", (run, filter, camcol, field))
-
-        for row in conn.execute("SELECT last_insert_rowid()"):
-            id = row[0]
-            break
-
-        wcs = makeSkyWcs(md)
-        poly = skypix.imageToPolygon(wcs,
-                                     md.get("NAXIS1"), md.get("NAXIS2"),
-                                     padRad=0.000075)  # about 15 arcsec
-        pix = qsp.intersect(poly)
-        for skyTileId in pix:
-            conn.execute("INSERT INTO raw_skyTile VALUES(?, ?)",
-                         (id, skyTileId))
 
         nProcessed += 1
         if nProcessed % 100 == 0:
