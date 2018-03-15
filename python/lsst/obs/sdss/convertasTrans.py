@@ -209,13 +209,13 @@ def convertasTrans(infile, filt, camcol, field, stepSize=50, doValidate=False):
 
     try:
         cIdx = cList.index(camcol)
-    except:
+    except Exception:
         print("Cannot extract data for camcol %s" % (camcol))
         return None
 
     try:
         fIdx = fList.index(filt)
-    except:
+    except Exception:
         print("Cannot extract data for filter %s" % (filt))
         return None
 
@@ -230,7 +230,7 @@ def convertasTrans(infile, filt, camcol, field, stepSize=50, doValidate=False):
     fields = edat.field('field').tolist()
     try:
         fIdx = fields.index(field)
-    except:
+    except Exception:
         print("Cannot extract data for field %d" % (field))
         return None
 
