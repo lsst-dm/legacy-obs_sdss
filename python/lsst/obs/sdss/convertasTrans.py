@@ -30,7 +30,6 @@ import numpy as np
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 from lsst.afw.geom import makeSkyWcs
-import lsst.afw.coord as afwCoord
 import lsst.afw.table as afwTable
 import lsst.meas.astrom.sip as sip
 
@@ -152,7 +151,7 @@ def createWcs(x, y, mapper, order=4, cOffset=1.0):
 
     # CRVAL1  = RA at Reference Pixel
     # CRVAL2  = DEC at Reference Pixel
-    crval = afwCoord.IcrsCoord(afwGeom.Point2D(ra_rad[0], dec_rad[0]), afwGeom.radians)
+    crval = afwGeom.SpherePoint(ra_rad[0], dec_rad[0], afwGeom.radians)
 
     # CD1_1   = RA  degrees per column pixel
     # CD1_2   = RA  degrees per row pixel
@@ -162,9 +161,9 @@ def createWcs(x, y, mapper, order=4, cOffset=1.0):
     ULl = mapper.xyToRaDec(0., 1.)
     LRl = mapper.xyToRaDec(1., 0.)
 
-    LLc = afwCoord.IcrsCoord(afwGeom.Point2D(LLl[0], LLl[1]), afwGeom.radians)
-    ULc = afwCoord.IcrsCoord(afwGeom.Point2D(ULl[0], ULl[1]), afwGeom.radians)
-    LRc = afwCoord.IcrsCoord(afwGeom.Point2D(LRl[0], LRl[1]), afwGeom.radians)
+    LLc = afwGeom.SpherePoint(LLl[0], LLl[1], afwGeom.radians)
+    ULc = afwGeom.SpherePoint(ULl[0], ULl[1], afwGeom.radians)
+    LRc = afwGeom.SpherePoint(LRl[0], LRl[1], afwGeom.radians)
 
     cdN_1 = LLc.getTangentPlaneOffset(LRc)
     cdN_2 = LLc.getTangentPlaneOffset(ULc)
@@ -184,9 +183,9 @@ def validate(xs, ys, mapper, wcs):
     dists = []
     for i in range(len(xs)):
         tuple1 = mapper.xyToRaDec(xs[i], ys[i])
-        coord1 = afwCoord.IcrsCoord(afwGeom.Point2D(tuple1[0], tuple1[1]), afwGeom.radians)
+        coord1 = afwGeom.SpherePoint(tuple1[0], tuple1[1], afwGeom.radians)
         coord2 = wcs.pixelToSky(xs[i], ys[i])
-        dist = coord1.angularSeparation(coord2).asArcseconds()
+        dist = coord1.separation(coord2).asArcseconds()
         dists.append(dist)
 
     print(np.mean(dists), np.std(dists))

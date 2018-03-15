@@ -30,9 +30,7 @@ import lsst.utils.tests
 import lsst.daf.persistence as dafPersist
 from lsst.daf.base import DateTime
 import lsst.afw.image
-from lsst.afw.coord import IcrsCoord
-from lsst.afw.geom import SkyWcs
-from lsst.afw.geom import degrees
+from lsst.afw.geom import SkyWcs, SpherePoint, degrees
 import lsst.afw.detection
 
 
@@ -74,9 +72,8 @@ class SdssMapperTestCase(lsst.utils.tests.TestCase):
             self.assertIsInstance(wcs, SkyWcs)
             self.assertFalse(wcs.isFlipped)
             # comparison is to results from lsst.afw.image.TanWcs class
-            self.assertCoordsAlmostEqual(wcs.pixelToSky(700, 1000),
-                                         IcrsCoord(343.6507738304687 * degrees,
-                                                   -0.3509870420713227 * degrees))
+            self.assertSpherePointsAlmostEqual(wcs.pixelToSky(700, 1000),
+                                               SpherePoint(343.6507738304687, -0.3509870420713227, degrees))
 
             tsField = ref.get("tsField")
             self.assertAlmostEqual(tsField.gain, 4.72, 2)

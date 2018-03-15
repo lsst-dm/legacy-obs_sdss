@@ -35,7 +35,6 @@ from lsst.daf.persistence import DbAuth
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
-import lsst.afw.coord as afwCoord
 from lsst.obs.sdss.scaleSdssZeroPoint import ScaleSdssZeroPointTask
 from lsst.obs.sdss.selectFluxMag0 import SelectSdssFluxMag0Task
 
@@ -106,10 +105,10 @@ class ScaleSdssZeroPointTaskTestCase(lsst.utils.tests.TestCase):
         run = 4192
         filter = 'i'
         dataId = {'run': run, "filter": filter}
-        coordList = [afwCoord.Coord(5.62839*afwGeom.radians, -5.66359e-05*afwGeom.radians),
-                     afwCoord.Coord(5.62444*afwGeom.radians, -5.66359e-05*afwGeom.radians),
-                     afwCoord.Coord(5.62444*afwGeom.radians, 0.00371974*afwGeom.radians),
-                     afwCoord.Coord(5.62839*afwGeom.radians, 0.00371974*afwGeom.radians)]
+        coordList = [afwGeom.SpherePoint(5.62839, -5.66359e-05, afwGeom.radians),
+                     afwGeom.SpherePoint(5.62444, -5.66359e-05, afwGeom.radians),
+                     afwGeom.SpherePoint(5.62444, 0.00371974, afwGeom.radians),
+                     afwGeom.SpherePoint(5.62839, 0.00371974, afwGeom.radians)]
         fmInfoStruct = task.run(dataId, coordList)
         fmInfoList = fmInfoStruct.fluxMagInfoList
         self.assertEqual(2, len(fmInfoList))

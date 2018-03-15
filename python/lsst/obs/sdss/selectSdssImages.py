@@ -28,7 +28,6 @@ import MySQLdb
 import numpy as np
 
 import lsst.pex.config as pexConfig
-from lsst.afw.coord import IcrsCoord
 import lsst.afw.geom as afwGeom
 from lsst.daf.persistence import DbAuth
 import lsst.pipe.base as pipeBase
@@ -115,7 +114,7 @@ class ExposureInfo(BaseExposureInfo):
 
     Data includes:
     - dataId: data ID of exposure (a dict)
-    - coordList: a list of corner coordinates of the exposure (list of IcrsCoord)
+    - coordList: a list of corner coordinates of the exposure (list of lsst.afw.geom.SpherePoint)
     - fwhm: mean FWHM of exposure
     - quality: quality field from self.config.table
     """
@@ -135,10 +134,7 @@ class ExposureInfo(BaseExposureInfo):
         coordList = []
         for i in range(4):
             coordList.append(
-                IcrsCoord(
-                    afwGeom.Angle(result[self._nextInd], afwGeom.degrees),
-                    afwGeom.Angle(result[self._nextInd], afwGeom.degrees),
-                )
+                afwGeom.SpherePoint(result[self._nextInd], result[self._nextInd], afwGeom.degrees)
             )
         BaseExposureInfo.__init__(self, dataId, coordList)
 
@@ -456,7 +452,7 @@ def _computeRaRange(coordList, ctrRa=None):
     or is not the center of your range, then it is safer to restrict your coordinates
     to span a range of ctrRa - pi < coord < ctrRa + pi
 
-    @param[in] coordList: list of afwCoord.Coord
+    @param[in] coordList: list of ICRS coordinates, each an lsst.afw.geom.SpherePoint
     @param[in] ctrRa: RA of center of range as an afwGeom.Angle; if None then
         coordList[0].toIcrs().getLongitude() is used after being wrapped into the range [-pi, pi)
     @return RA range as (minRA, maxRA), each an ICRS RA as an afwGeom.Angle
