@@ -28,7 +28,6 @@ import unittest
 
 import lsst.utils.tests
 from lsst.daf.persistence import DbAuth
-import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
 from lsst.obs.sdss.selectSdssImages import SelectSdssImagesTask
 
@@ -57,7 +56,7 @@ def getCoordList(minRa, minDec, maxRa, maxDec):
         (maxRa, maxDec),
         (minRa, maxDec),
     )
-    return tuple(afwCoord.IcrsCoord(afwGeom.Point2D(d[0], d[1]), afwGeom.degrees) for d in degList)
+    return tuple(afwGeom.SpherePoint(d[0], d[1], afwGeom.degrees) for d in degList)
 
 
 class SelectSdssImagesTestCase(unittest.TestCase):
