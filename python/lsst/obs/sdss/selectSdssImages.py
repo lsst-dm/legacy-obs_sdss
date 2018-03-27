@@ -454,12 +454,12 @@ def _computeRaRange(coordList, ctrRa=None):
 
     @param[in] coordList: list of ICRS coordinates, each an lsst.afw.geom.SpherePoint
     @param[in] ctrRa: RA of center of range as an afwGeom.Angle; if None then
-        coordList[0].toIcrs().getLongitude() is used after being wrapped into the range [-pi, pi)
+        coordList[0].getLongitude() is used after being wrapped into the range [-pi, pi)
     @return RA range as (minRA, maxRA), each an ICRS RA as an afwGeom.Angle
     """
     if not coordList:
         raise RuntimeError("coordList contains no elements")
-    raList = [coord.toIcrs().getLongitude() for coord in coordList]
+    raList = [coord.getLongitude() for coord in coordList]
     if ctrRa is None:
         ctrRa = raList[0].wrapCtr()
     raList = [ra.wrapNear(ctrRa) for ra in raList]
