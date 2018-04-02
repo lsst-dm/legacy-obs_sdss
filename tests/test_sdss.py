@@ -46,7 +46,7 @@ class SdssMapperTestCase(lsst.utils.tests.TestCase):
         for ref in sub:
             im = ref.get("fpC")
             w, h = im.getWidth(), im.getHeight()
-            self.assertEqual(im.__class__, lsst.afw.image.ImageU)
+            self.assertEqual(im.__class__, lsst.afw.image.ExposureU)
             self.assertEqual(w, 2048)
             self.assertEqual(h, 1489)
 
