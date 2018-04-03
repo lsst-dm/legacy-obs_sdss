@@ -113,7 +113,8 @@ class SdssNullIsrTask(pipeBase.Task):
         - Calib is from tsField
         - Psf is from psField
         """
-        image = sensorRef.get("fpC").convertF()
+        originalExp = sensorRef.get("fpC").convertF()
+        image = originalExp.getMaskedImage().getImage()
         if self.config.removePedestal:
             image -= self.config.pedestalVal
         mask = sensorRef.get("fpM")
