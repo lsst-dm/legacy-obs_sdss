@@ -19,7 +19,7 @@ config.charImage.measurement.slots.apFlux = "base_CircularApertureFlux_7_0"
 config.charImage.measurement.slots.calibFlux = "base_CircularApertureFlux_7_0"
 
 # we rarely run PSF determination on SDSS data, so we have to run our own star selector instead
-config.charImage.measureApCorr.starSelector.name = "objectSize"
+config.charImage.measureApCorr.sourceSelector.name = "objectSize"
 
 config.calibrate.detection.background.binSize = 512
 config.calibrate.detection.background.binSize = 512
