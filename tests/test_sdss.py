@@ -51,9 +51,9 @@ class SdssMapperTestCase(lsst.utils.tests.TestCase):
             self.assertEqual(h, 1489)
 
             im_md = ref.get("fpC_md")
-            self.assertEqual(im_md.get("RUN"), 5754)
-            self.assertEqual(im_md.get("FRAME"), 280)
-            self.assertEqual(im_md.get("STRIPE"), 82)
+            self.assertEqual(im_md.getScalar("RUN"), 5754)
+            self.assertEqual(im_md.getScalar("FRAME"), 280)
+            self.assertEqual(im_md.getScalar("STRIPE"), 82)
 
             msk = ref.get("fpM")
             w, h = msk.getWidth(), msk.getHeight()

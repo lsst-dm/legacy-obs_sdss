@@ -104,13 +104,13 @@ def processRun(runDir, conn, done):
             continue
 
         md = readMetadata(fits)
-        date = md.get("DATE-OBS")
+        date = md.getScalar("DATE-OBS")
         if date.find("-") != -1:
-            (year, month, day) = md.get("DATE-OBS").split("-")
+            (year, month, day) = md.getScalar("DATE-OBS").split("-")
         else:
-            (day, month, year) = md.get("DATE-OBS").split("/")
+            (day, month, year) = md.getScalar("DATE-OBS").split("/")
             year = 1900 + int(year)
-        (hour, minute, second) = md.get("TAIHMS").split(":")
+        (hour, minute, second) = md.getScalar("TAIHMS").split(":")
         seconds = float(second)
         second = int(seconds)
         taiObs = dafBase.DateTime(int(year), int(month), int(day), int(hour),
@@ -118,7 +118,7 @@ def processRun(runDir, conn, done):
         taiObs = dafBase.DateTime(taiObs.nsecs() +
                                   int((seconds - second) * 1000000000), dafBase.DateTime.TAI)
         taiObs = taiObs.toString(dafBase.DateTime.UTC)[:-1]
-        strip = "%d%s" % (md.get('STRIPE'), md.get('STRIP'))
+        strip = "%d%s" % (md.getScalar('STRIPE'), md.getScalar('STRIP'))
         conn.execute("""INSERT INTO raw VALUES
             (NULL, ?, ?, ?, ?, ?, ?, ?)""",
                      (run, rerun, filter, camcol, field, taiObs, strip))
