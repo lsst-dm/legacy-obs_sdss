@@ -37,7 +37,7 @@ import datetime
 import numpy
 
 
-class yanny(dict):
+class yanny(dict):  # noqa N801
     """An object interface to a yanny file.
 
     Create a yanny object using a yanny file, `filename`.  If the file exists,
@@ -269,11 +269,11 @@ class yanny(dict):
         for c in dt.names:
             if dt[c].kind == 'V':
                 t = dt[c].subdtype[0].str[1:]
-                l = dt[c].subdtype[1][0]
+                l = dt[c].subdtype[1][0]  # noqa E741
                 s = dt[c].subdtype[0].itemsize
             else:
                 t = dt[c].str[1:]
-                l = 0
+                l = 0  # noqa E741
                 s = dt[c].itemsize
             line = '    '
             if t[0] == 'S':
