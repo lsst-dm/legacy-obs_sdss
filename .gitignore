@@ -9,6 +9,9 @@ config.log
 *.pyc
 *_wrap.cc
 .cache
+.pytest_cache
+pytest_session.txt
+.coverage
 *Lib.py
 doc/html
 doc/*.tag
