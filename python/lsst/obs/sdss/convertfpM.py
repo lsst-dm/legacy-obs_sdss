@@ -109,19 +109,18 @@ class Objmask(object):
 
 def convertfpM(infile, allPlanes=False):
     hdr = pyfits.open(infile)
-    run = hdr[0].header['RUN']
-    camcol = hdr[0].header['CAMCOL']
-    field = hdr[0].header['FIELD']
+    hdr[0].header['RUN']
+    hdr[0].header['CAMCOL']
+    hdr[0].header['FIELD']
     nRows = hdr[0].header['MASKROWS']
     nCols = hdr[0].header['MASKCOLS']
-    nPlane = hdr[0].header['NPLANE']
+    hdr[0].header['NPLANE']
 
     names = hdr[-1].data.names
-    if (not "attributeName" in names) or (not "Value" in names):
+    if ("attributeName" not in names) or ("Value" not in names):
         raise LookupError("Missing data in fpM header")
 
     planes = hdr[-1].data.field("attributeName").tolist()
-    values = hdr[-1].data.field("Value").tolist()
     mask = afwImage.Mask(afwGeom.ExtentI(nCols, nRows))
 
     # Minimal sets of mask planes needed for LSST
@@ -143,7 +142,7 @@ def convertfpM(infile, allPlanes=False):
                       'S_MASK_BINOBJECT', 'S_MASK_CATOBJECT', 'S_MASK_SUBTRACTED', 'S_MASK_GHOST']:
             idx = planes.index(plane) + 1
             planeName = re.sub("S_MASK_", "", plane)
-            planeId = mask.addMaskPlane(planeName)
+            mask.addMaskPlane(planeName)
             planeBitMask = afwImage.Mask.getPlaneBitMask(planeName)
             listToSet.append((idx, planeBitMask))
 

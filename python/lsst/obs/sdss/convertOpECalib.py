@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 import lsst.utils
-from lsst.obs.sdss.yanny import yanny as Yanny
+from lsst.obs.sdss.yanny import yanny as Yanny  # noqa N812
 
 
 class SdssCameraState(Yanny):
@@ -53,7 +53,6 @@ class SdssCameraState(Yanny):
 
         return eparams
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 if __name__ == "__main__":
     sc = SdssCameraState(os.path.join(lsst.utils.getPackageDir("obs_sdss"), "etc"), "opConfig-50000.par",
