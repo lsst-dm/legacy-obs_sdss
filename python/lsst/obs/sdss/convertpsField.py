@@ -23,7 +23,7 @@ from builtins import range
 #
 import sys
 import os
-import pyfits
+from astropy.io import fits
 import numpy as num
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
@@ -48,7 +48,7 @@ def convertpsField(infile, filt, trim=True, rcscale=0.001, MAX_ORDER_B=5, LSST_O
         sys.exit(1)
 
     buff = open(infile, "rb")
-    pstruct = pyfits.getdata(buff, ext=filtToHdu[filt])
+    pstruct = fits.getdata(buff, ext=filtToHdu[filt])
 
     spaParList = [[]]*len(pstruct)
     kernelList = []

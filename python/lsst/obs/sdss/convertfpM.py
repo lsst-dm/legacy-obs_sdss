@@ -26,7 +26,7 @@ from builtins import object
 import sys
 import os
 import re
-import pyfits
+from astropy.io import fits
 
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
@@ -105,7 +105,7 @@ class Objmask(object):
 
 
 def convertfpM(infile, allPlanes=False):
-    hdr = pyfits.open(infile)
+    hdr = fits.open(infile)
     hdr[0].header['RUN']
     hdr[0].header['CAMCOL']
     hdr[0].header['FIELD']

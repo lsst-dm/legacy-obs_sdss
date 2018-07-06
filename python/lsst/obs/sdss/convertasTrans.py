@@ -24,7 +24,7 @@ from builtins import object
 #
 import sys
 
-import pyfits
+from astropy.io import fits
 import numpy as np
 
 import lsst.afw.image as afwImage
@@ -192,7 +192,7 @@ def validate(xs, ys, mapper, wcs):
 
 
 def convertasTrans(infile, filt, camcol, field, stepSize=50, doValidate=False):
-    hdulist = pyfits.open(infile)
+    hdulist = fits.open(infile)
     t0 = hdulist[0].header['ccdarray']
     if t0 != 'photo':
         raise RuntimeError('*** Cannot support ccdarray: %s' % (t0,))
