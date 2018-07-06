@@ -101,10 +101,7 @@ class Objmask(object):
             if(x2 >= ncol):
                 x2 = ncol - 1
 
-            x = int(x1)
-            while x <= x2:
-                mask.set(x, y, mask.get(x, y) | self.cval)
-                x += 1
+            mask.array[y, x1: x2 + 1] |= self.cval
 
 
 def convertfpM(infile, allPlanes=False):
