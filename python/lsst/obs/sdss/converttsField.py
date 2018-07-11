@@ -24,7 +24,7 @@ import sys
 import os
 import collections
 
-import pyfits
+from astropy.io import fits
 import numpy as np
 
 import lsst.afw.image as afwImage
@@ -47,7 +47,7 @@ def converttsField(infile, filt, exptime=53.907456):
     - exptime: exposure time (sec)
     - airmass: airmass
     """
-    ptr = pyfits.open(infile)
+    ptr = fits.open(infile)
     if ptr[0].header['NFIELDS'] != 1:
         print("INVALID TSFIELD FILE")
         sys.exit(1)
