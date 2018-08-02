@@ -62,13 +62,13 @@ def addAmp(ampCatalog, i, eparams):
     #
     record = ampCatalog.addNew()
     xtot = width + nExtended + nOverclock
-    allPixels = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(xtot, height))
+    allPixels = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(xtot, height), invert=False)
     biasSec = afwGeom.BoxI(afwGeom.PointI(nExtended if i == 0 else width, 0),
-                           afwGeom.ExtentI(nOverclock, height))
+                           afwGeom.ExtentI(nOverclock, height), invert=False)
     dataSec = afwGeom.BoxI(afwGeom.PointI(nExtended + nOverclock if i == 0 else 0, 0),
-                           afwGeom.ExtentI(width, height))
+                           afwGeom.ExtentI(width, height), invert=False)
     emptyBox = afwGeom.BoxI()
-    bbox = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(width, height))
+    bbox = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(width, height), invert=False)
     bbox.shift(afwGeom.Extent2I(width*i, 0))
 
     shiftp = afwGeom.Extent2I(xtot*i, 0)

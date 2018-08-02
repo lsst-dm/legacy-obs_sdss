@@ -132,7 +132,7 @@ class SdssNullIsrTask(pipeBase.Task):
             begin = bbox.getBegin()
             extent = bbox.getDimensions()
             extent -= afwGeom.Extent2I(0, self.config.overlapSize)
-            tbbox = afwGeom.BoxI(begin, extent)
+            tbbox = afwGeom.BoxI(begin, extent, invert=False)
             mi = afwImage.MaskedImageF(mi, tbbox)
 
         exposure = afwImage.ExposureF(mi, wcs)
