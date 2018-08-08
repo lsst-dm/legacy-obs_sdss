@@ -1,3 +1,6 @@
+"""
+SDSS-specific overrides for ProcessCcdTask
+"""
 from lsst.obs.sdss.sdssNullIsr import SdssNullIsrTask
 
 # Read post-ISR data from fpC, fpM, asTrans, etc. files and remove overlap
