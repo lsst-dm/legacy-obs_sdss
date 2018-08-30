@@ -115,15 +115,15 @@ datasets:
     persistable: ignored
     template: sci-results/%(run)d/%(camcol)d/%(filter)s/src/src-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
   processCcd_metadata:
-    template: processCcd_metadata/%(run)d/%(camcol)d/%(filter)s/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+    template: processCcd_metadata/%(run)d/%(camcol)d/%(filter)s/calexp-%(run)06d-%(filter)s%(camcol)d-%(field)04d.yaml
   isr_config:
     python: lsst.obs.sdss.sdssNullIsr.SdssNullIsrConfig
   isr_metadata:
-    template: isr_metadata/%(run)d/%(camcol)d/%(filter)s/isr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+    template: isr_metadata/%(run)d/%(camcol)d/%(filter)s/isr-%(run)06d-%(filter)s%(camcol)d-%(field)04d.yaml
   characterizeImage_metadata:
-    template: characterizeImage_metadata/%(run)d/%(camcol)d/%(filter)s/characterizeImage-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+    template: characterizeImage_metadata/%(run)d/%(camcol)d/%(filter)s/characterizeImage-%(run)06d-%(filter)s%(camcol)d-%(field)04d.yaml
   calibrate_metadata:
-    template: calibrate_metadata/%(run)d/%(camcol)d/%(filter)s/calibrate-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+    template: calibrate_metadata/%(run)d/%(camcol)d/%(filter)s/calibrate-%(run)06d-%(filter)s%(camcol)d-%(field)04d.yaml
   deep_makeSkyMap_config:
     persistable: Config
     python: lsst.pipe.tasks.makeSkyMap.MakeSkyMapTask.ConfigClass
@@ -131,7 +131,7 @@ datasets:
     tables: raw
     template: config/deep_makeSkyMap.py
   deep_assembleCoadd_metadata:
-    template: deep_assembleCoadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.boost
+    template: deep_assembleCoadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.yaml
   deepCoadd_measMatch:
     persistable: ignored
     template: deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/srcMatch-%(filter)s-%(tract)d-%(patch)s.fits
@@ -141,10 +141,10 @@ datasets:
   deepDiff_config:
     python: lsst.pex.config.Config
   deepDiff_metadata:
-    template: deepDiff/%(run)d/%(camcol)d/%(filter)s/metadata-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+    template: deepDiff/%(run)d/%(camcol)d/%(filter)s/metadata-%(run)06d-%(filter)s%(camcol)d-%(field)04d.yaml
   deepDiff_diaSrc:
     template: deepDiff/%(run)d/%(camcol)d/%(filter)s/diaSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
   deepDiff_kernelSrc:
     template: deepDiff/%(run)d/%(camcol)d/%(filter)s/kernelSrc-%(run)06d-%(filter)s%(camcol)d-%(field)04d.fits
   apPipe_metadata:
-    template: apPipe_metadata/%(run)d/%(camcol)d/%(filter)s/apPipe-%(run)06d-%(filter)s%(camcol)d-%(field)04d.boost
+    template: apPipe_metadata/%(run)d/%(camcol)d/%(filter)s/apPipe-%(run)06d-%(filter)s%(camcol)d-%(field)04d.yaml
