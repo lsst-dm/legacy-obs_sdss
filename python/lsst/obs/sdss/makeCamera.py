@@ -35,15 +35,21 @@ from lsst.obs.sdss.convertOpECalib import SdssCameraState
 #
 # Make an Amp
 #
+__all__ = []
 
 
 def addAmp(ampCatalog, i, eparams):
     """ Add an amplifier to an AmpInfoCatalog
 
-    @param ampCatalog: An instance of an AmpInfoCatalog object to fill with amp properties
-    @param i which amplifier? (i == 0 ? left : right)
-    @param eparams: Electronic parameters.  This is a list of tuples with (i, params),
-                    where params is a dictionary of electronic parameters.
+    Parameters
+    ----------
+    ampCatalog :
+        An instance of an AmpInfoCatalog object to fill with amp properties
+    i :
+        which amplifier? (i == 0 ? left : right)
+    eparams :
+        Electronic parameters.  This is a list of tuples with (i, params),
+        where params is a dictionary of electronic parameters.
     """
     #
     # Layout of active and overclock pixels in the as-readout data  The layout is:
@@ -102,10 +108,20 @@ def addAmp(ampCatalog, i, eparams):
 
 def makeCcd(ccdName, ccdId, offsetPoint):
     """make the information necessary to build a set detector
-    @param ccdName: string name of the ccd
-    @param ccdId: Integer id of the ccd
-    @param offsetPoint: Point2D position of the center of the ccd in mm
-    @return a dict of a DetectorConfig and an AmpInfoCatalog
+
+    Parameters
+    ----------
+    ccdName :
+        string name of the ccd
+    ccdId :
+        Integer id of the ccd
+    offsetPoint :
+        Point2D position of the center of the ccd in mm
+
+    Returns
+    -------
+    result : `callable`
+        a dict of a DetectorConfig and an AmpInfoCatalog
     """
     obsSdssDir = lsst.utils.getPackageDir('obs_sdss')
     opDir = os.path.join(obsSdssDir, "etc")
@@ -148,9 +164,18 @@ def makeCcd(ccdName, ccdId, offsetPoint):
 
 def makeCamera(name="SDSS", outputDir=None):
     """Make a camera
-    @param name: name of the camera
-    @param outputDir: If not None, write the objects used to make the camera to this location
-    @return a camera object
+
+    Parameters
+    ----------
+    name :
+        name of the camera
+    outputDir :
+        If not None, write the objects used to make the camera to this location
+
+    Returns
+    -------
+    result : `callable`
+        a camera object
     """
     camConfig = CameraConfig()
     camConfig.name = name
@@ -193,10 +218,17 @@ def makeCamera(name="SDSS", outputDir=None):
 
 def printCcd(title, ccd, trimmed=True, indent=""):
     """Print info about a ccd
-    @param title: title for the ccd
-    @param ccd: Detector object to interrogate
-    @param trimmed: Find out information about a trimmed ccd?
-    @param indent: Prefix to each output line
+
+    Parameters
+    ----------
+    title :
+        title for the ccd
+    ccd :
+        Detector object to interrogate
+    trimmed :
+        Find out information about a trimmed ccd?
+    indent :
+        Prefix to each output line
     """
     print(indent, title, "CCD: ", ccd.getName())
     if trimmed:
@@ -226,8 +258,13 @@ def printCcd(title, ccd, trimmed=True, indent=""):
 
 def printCamera(title, camera):
     """Print information about a camera
-    @param title: title for camera output
-    @param camera: Camera object to use to print the information
+
+    Parameters
+    ----------
+    title :
+        title for camera output
+    camera :
+        Camera object to use to print the information
     """
     print(title, "Camera:", camera.getName())
 

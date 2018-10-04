@@ -36,6 +36,8 @@ import lsst.meas.astrom.sip as sip
 deg2rad = np.pi / 180.
 rad2deg = 180. / np.pi
 
+__all__ = ("CoordinateMapper",)
+
 
 class CoordinateMapper(object):
     # COMMENT mu nu are defined as:

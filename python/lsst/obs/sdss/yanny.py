@@ -36,6 +36,8 @@ import os.path
 import datetime
 import numpy
 
+__all__ = ("yanny",)
+
 
 class yanny(dict):  # noqa N801
     """An object interface to a yanny file.

@@ -36,16 +36,26 @@ TsField = collections.namedtuple("TsField", "calib gain dateAvg exptime airmass"
 def converttsField(infile, filt, exptime=53.907456):
     """Extract data from a tsField table
 
-    @param[in] infile  path to tsField FITS file
-    @param[in] filt  index of filter in tsField FILTERS metadata entry
-    @param[in] exptime  exposure time (sec)
+    Parameters
+    ----------
+    infile :
+        path to tsField FITS file
+    filt :
+        index of filter in tsField FILTERS metadata entry
+    exptime :
+        exposure time (sec)
 
-    @return a dict with the following entries:
-    - calib: an lsst.afw.Calib
-    - gain: gain as a float
-    - dateAvg: date of exposure at middle of exposure, as an lsst.daf.base.DateTime
-    - exptime: exposure time (sec)
-    - airmass: airmass
+    Returns
+    -------
+    result : `callable` and `dict`
+        return a dict with the following entries:
+
+        - calib: an lsst.afw.Calib
+        - gain: gain as a float
+        - dateAvg: date of exposure at middle of exposure, as an lsst.daf.base.DateTime
+        - exptime: exposure time (sec)
+        - airmass: airmass
+
     """
     ptr = fits.open(infile)
     if ptr[0].header['NFIELDS'] != 1:

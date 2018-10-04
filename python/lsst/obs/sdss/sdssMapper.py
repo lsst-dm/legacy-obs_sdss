@@ -36,6 +36,8 @@ import lsst.afw.image.utils as afwImageUtils
 # Solely to get boost serialization registrations for Measurement subclasses
 import lsst.meas.algorithms as measAlgo  # flake8: noqa
 
+__all__ = ("SdssMapper",)
+
 
 class SdssMapper(CameraMapper):
     packageName = 'obs_sdss'
@@ -65,7 +67,10 @@ class SdssMapper(CameraMapper):
     def _computeCcdExposureId(self, dataId):
         """Compute the 64-bit (long) identifier for a CCD exposure.
 
-        @param dataId (dict) Data identifier with run, rerun, filter, camcol, field
+        Parameters
+        ----------
+        dataId : `dict`
+            Data identifier with run, rerun, filter, camcol, field
         """
         return ((int(dataId['run'])
                  * 10 + self.filterIdMap[dataId['filter']])
@@ -75,10 +80,14 @@ class SdssMapper(CameraMapper):
     def _computeCoaddExposureId(self, dataId, singleFilter):
         """Compute the 64-bit (long) identifier for a coadd.
 
-        @param dataId (dict)       Data identifier with tract and patch.
-        @param singleFilter (bool) True means the desired ID is for a single-
-                                   filter coadd, in which case dataId
-                                   must contain filter.
+        Parameters
+        ----------
+        dataId : `dict`
+            Data identifier with tract and patch.
+        singleFilter : `bool`
+            True means the desired ID is for a single-
+            filter coadd, in which case dataId
+            must contain filter.
         """
         tract = int(dataId['tract'])
         if tract < 0 or tract >= 128:
@@ -99,12 +108,22 @@ class SdssMapper(CameraMapper):
     def _standardizeExposure(self, mapping, item, dataId, filter=True,
                              trimmed=True):
         """Default standardization function for images.
-        @param mapping (lsst.obs.base.Mapping)
-        @param[in,out] item (lsst.afw.image.Exposure)
-        @param dataId (dict) Dataset identifier
-        @param filter (bool) Set filter?
-        @param trimmed (bool) Should detector be marked as trimmed?
-        @return (lsst.afw.image.Exposure) the standardized Exposure"""
+
+        Parameters
+        ----------
+        mapping : `lsst.obs.base.Mapping`
+        item : `lsst.afw.image.Exposure`
+        dataId : `dict`
+            Dataset identifier
+        filter : `bool`
+            Set filter?
+        trimmed : `bool`
+            Should detector be marked as trimmed?
+
+        Returns
+        -------
+        item : `lsst.afw.image.Exposure`
+            the standardized Exposure"""
 
         if (re.search(r'Exposure', mapping.python) and re.search(r'Image', mapping.persistable)):
             item = exposureFromImage(item, logger=self.log)

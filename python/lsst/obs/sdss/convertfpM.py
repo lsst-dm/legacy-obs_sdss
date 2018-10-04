@@ -31,6 +31,8 @@ from astropy.io import fits
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 
+__all__ = ("Span", "Objmask")
+
 
 class Span(object):
 

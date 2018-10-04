@@ -7,6 +7,8 @@ import numpy as np
 import lsst.utils
 from lsst.obs.sdss.yanny import yanny as Yanny  # noqa N812
 
+__all__ = ("SdssCameraState",)
+
 
 class SdssCameraState(Yanny):
     _filters = dict(u=1, g=2, r=3, i=4, z=5)

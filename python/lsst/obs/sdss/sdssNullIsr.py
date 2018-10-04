@@ -26,9 +26,12 @@ import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 from lsst.pipe.tasks.processCcd import ProcessCcdTask
 
+__all__ = ("SdssNullIsrConfig", "SdssNullIsrTask",)
+
 
 class SdssNullIsrConfig(ProcessCcdTask.ConfigClass):
     """Config for SdssNullIsrTask"""
+
     removePedestal = pexConfig.Field(
         dtype=bool,
         doc="Remove SDSS pedestal from fpC file?",
@@ -69,36 +72,17 @@ class SdssNullIsrConfig(ProcessCcdTask.ConfigClass):
 # \}
 
 class SdssNullIsrTask(pipeBase.Task):
-    """!Load SDSS post-ISR data from fpC, fpM, asTrans, etc. files
+    """Load SDSS post-ISR data from fpC, fpM, asTrans, etc. files
 
-    @anchor SdssNullIsrTask_
-
-    @section pipe_tasks_sdssNullIsr_Contents  Contents
-
-     - @ref pipe_tasks_sdssNullIsr_Purpose
-     - @ref pipe_tasks_sdssNullIsr_Initialize
-     - @ref pipe_tasks_sdssNullIsr_IO
-     - @ref pipe_tasks_sdssNullIsr_Config
-
-    @section pipe_tasks_sdssNullIsr_Purpose  Description
+    Notes
+    -----
+    Description
 
     Load "instcal" exposures from the community pipeline as a post-ISR exposure,
     and optionally persists it as a `postISRCCD`.
 
     This is used to retarget the `isr` subtask in `ProcessCcdTask` for SDSS
     because the LSST software stack is not capable of performing ISR on SDSS data.
-
-    @section pipe_tasks_sdssNullIsr_Initialize  Task initialisation
-
-    @copydoc \_\_init\_\_
-
-    @section pipe_tasks_sdssNullIsr_IO  Invoking the Task
-
-    The main method is `runDataRef`.
-
-    @section pipe_tasks_sdssNullIsr_Config  Configuration parameters
-
-    See @ref SdssNullIsrConfig
     """
     ConfigClass = SdssNullIsrConfig
     _DefaultName = "isr"
@@ -112,6 +96,7 @@ class SdssNullIsrTask(pipeBase.Task):
         - Wcs is from asTrans
         - Calib is from tsField
         - Psf is from psField
+
         """
         originalExp = sensorRef.get("fpC").convertF()
         image = originalExp.getMaskedImage().getImage()
@@ -159,13 +144,20 @@ class SdssNullIsrTask(pipeBase.Task):
 
     @pipeBase.timeMethod
     def runDataRef(self, sensorRef):
-        """!Load SDSS data as post-ISR exposure and possibly persist it as a post-ISR CCD
+        """Load SDSS data as post-ISR exposure and possibly persist it as a post-ISR CCD
 
-        @param[in] sensorRef  butler data reference for post-ISR exposure
+        Parameters
+        ----------
+        sensorRef :
+            butler data reference for post-ISR exposure
             (a daf.persistence.butlerSubset.ButlerDataRef)
 
-        @return a pipeBase.Struct with fields:
-        - exposure: the exposure after application of ISR
+        Returns
+        result : `struct`
+            a pipeBase.Struct with fields:
+
+            - ``exposure`` : the exposure after application of ISR
+
         """
         self.log.info("Loading SDSS asTrans file %s" % (sensorRef.dataId))
 
