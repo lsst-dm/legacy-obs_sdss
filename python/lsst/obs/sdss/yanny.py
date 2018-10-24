@@ -27,9 +27,6 @@ files in etc/.
 #
 # Modules
 #
-from __future__ import print_function
-from builtins import range
-from past.builtins import basestring
 import re
 import os
 import os.path
@@ -332,9 +329,8 @@ class yanny(dict):  # noqa N801
             # Handle file-like objects
             #
             # NOTE: commented out to remove astropy.extern.six dependency
-            # NOTE: Should be revisited when Python 3 support is added to the stack
             # if isinstance(filename, six.string_types):
-            if isinstance(filename, basestring):
+            if isinstance(filename, str):
                 if os.access(filename, os.R_OK):
                     self.filename = filename
                     with open(filename, 'r') as f:
