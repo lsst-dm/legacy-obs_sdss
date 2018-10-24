@@ -124,12 +124,6 @@ datasets:
     template: characterizeImage_metadata/%(run)d/%(camcol)d/%(filter)s/characterizeImage-%(run)06d-%(filter)s%(camcol)d-%(field)04d.yaml
   calibrate_metadata:
     template: calibrate_metadata/%(run)d/%(camcol)d/%(filter)s/calibrate-%(run)06d-%(filter)s%(camcol)d-%(field)04d.yaml
-  deep_makeSkyMap_config:
-    persistable: Config
-    python: lsst.pipe.tasks.makeSkyMap.MakeSkyMapTask.ConfigClass
-    storage: ConfigStorage
-    tables: raw
-    template: config/deep_makeSkyMap.py
   deep_assembleCoadd_metadata:
     template: deep_assembleCoadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.yaml
   deepCoadd_measMatch:
