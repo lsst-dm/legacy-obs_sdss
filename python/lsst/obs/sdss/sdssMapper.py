@@ -67,10 +67,9 @@ class SdssMapper(CameraMapper):
 
         @param dataId (dict) Data identifier with run, rerun, filter, camcol, field
         """
-        return ((int(dataId['run'])
-                 * 10 + self.filterIdMap[dataId['filter']])
-                * 10 + dataId['camcol']) \
-            * 10000 + dataId['field']
+        return ((int(dataId['run']) * 10 +
+                 self.filterIdMap[dataId['filter']]) * 10 +
+                dataId['camcol']) * 10000 + dataId['field']
 
     def _computeCoaddExposureId(self, dataId, singleFilter):
         """Compute the 64-bit (long) identifier for a coadd.
