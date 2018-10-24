@@ -126,12 +126,6 @@ datasets:
     template: calibrate_metadata/%(run)d/%(camcol)d/%(filter)s/calibrate-%(run)06d-%(filter)s%(camcol)d-%(field)04d.yaml
   deep_assembleCoadd_metadata:
     template: deep_assembleCoadd_metadata/%(filter)s/%(tract)d/%(patch)s/metadata-%(filter)s-%(tract)d-%(patch)s.yaml
-  deepCoadd_measMatch:
-    persistable: ignored
-    template: deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/srcMatch-%(filter)s-%(tract)d-%(patch)s.fits
-  deepCoadd_measMatchFull:
-    persistable: ignored
-    template: deepCoadd-results/%(filter)s/%(tract)d/%(patch)s/srcMatchFull-%(filter)s-%(tract)d-%(patch)s.fits
   deepDiff_config:
     python: lsst.pex.config.Config
   deepDiff_metadata:
