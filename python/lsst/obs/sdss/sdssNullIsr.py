@@ -69,7 +69,7 @@ class SdssNullIsrConfig(ProcessCcdTask.ConfigClass):
 # \}
 
 class SdssNullIsrTask(pipeBase.Task):
-    """!Load SDSS post-ISR data from fpC, fpM, asTrans, etc. files
+    r"""!Load SDSS post-ISR data from fpC, fpM, asTrans, etc. files
 
     @anchor SdssNullIsrTask_
 

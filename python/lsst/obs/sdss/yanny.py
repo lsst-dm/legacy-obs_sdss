@@ -1023,7 +1023,7 @@ class yanny(dict):  # noqa N801
     #
 
     def _parse(self):
-        """Converts text into tables that users can use.
+        r"""Converts text into tables that users can use.
 
         This method is for use internally by the yanny object.  It is not
         meant to be called by users.
