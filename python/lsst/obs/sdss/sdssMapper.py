@@ -33,9 +33,6 @@ from lsst.obs.sdss.convertasTrans import convertasTrans
 from lsst.obs.sdss.converttsField import converttsField
 import lsst.afw.image.utils as afwImageUtils
 
-# Solely to get boost serialization registrations for Measurement subclasses
-import lsst.meas.algorithms as measAlgo  # flake8: noqa
-
 
 class SdssMapper(CameraMapper):
     packageName = 'obs_sdss'
