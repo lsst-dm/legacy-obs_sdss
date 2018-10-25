@@ -1,4 +1,3 @@
-from __future__ import print_function
 config.inputLevel = "filter"
 config.inputSourceDataset = "src"
 config.inputCalexpMetadataDataset = "calexp_md"

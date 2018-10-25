@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-from builtins import map
 #
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
@@ -33,9 +31,6 @@ from lsst.obs.sdss.convertasTrans import convertasTrans
 from lsst.obs.sdss.converttsField import converttsField
 import lsst.afw.image.utils as afwImageUtils
 
-# Solely to get boost serialization registrations for Measurement subclasses
-import lsst.meas.algorithms as measAlgo  # flake8: noqa
-
 
 class SdssMapper(CameraMapper):
     packageName = 'obs_sdss'
@@ -67,10 +62,9 @@ class SdssMapper(CameraMapper):
 
         @param dataId (dict) Data identifier with run, rerun, filter, camcol, field
         """
-        return ((int(dataId['run'])
-                 * 10 + self.filterIdMap[dataId['filter']])
-                * 10 + dataId['camcol']) \
-            * 10000 + dataId['field']
+        return ((int(dataId['run']) * 10 +
+                 self.filterIdMap[dataId['filter']]) * 10 +
+                dataId['camcol']) * 10000 + dataId['field']
 
     def _computeCoaddExposureId(self, dataId, singleFilter):
         """Compute the 64-bit (long) identifier for a coadd.
