@@ -109,7 +109,7 @@ class SdssNullIsrTask(pipeBase.Task):
         - Image is from fpC
         - Mask is from fpM
         - Wcs is from asTrans
-        - Calib is from tsField
+        - PhotoCalib is from tsField
         - Psf is from psField
         """
         originalExp = sensorRef.get("fpC").convertF()
@@ -119,7 +119,7 @@ class SdssNullIsrTask(pipeBase.Task):
         mask = sensorRef.get("fpM")
         wcs = sensorRef.get("asTrans")
         tsField = sensorRef.get("tsField")
-        calib = tsField.calib
+        photoCalib = tsField.photoCalib
         gain = tsField.gain
         var = afwImage.ImageF(image, True)
         var /= gain
@@ -136,7 +136,7 @@ class SdssNullIsrTask(pipeBase.Task):
 
         exposure = afwImage.ExposureF(mi, wcs)
         expInfo = exposure.getInfo()
-        expInfo.setCalib(calib)
+        expInfo.setPhotoCalib(photoCalib)
 
         camera = sensorRef.get('camera')
         detector = camera["%(filter)s%(camcol)d" % sensorRef.dataId]
