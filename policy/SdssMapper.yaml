@@ -88,7 +88,7 @@ datasets:
     template: '%(run)d/%(rerun)d/astrom/asTrans-%(run)06d.fit'
   tsField:
     persistable: ignored
-    python: lsst.afw.image.Calib
+    python: lsst.afw.image.PhotoCalib
     storage: FitsStorage
     tables: raw
     template: '%(run)d/%(rerun)d/calibChunks/%(camcol)d/tsField-%(run)06d-%(camcol)d-%(rerun)d-%(field)04d.fit'

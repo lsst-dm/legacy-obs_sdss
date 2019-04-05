@@ -29,7 +29,7 @@ import numpy as np
 import lsst.afw.image as afwImage
 import lsst.daf.base as dafBase
 
-TsField = collections.namedtuple("TsField", "calib gain dateAvg exptime airmass")
+TsField = collections.namedtuple("TsField", "photoCalib gain dateAvg exptime airmass")
 
 
 def converttsField(infile, filt, exptime=53.907456):
@@ -40,7 +40,7 @@ def converttsField(infile, filt, exptime=53.907456):
     @param[in] exptime  exposure time (sec)
 
     @return a dict with the following entries:
-    - calib: an lsst.afw.Calib
+    - photoCalib: an lsst.afw.PhotoCalib
     - gain: gain as a float
     - dateAvg: date of exposure at middle of exposure, as an lsst.daf.base.DateTime
     - exptime: exposure time (sec)
@@ -65,13 +65,12 @@ def converttsField(infile, filt, exptime=53.907456):
     fluxMag0 = 10**(-0.4 * aa) * exptime
     dfluxMag0 = fluxMag0 * 0.4 * np.log(10.0) * aaErr
 
-    calib = afwImage.Calib()
-    calib.setFluxMag0(fluxMag0, dfluxMag0)
+    photoCalib = afwImage.makePhotoCalibFromCalibZeroPoint(fluxMag0, dfluxMag0)
 
     ptr.close()
 
     return TsField(
-        calib=calib,
+        photoCalib=photoCalib,
         gain=gain,
         dateAvg=dateAvg,
         exptime=exptime,
