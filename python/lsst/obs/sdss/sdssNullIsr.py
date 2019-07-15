@@ -143,7 +143,7 @@ class SdssNullIsrTask(pipeBase.Task):
         expInfo.setDetector(detector)
         expInfo.setFilter(afwImage.Filter(sensorRef.dataId['filter']))
 
-        visitInfo = afwImage.makeVisitInfo(
+        visitInfo = afwImage.VisitInfo(
             exposureTime=tsField.exptime,
             date=tsField.dateAvg,
             boresightAirmass=tsField.airmass,
