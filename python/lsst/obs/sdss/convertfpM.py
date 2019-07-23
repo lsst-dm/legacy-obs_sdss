@@ -26,7 +26,7 @@ import re
 from astropy.io import fits
 
 import lsst.afw.image as afwImage
-import lsst.afw.geom as afwGeom
+import lsst.geom as geom
 
 
 class Span(object):
@@ -115,7 +115,7 @@ def convertfpM(infile, allPlanes=False):
         raise LookupError("Missing data in fpM header")
 
     planes = hdr[-1].data.field("attributeName").tolist()
-    mask = afwImage.Mask(afwGeom.ExtentI(nCols, nRows))
+    mask = afwImage.Mask(geom.ExtentI(nCols, nRows))
 
     # Minimal sets of mask planes needed for LSST
     interpPlane = planes.index("S_MASK_INTERP") + 1

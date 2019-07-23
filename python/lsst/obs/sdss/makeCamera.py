@@ -27,6 +27,7 @@ import lsst.afw.cameraGeom.utils as cameraGeomUtils
 from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig, \
     TransformMapConfig, SCIENCE, PIXELS, FIELD_ANGLE, FOCAL_PLANE, NullLinearityType
 import lsst.afw.table as afwTable
+import lsst.geom as geom
 from lsst.obs.sdss.convertOpECalib import SdssCameraState
 
 #
@@ -59,22 +60,22 @@ def addAmp(ampCatalog, i, eparams):
     #
     record = ampCatalog.addNew()
     xtot = width + nExtended + nOverclock
-    allPixels = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(xtot, height))
-    biasSec = afwGeom.BoxI(afwGeom.PointI(nExtended if i == 0 else width, 0),
-                           afwGeom.ExtentI(nOverclock, height))
-    dataSec = afwGeom.BoxI(afwGeom.PointI(nExtended + nOverclock if i == 0 else 0, 0),
-                           afwGeom.ExtentI(width, height))
-    emptyBox = afwGeom.BoxI()
-    bbox = afwGeom.BoxI(afwGeom.PointI(0, 0), afwGeom.ExtentI(width, height))
-    bbox.shift(afwGeom.Extent2I(width*i, 0))
+    allPixels = geom.BoxI(geom.PointI(0, 0), geom.ExtentI(xtot, height))
+    biasSec = geom.BoxI(geom.PointI(nExtended if i == 0 else width, 0),
+                        geom.ExtentI(nOverclock, height))
+    dataSec = geom.BoxI(geom.PointI(nExtended + nOverclock if i == 0 else 0, 0),
+                        geom.ExtentI(width, height))
+    emptyBox = geom.BoxI()
+    bbox = geom.BoxI(geom.PointI(0, 0), geom.ExtentI(width, height))
+    bbox.shift(geom.Extent2I(width*i, 0))
 
-    shiftp = afwGeom.Extent2I(xtot*i, 0)
+    shiftp = geom.Extent2I(xtot*i, 0)
     allPixels.shift(shiftp)
     biasSec.shift(shiftp)
     dataSec.shift(shiftp)
 
     record.setBBox(bbox)
-    record.setRawXYOffset(afwGeom.ExtentI(0, 0))
+    record.setRawXYOffset(geom.ExtentI(0, 0))
     record.setName('left' if i == 0 else 'right')
     record.setReadoutCorner(afwTable.LL if i == 0 else afwTable.LR)
     record.setGain(eparams['gain'])
@@ -153,7 +154,7 @@ def makeCamera(name="SDSS", outputDir=None):
     camConfig.name = name
     camConfig.detectorList = {}
     camConfig.plateScale = 16.5  # arcsec/mm
-    pScaleRad = afwGeom.arcsecToRad(camConfig.plateScale)
+    pScaleRad = geom.arcsecToRad(camConfig.plateScale)
     radialDistortCoeffs = [0.0, 1.0/pScaleRad]
     tConfig = afwGeom.TransformConfig()
     tConfig.transform.name = 'inverted'
@@ -172,7 +173,7 @@ def makeCamera(name="SDSS", outputDir=None):
         filters = "riuzg"
         for j, c in enumerate(reversed(filters)):
             ccdName = "%s%s" % (c, dewarName)
-            offsetPoint = afwGeom.Point2D(25.4*2.5*(2.5-i), 25.4*2.1*(2.0 - j))
+            offsetPoint = geom.Point2D(25.4*2.5*(2.5-i), 25.4*2.1*(2.0 - j))
             ccdInfo = makeCcd(ccdName, ccdId, offsetPoint)
             ampInfoCatDict[ccdName] = ccdInfo['ampInfo']
             camConfig.detectorList[ccdId] = ccdInfo['ccdConfig']
