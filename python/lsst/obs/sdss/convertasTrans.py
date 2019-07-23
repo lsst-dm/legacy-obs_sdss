@@ -189,36 +189,36 @@ def validate(xs, ys, mapper, wcs):
 
 
 def convertasTrans(infile, filt, camcol, field, stepSize=50, doValidate=False):
-    hdulist = fits.open(infile)
-    t0 = hdulist[0].header['ccdarray']
-    if t0 != 'photo':
-        raise RuntimeError('*** Cannot support ccdarray: %s' % (t0,))
+    with fits.open(infile) as hdulist:
+        t0 = hdulist[0].header['ccdarray']
+        if t0 != 'photo':
+            raise RuntimeError('*** Cannot support ccdarray: %s' % (t0,))
 
-    camcols = hdulist[0].header['camcols']
-    filters = hdulist[0].header['filters']
-    node_deg = hdulist[0].header['node']
-    incl_deg = hdulist[0].header['incl']
-    node_rad = node_deg * deg2rad
-    incl_rad = incl_deg * deg2rad
+        camcols = hdulist[0].header['camcols']
+        filters = hdulist[0].header['filters']
+        node_deg = hdulist[0].header['node']
+        incl_deg = hdulist[0].header['incl']
+        node_rad = node_deg * deg2rad
+        incl_rad = incl_deg * deg2rad
 
-    cList = [int(cc) for cc in camcols.split()]
-    fList = filters.split()
+        cList = [int(cc) for cc in camcols.split()]
+        fList = filters.split()
 
-    try:
-        cIdx = cList.index(camcol)
-    except Exception:
-        print("Cannot extract data for camcol %s" % (camcol))
-        return None
+        try:
+            cIdx = cList.index(camcol)
+        except Exception:
+            print("Cannot extract data for camcol %s" % (camcol))
+            return None
 
-    try:
-        fIdx = fList.index(filt)
-    except Exception:
-        print("Cannot extract data for filter %s" % (filt))
-        return None
+        try:
+            fIdx = fList.index(filt)
+        except Exception:
+            print("Cannot extract data for filter %s" % (filt))
+            return None
 
-    ext = cIdx * len(fList) + (fIdx + 1)
-    ehdr = hdulist[ext].header
-    edat = hdulist[ext].data
+        ext = cIdx * len(fList) + (fIdx + 1)
+        ehdr = hdulist[ext].header
+        edat = hdulist[ext].data
 
     if ehdr['CAMCOL'] != camcol or ehdr['FILTER'] != filt:
         print("Extracted incorrect header; fix me")

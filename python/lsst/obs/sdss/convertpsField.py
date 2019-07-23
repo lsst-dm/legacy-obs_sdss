@@ -45,8 +45,8 @@ def convertpsField(infile, filt, trim=True, rcscale=0.001, MAX_ORDER_B=5, LSST_O
         print("INVALID FILTER", filt)
         sys.exit(1)
 
-    buff = open(infile, "rb")
-    pstruct = fits.getdata(buff, ext=filtToHdu[filt])
+    with open(infile, "rb") as buff:
+        pstruct = fits.getdata(buff, ext=filtToHdu[filt])
 
     spaParList = [[]]*len(pstruct)
     kernelList = []
@@ -124,7 +124,6 @@ def convertpsField(infile, filt, trim=True, rcscale=0.001, MAX_ORDER_B=5, LSST_O
         spaParamsTri = spaParamsTri[:nTerms]
         spaParList[i] = spaParamsTri
 
-    buff.close()
     spaFun = afwMath.PolynomialFunction2D(LSST_ORDER)
     spatialKernel = afwMath.LinearCombinationKernel(kernelList, spaFun)
     spatialKernel.setSpatialParameters(spaParList)
