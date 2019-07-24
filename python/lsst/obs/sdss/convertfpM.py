@@ -26,7 +26,7 @@ import re
 from astropy.io import fits
 
 import lsst.afw.image as afwImage
-import lsst.afw.geom as afwGeom
+import lsst.geom as geom
 
 
 class Span(object):
@@ -102,55 +102,55 @@ class Objmask(object):
 
 
 def convertfpM(infile, allPlanes=False):
-    hdr = fits.open(infile)
-    hdr[0].header['RUN']
-    hdr[0].header['CAMCOL']
-    hdr[0].header['FIELD']
-    nRows = hdr[0].header['MASKROWS']
-    nCols = hdr[0].header['MASKCOLS']
-    hdr[0].header['NPLANE']
+    with fits.open(infile) as hdr:
+        hdr[0].header['RUN']
+        hdr[0].header['CAMCOL']
+        hdr[0].header['FIELD']
+        nRows = hdr[0].header['MASKROWS']
+        nCols = hdr[0].header['MASKCOLS']
+        hdr[0].header['NPLANE']
 
-    names = hdr[-1].data.names
-    if ("attributeName" not in names) or ("Value" not in names):
-        raise LookupError("Missing data in fpM header")
+        names = hdr[-1].data.names
+        if ("attributeName" not in names) or ("Value" not in names):
+            raise LookupError("Missing data in fpM header")
 
-    planes = hdr[-1].data.field("attributeName").tolist()
-    mask = afwImage.Mask(afwGeom.ExtentI(nCols, nRows))
+        planes = hdr[-1].data.field("attributeName").tolist()
+        mask = afwImage.Mask(geom.ExtentI(nCols, nRows))
 
-    # Minimal sets of mask planes needed for LSST
-    interpPlane = planes.index("S_MASK_INTERP") + 1
-    satPlane = planes.index("S_MASK_SATUR") + 1
-    crPlane = planes.index("S_MASK_CR") + 1
+        # Minimal sets of mask planes needed for LSST
+        interpPlane = planes.index("S_MASK_INTERP") + 1
+        satPlane = planes.index("S_MASK_SATUR") + 1
+        crPlane = planes.index("S_MASK_CR") + 1
 
-    interpBitMask = afwImage.Mask.getPlaneBitMask("INTRP")
-    satBitMask = afwImage.Mask.getPlaneBitMask("SAT")
-    crBitMask = afwImage.Mask.getPlaneBitMask("CR")
+        interpBitMask = afwImage.Mask.getPlaneBitMask("INTRP")
+        satBitMask = afwImage.Mask.getPlaneBitMask("SAT")
+        crBitMask = afwImage.Mask.getPlaneBitMask("CR")
 
-    listToSet = [(interpPlane, interpBitMask),
-                 (satPlane, satBitMask),
-                 (crPlane, crBitMask)]
+        listToSet = [(interpPlane, interpBitMask),
+                     (satPlane, satBitMask),
+                     (crPlane, crBitMask)]
 
-    # Add the rest of the SDSS planes
-    if allPlanes:
-        for plane in ['S_MASK_NOTCHECKED', 'S_MASK_OBJECT', 'S_MASK_BRIGHTOBJECT',
-                      'S_MASK_BINOBJECT', 'S_MASK_CATOBJECT', 'S_MASK_SUBTRACTED', 'S_MASK_GHOST']:
-            idx = planes.index(plane) + 1
-            planeName = re.sub("S_MASK_", "", plane)
-            mask.addMaskPlane(planeName)
-            planeBitMask = afwImage.Mask.getPlaneBitMask(planeName)
-            listToSet.append((idx, planeBitMask))
+        # Add the rest of the SDSS planes
+        if allPlanes:
+            for plane in ['S_MASK_NOTCHECKED', 'S_MASK_OBJECT', 'S_MASK_BRIGHTOBJECT',
+                          'S_MASK_BINOBJECT', 'S_MASK_CATOBJECT', 'S_MASK_SUBTRACTED', 'S_MASK_GHOST']:
+                idx = planes.index(plane) + 1
+                planeName = re.sub("S_MASK_", "", plane)
+                mask.addMaskPlane(planeName)
+                planeBitMask = afwImage.Mask.getPlaneBitMask(planeName)
+                listToSet.append((idx, planeBitMask))
 
-    for plane, bitmask in listToSet:
-        if len(hdr) < plane:
-            continue
+        for plane, bitmask in listToSet:
+            if len(hdr) < plane:
+                continue
 
-        if hdr[plane].data is None:
-            continue
+            if hdr[plane].data is None:
+                continue
 
-        nmask = len(hdr[plane].data)
-        for i in range(nmask):
-            frow = hdr[plane].data[i]
-            Objmask(frow, bitmask).setMask(mask)
+            nmask = len(hdr[plane].data)
+            for i in range(nmask):
+                frow = hdr[plane].data[i]
+                Objmask(frow, bitmask).setMask(mask)
 
     return mask
 

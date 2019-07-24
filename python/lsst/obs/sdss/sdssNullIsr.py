@@ -22,7 +22,7 @@
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 import lsst.afw.image as afwImage
-import lsst.afw.geom as afwGeom
+import lsst.geom as geom
 from lsst.pipe.tasks.processCcd import ProcessCcdTask
 
 
@@ -130,8 +130,8 @@ class SdssNullIsrTask(pipeBase.Task):
             bbox = mi.getBBox()
             begin = bbox.getBegin()
             extent = bbox.getDimensions()
-            extent -= afwGeom.Extent2I(0, self.config.overlapSize)
-            tbbox = afwGeom.BoxI(begin, extent)
+            extent -= geom.Extent2I(0, self.config.overlapSize)
+            tbbox = geom.BoxI(begin, extent)
             mi = afwImage.MaskedImageF(mi, tbbox)
 
         exposure = afwImage.ExposureF(mi, wcs)

@@ -29,8 +29,9 @@ import lsst.utils.tests
 import lsst.daf.persistence as dafPersist
 from lsst.daf.base import DateTime
 import lsst.afw.image
-from lsst.afw.geom import SkyWcs, SpherePoint, degrees
+from lsst.afw.geom import SkyWcs
 import lsst.afw.detection
+from lsst.geom import SpherePoint, degrees
 
 
 class SdssMapperTestCase(lsst.utils.tests.TestCase):
