@@ -24,8 +24,8 @@ import os
 import lsst.utils
 import lsst.afw.geom as afwGeom
 import lsst.afw.cameraGeom.utils as cameraGeomUtils
-from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig, \
-    TransformMapConfig, SCIENCE, PIXELS, FIELD_ANGLE, FOCAL_PLANE, NullLinearityType
+from lsst.afw.cameraGeom import makeCameraFromAmpLists, CameraConfig, DetectorConfig, \
+    TransformMapConfig, DetectorType, PIXELS, FIELD_ANGLE, FOCAL_PLANE, NullLinearityType
 import lsst.afw.table as afwTable
 import lsst.geom as geom
 from lsst.obs.sdss.convertOpECalib import SdssCameraState
@@ -125,7 +125,7 @@ def makeCcd(ccdName, ccdId, offsetPoint):
     detConfig.bbox_x1 = width - 1
     detConfig.bbox_y1 = height - 1
     detConfig.serial = ccdName
-    detConfig.detectorType = SCIENCE
+    detConfig.detectorType = DetectorType.SCIENCE
     detConfig.offset_x = offsetPoint.getX()
     detConfig.offset_y = offsetPoint.getY()
     detConfig.refpos_x = (width-1)/2.
@@ -182,7 +182,7 @@ def makeCamera(name="SDSS", outputDir=None):
         camConfig.save(os.path.join(outputDir, 'camera.py'))
         for k in ampInfoCatDict:
             ampInfoCatDict[k].writeFits(os.path.join(outputDir, "%s.fits"%(k)))
-    return makeCameraFromCatalogs(camConfig, ampInfoCatDict)
+    return makeCameraFromAmpLists(camConfig, ampInfoCatDict)
 
 #
 # Print a Ccd
