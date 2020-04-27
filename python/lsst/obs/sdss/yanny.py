@@ -506,9 +506,9 @@ class yanny(dict):  # noqa N801
         except KeyError:
             typ = self.type(structure, variable)
             character_array = re.compile(r'char[[<]\d*[]>][[<]\d*[]>]')
-            if ((character_array.search(typ) is not None) or
-                (typ.find('char') < 0 and (typ.find('[') >= 0 or
-                                           typ.find('<') >= 0))):
+            if ((character_array.search(typ) is not None)
+                or (typ.find('char') < 0 and (typ.find('[') >= 0
+                                              or typ.find('<') >= 0))):
                 cache[variable] = True
             else:
                 cache[variable] = False
