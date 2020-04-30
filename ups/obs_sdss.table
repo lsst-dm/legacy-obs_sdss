@@ -5,7 +5,6 @@ setupRequired(meas_astrom)
 setupRequired(pipe_tasks)
 setupRequired(utils)
 setupRequired(log)
-setupRequired(astropy)
 setupRequired(geom)
 
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
