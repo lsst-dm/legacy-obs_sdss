@@ -24,6 +24,7 @@ import lsst.pipe.base as pipeBase
 import lsst.afw.image as afwImage
 import lsst.geom as geom
 from lsst.pipe.tasks.processCcd import ProcessCcdTask
+from lsst.utils.timer import timeMethod
 
 
 class SdssNullIsrConfig(ProcessCcdTask.ConfigClass):
@@ -102,7 +103,7 @@ class SdssNullIsrTask(pipeBase.Task):
     ConfigClass = SdssNullIsrConfig
     _DefaultName = "isr"
 
-    @pipeBase.timeMethod
+    @timeMethod
     def loadExposure(self, sensorRef):
         """Load SDSS data as a post-ISR exposure
 
@@ -156,7 +157,7 @@ class SdssNullIsrTask(pipeBase.Task):
 
         return exposure
 
-    @pipeBase.timeMethod
+    @timeMethod
     def runDataRef(self, sensorRef):
         """!Load SDSS data as post-ISR exposure and possibly persist it as a post-ISR CCD
 
